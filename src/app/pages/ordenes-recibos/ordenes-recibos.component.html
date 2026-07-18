@@ -1,8 +1,737 @@
-<div class="page-stack">
-  <div class="card">
-    <div class="toolbar"><h2>Órdenes de trabajo y recibos</h2><div class="actions"><button class="btn secondary">Exportar Excel</button><button class="btn secondary">PDF formato Excel</button></div></div>
-    <div class="table-wrap" *ngIf="ordenes.length; else empty"><table><thead><tr><th>N° Orden</th><th>Cliente</th><th>Total</th><th>A cuenta</th><th>Saldo</th><th>Estado</th></tr></thead><tbody><tr *ngFor="let o of ordenes"><td>{{ o.numero }}</td><td>{{ o.cliente }}</td><td>{{ o.total }}</td><td>{{ o.aCuenta }}</td><td>{{ o.saldo }}</td><td>{{ o.estado }}</td></tr></tbody></table></div>
-    <ng-template #empty><div class="empty">Aún no hay órdenes registradas. Se crearán desde el módulo de ventas.</div></ng-template>
+<div class="orders-page">
+
+  <header class="orders-header">
+    <div class="header-title">
+      <span class="header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M6 3h9l3 3v15H6Z" />
+          <path d="M9 10h6M9 14h6M9 18h4M15 3v4h4" />
+        </svg>
+      </span>
+
+      <div>
+        <span class="page-kicker">
+          CONTROL DE DOCUMENTOS
+        </span>
+
+        <h1>Historial de órdenes y recibos</h1>
+
+        <p>
+          Consulta, filtra, imprime y gestiona las órdenes creadas desde el módulo de ventas.
+        </p>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="new-order-button"
+      (click)="nuevaOrden()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      Nueva orden
+    </button>
+  </header>
+
+  <section class="filters-card">
+    <div class="filters-grid">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-4-4" />
+        </svg>
+
+        <input
+          type="search"
+          [(ngModel)]="filtros.buscar"
+          (ngModelChange)="aplicarFiltros()"
+          placeholder="Buscar por N° de orden, cliente, DNI o teléfono..."
+          autocomplete="off"
+        />
+
+        <button
+          type="button"
+          *ngIf="filtros.buscar"
+          (click)="filtros.buscar = ''; aplicarFiltros()"
+          aria-label="Limpiar búsqueda"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="filter-field">
+        <label for="desdeOrden">Desde</label>
+        <input
+          id="desdeOrden"
+          type="date"
+          [(ngModel)]="filtros.desde"
+          (ngModelChange)="aplicarFiltros()"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="hastaOrden">Hasta</label>
+        <input
+          id="hastaOrden"
+          type="date"
+          [(ngModel)]="filtros.hasta"
+          (ngModelChange)="aplicarFiltros()"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="estadoOrden">Estado</label>
+        <select
+          id="estadoOrden"
+          [(ngModel)]="filtros.estado"
+          (ngModelChange)="aplicarFiltros()"
+        >
+          <option value="TODOS">Todos</option>
+          <option value="COMPLETADA">Completadas</option>
+          <option value="PENDIENTE">Pendientes</option>
+          <option value="CANCELADA">Canceladas</option>
+        </select>
+      </div>
+    </div>
+
+    <div
+      class="advanced-filters"
+      *ngIf="mostrarAvanzados"
+    >
+      <div class="filter-field">
+        <label for="tipoOrden">Tipo</label>
+        <select
+          id="tipoOrden"
+          [(ngModel)]="filtros.tipo"
+          (ngModelChange)="aplicarFiltros()"
+        >
+          <option value="TODOS">Todos</option>
+          <option value="ORDEN_TRABAJO">
+            Orden de trabajo
+          </option>
+          <option value="RECIBO">Recibo</option>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label for="metodoOrden">Método de pago</label>
+        <select
+          id="metodoOrden"
+          [(ngModel)]="filtros.metodoPago"
+          (ngModelChange)="aplicarFiltros()"
+        >
+          <option value="TODOS">Todos</option>
+          <option value="EFECTIVO">Efectivo</option>
+          <option value="YAPE">Yape</option>
+          <option value="TRANSFERENCIA">
+            Transferencia
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button
+        type="button"
+        class="filter-button"
+        (click)="alternarFiltrosAvanzados()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 6h16M7 12h10M10 18h4" />
+        </svg>
+        {{
+          mostrarAvanzados
+            ? 'Ocultar filtros'
+            : 'Filtros avanzados'
+        }}
+      </button>
+
+      <button
+        type="button"
+        class="clear-button"
+        (click)="limpiarFiltros()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 4v6h6M20 20v-6h-6" />
+          <path d="M19 9a8 8 0 0 0-14-3M5 15a8 8 0 0 0 14 3" />
+        </svg>
+        Limpiar filtros
+      </button>
+    </div>
+  </section>
+
+  <p class="message success" *ngIf="mensaje">
+    {{ mensaje }}
+  </p>
+
+  <p class="message error" *ngIf="error">
+    {{ error }}
+  </p>
+
+  <div class="loading-panel" *ngIf="cargando">
+    <span class="spinner"></span>
+    Cargando órdenes y recibos...
   </div>
-  <div class="card receipt-preview"><div class="receipt"><h2>Óptica Alba</h2><p class="muted" style="text-align:center;">Cajamarca, Perú</p><div class="line"></div><h3>ORDEN DE TRABAJO / RECIBO</h3><p><b>Total:</b> S/ 0.00</p><p><b>A cuenta:</b> S/ 0.00</p><p><b>Saldo:</b> S/ 0.00</p><p><b>Método de pago:</b> EFECTIVO</p></div></div>
+
+  <ng-container *ngIf="!cargando">
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span class="stat-icon total">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 3h9l3 3v15H6Z" />
+            <path d="M9 10h6M9 14h6M9 18h4" />
+          </svg>
+        </span>
+
+        <div>
+          <small>Total órdenes</small>
+          <strong>{{ resumen.total }}</strong>
+          <span>En el rango seleccionado</span>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon completed">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="m8 12 3 3 5-6" />
+          </svg>
+        </span>
+
+        <div>
+          <small>Completadas</small>
+          <strong>{{ resumen.completadas }}</strong>
+          <span>{{ porcentajeCompletadas }}% del total</span>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon pending">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v6l4 2" />
+          </svg>
+        </span>
+
+        <div>
+          <small>Pendientes</small>
+          <strong>{{ resumen.pendientes }}</strong>
+          <span>{{ porcentajePendientes }}% del total</span>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon cancelled">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="m9 9 6 6M15 9l-6 6" />
+          </svg>
+        </span>
+
+        <div>
+          <small>Canceladas</small>
+          <strong>{{ resumen.canceladas }}</strong>
+          <span>{{ porcentajeCanceladas }}% del total</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="orders-card">
+      <header class="orders-card-header">
+        <div>
+          <span class="page-kicker">
+            DOCUMENTOS REGISTRADOS
+          </span>
+          <h2>Listado de órdenes y recibos</h2>
+        </div>
+
+        <button
+          type="button"
+          class="excel-button"
+          (click)="exportarExcel()"
+          [disabled]="
+            exportando ||
+            ordenesFiltradas.length === 0
+          "
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 3h9l3 3v15H6Z" />
+            <path d="M9 10l6 7M15 10l-6 7" />
+          </svg>
+          {{
+            exportando
+              ? 'Exportando...'
+              : 'Exportar Excel'
+          }}
+        </button>
+      </header>
+
+      <div
+        class="table-wrapper"
+        *ngIf="
+          ordenesPaginadas.length;
+          else sinOrdenes
+        "
+      >
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>N° de orden</th>
+              <th>Cliente</th>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Total</th>
+              <th>Cancelado</th>
+              <th>Saldo</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              *ngFor="let orden of ordenesPaginadas"
+            >
+              <td>
+                <strong class="order-number">
+                  {{ orden.numeroOrden }}
+                </strong>
+                <small>{{ orden.metodoPago }}</small>
+              </td>
+
+              <td>
+                <div class="client-cell">
+                  <strong>{{ orden.cliente }}</strong>
+                  <small>
+                    {{ orden.telefono || 'Sin teléfono' }}
+                  </small>
+                </div>
+              </td>
+
+              <td>
+                <strong>
+                  {{ orden.fechaVenta | date:'dd/MM/yyyy' }}
+                </strong>
+                <small>
+                  {{ orden.fechaVenta | date:'hh:mm a' }}
+                </small>
+              </td>
+
+              <td>
+                <span
+                  class="type-badge"
+                  [class.receipt]="orden.tipo === 'RECIBO'"
+                >
+                  {{ textoTipo(orden.tipo) }}
+                </span>
+              </td>
+
+              <td class="money">
+                S/ {{ orden.total | number:'1.2-2' }}
+              </td>
+
+              <td class="money paid">
+                S/ {{ orden.montoCancelado | number:'1.2-2' }}
+              </td>
+
+              <td class="money debt">
+                S/ {{ orden.saldo | number:'1.2-2' }}
+              </td>
+
+              <td>
+                <span
+                  class="status-badge"
+                  [ngClass]="claseEstado(orden.estado)"
+                >
+                  {{ textoEstado(orden.estado) }}
+                </span>
+              </td>
+
+              <td>
+                <div class="row-actions">
+                  <button
+                    type="button"
+                    (click)="abrirDetalle(orden)"
+                    title="Ver detalle"
+                    aria-label="Ver detalle"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12Z" />
+                      <circle cx="12" cy="12" r="2.5" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="imprimir(orden)"
+                    title="Imprimir"
+                    aria-label="Imprimir"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M6 9V3h12v6M6 18H4V10h16v8h-2M7 14h10v7H7Z" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="abrirAcciones(orden)"
+                    title="Más acciones"
+                    aria-label="Más acciones"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="5" cy="12" r="1" />
+                      <circle cx="12" cy="12" r="1" />
+                      <circle cx="19" cy="12" r="1" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #sinOrdenes>
+        <div class="empty-state">
+          <span class="empty-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 3h9l3 3v15H6Z" />
+              <path d="M9 11h6M9 15h4" />
+            </svg>
+          </span>
+          <strong>No se encontraron órdenes.</strong>
+          <p>
+            Registra una venta o modifica los filtros seleccionados.
+          </p>
+        </div>
+      </ng-template>
+
+      <footer
+        class="pagination"
+        *ngIf="ordenesFiltradas.length > 0"
+      >
+        <span>
+          Mostrando
+          {{ ordenesPaginadas.length }}
+          de
+          {{ ordenesFiltradas.length }}
+          resultados
+        </span>
+
+        <div class="page-controls">
+          <button
+            type="button"
+            (click)="paginaAnterior()"
+            [disabled]="paginaActual === 1"
+            aria-label="Página anterior"
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            *ngFor="let pagina of paginasVisibles"
+            (click)="irPagina(pagina)"
+            [class.active]="pagina === paginaActual"
+          >
+            {{ pagina }}
+          </button>
+
+          <button
+            type="button"
+            (click)="paginaSiguiente()"
+            [disabled]="paginaActual === totalPaginas"
+            aria-label="Página siguiente"
+          >
+            ›
+          </button>
+        </div>
+
+        <select
+          [(ngModel)]="elementosPorPagina"
+          (ngModelChange)="cambiarElementosPorPagina()"
+          aria-label="Resultados por página"
+        >
+          <option [ngValue]="10">10 por página</option>
+          <option [ngValue]="25">25 por página</option>
+          <option [ngValue]="50">50 por página</option>
+        </select>
+      </footer>
+    </section>
+  </ng-container>
+
+  <!-- MODAL DETALLE -->
+  <div
+    class="modal-backdrop"
+    *ngIf="mostrarDetalle"
+    (click)="cerrarDetalle()"
+  >
+    <section
+      class="detail-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="detailTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal-header">
+        <div>
+          <span class="page-kicker">
+            DETALLE DEL DOCUMENTO
+          </span>
+          <h2 id="detailTitle">
+            {{
+              ordenSeleccionada?.numeroOrden ||
+              'Cargando orden...'
+            }}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="close-button"
+          (click)="cerrarDetalle()"
+          [disabled]="cargandoDetalle"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </header>
+
+      <div
+        class="modal-loading"
+        *ngIf="cargandoDetalle"
+      >
+        <span class="spinner"></span>
+        Cargando detalle...
+      </div>
+
+      <ng-container *ngIf="ordenSeleccionada">
+        <div class="detail-content">
+          <section class="detail-summary">
+            <div>
+              <span>Cliente</span>
+              <strong>
+                {{ ordenSeleccionada.cliente }}
+              </strong>
+            </div>
+            <div>
+              <span>Teléfono</span>
+              <strong>
+                {{ ordenSeleccionada.telefono || '—' }}
+              </strong>
+            </div>
+            <div>
+              <span>Fecha</span>
+              <strong>
+                {{
+                  ordenSeleccionada.fechaVenta
+                  | date:'dd/MM/yyyy hh:mm a'
+                }}
+              </strong>
+            </div>
+            <div>
+              <span>Tipo</span>
+              <strong>
+                {{ textoTipo(ordenSeleccionada.tipo) }}
+              </strong>
+            </div>
+            <div>
+              <span>Método</span>
+              <strong>
+                {{ ordenSeleccionada.metodoPago }}
+              </strong>
+            </div>
+            <div>
+              <span>Estado</span>
+              <strong>
+                {{ textoEstado(ordenSeleccionada.estado) }}
+              </strong>
+            </div>
+          </section>
+
+          <div class="table-wrapper detail-table-wrap">
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Marca</th>
+                  <th>Modelo</th>
+                  <th>Color</th>
+                  <th>Medida</th>
+                  <th>Cant.</th>
+                  <th>P. unitario</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="
+                    let item of ordenSeleccionada.items
+                  "
+                >
+                  <td>
+                    <strong>{{ item.producto }}</strong>
+                    <small>{{ item.codigo || 'Sin código' }}</small>
+                  </td>
+                  <td>{{ item.marca || '—' }}</td>
+                  <td>{{ item.modelo || '—' }}</td>
+                  <td>{{ item.color || '—' }}</td>
+                  <td>{{ item.medida || '—' }}</td>
+                  <td>{{ item.cantidad }}</td>
+                  <td>
+                    S/ {{ item.precioUnitario | number:'1.2-2' }}
+                  </td>
+                  <td>
+                    S/ {{ item.subtotal | number:'1.2-2' }}
+                  </td>
+                </tr>
+
+                <tr
+                  *ngIf="
+                    ordenSeleccionada.items.length === 0
+                  "
+                >
+                  <td colspan="8" class="empty-row">
+                    No hay productos asociados.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <section class="detail-bottom">
+            <div class="observations">
+              <span>Observaciones</span>
+              <p>
+                {{
+                  ordenSeleccionada.observaciones ||
+                  'Sin observaciones'
+                }}
+              </p>
+            </div>
+
+            <div class="totals-box">
+              <div>
+                <span>Total</span>
+                <strong>
+                  S/
+                  {{
+                    ordenSeleccionada.total
+                    | number:'1.2-2'
+                  }}
+                </strong>
+              </div>
+              <div>
+                <span>Cancelado</span>
+                <strong>
+                  S/
+                  {{
+                    ordenSeleccionada.montoCancelado
+                    | number:'1.2-2'
+                  }}
+                </strong>
+              </div>
+              <div class="debt-total">
+                <span>Saldo</span>
+                <strong>
+                  S/
+                  {{
+                    ordenSeleccionada.saldo
+                    | number:'1.2-2'
+                  }}
+                </strong>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="modal-actions">
+          <button
+            type="button"
+            class="secondary-action"
+            (click)="cerrarDetalle()"
+          >
+            Cerrar
+          </button>
+
+          <button
+            type="button"
+            class="primary-action"
+            (click)="imprimirSeleccionada()"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 9V3h12v6M6 18H4V10h16v8h-2M7 14h10v7H7Z" />
+            </svg>
+            Imprimir
+          </button>
+        </footer>
+      </ng-container>
+    </section>
+  </div>
+
+  <!-- MODAL ACCIONES -->
+  <div
+    class="modal-backdrop"
+    *ngIf="mostrarAcciones"
+    (click)="cerrarAcciones()"
+  >
+    <section
+      class="actions-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="actionsTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal-header">
+        <div>
+          <span class="page-kicker">
+            CAMBIAR ESTADO
+          </span>
+          <h2 id="actionsTitle">
+            {{ ordenAcciones?.numeroOrden }}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="close-button"
+          (click)="cerrarAcciones()"
+          [disabled]="actualizando"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="state-actions">
+        <button
+          type="button"
+          class="state-option completed"
+          (click)="cambiarEstado('COMPLETADA')"
+          [disabled]="actualizando"
+        >
+          Marcar como completada
+        </button>
+
+        <button
+          type="button"
+          class="state-option pending"
+          (click)="cambiarEstado('PENDIENTE')"
+          [disabled]="actualizando"
+        >
+          Marcar como pendiente
+        </button>
+
+        <button
+          type="button"
+          class="state-option cancelled"
+          (click)="cambiarEstado('CANCELADA')"
+          [disabled]="actualizando"
+        >
+          Marcar como cancelada
+        </button>
+      </div>
+    </section>
+  </div>
 </div>

@@ -1,18 +1,469 @@
-<div class="page-stack">
-  <div class="card">
-    <div class="toolbar">
-      <div class="actions"><div class="field" style="margin:0;"><label>Desde</label><input type="date"></div><div class="field" style="margin:0;"><label>Hasta</label><input type="date"></div></div>
-      <div class="actions"><button class="btn secondary">Limpiar filtros</button><button class="btn">Exportar Excel</button><button class="btn secondary">PDF formato Excel</button></div>
+<div class="reports-page">
+
+  <header class="reports-header">
+    <div class="header-title">
+      <span class="header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 19V9M10 19V5M16 19v-8M3 19h18M3 12l5-5 4 3 7-7" />
+        </svg>
+      </span>
+
+      <div>
+        <span class="page-kicker">
+          ANÁLISIS DEL NEGOCIO
+        </span>
+        <h1>Reportes</h1>
+        <p>
+          Analiza el rendimiento de Óptica Alba con información real de ventas e inventario.
+        </p>
+      </div>
     </div>
-    <div class="grid cards">
-      <div class="card stat"><div><h3>Ventas registradas</h3><strong>{{ resumen.cantidadVentas }}</strong></div><div class="icon">🧾</div></div>
-      <div class="card stat"><div><h3>Total vendido</h3><strong>S/ {{ resumen.totalVentas | number:'1.2-2' }}</strong></div><div class="icon">💵</div></div>
-      <div class="card stat"><div><h3>Productos</h3><strong>{{ resumen.totalProductos }}</strong></div><div class="icon">👓</div></div>
-      <div class="card stat"><div><h3>Bajo stock</h3><strong>{{ resumen.bajoStock }}</strong></div><div class="icon">⚠️</div></div>
+
+    <div class="date-card">
+      <span class="date-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
+        </svg>
+      </span>
+      <div>
+        <strong>
+          {{ ahora | date:'dd/MM/yyyy' }}
+        </strong>
+        <small>
+          {{ ahora | date:'h:mm a' }}
+        </small>
+      </div>
     </div>
+  </header>
+
+  <section class="filters-card">
+    <div class="filters-grid">
+      <div class="filter-field">
+        <label for="desde">Desde</label>
+        <input
+          id="desde"
+          type="date"
+          [(ngModel)]="filtros.desde"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="hasta">Hasta</label>
+        <input
+          id="hasta"
+          type="date"
+          [(ngModel)]="filtros.hasta"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="vendedor">Vendedor</label>
+        <select
+          id="vendedor"
+          [(ngModel)]="filtros.vendedorId"
+        >
+          <option [ngValue]="null">Todos</option>
+          <option
+            *ngFor="let vendedor of vendedores"
+            [ngValue]="vendedor.id"
+          >
+            {{ vendedor.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label for="proveedor">Proveedor</label>
+        <select
+          id="proveedor"
+          [(ngModel)]="filtros.proveedorId"
+        >
+          <option [ngValue]="null">Todos</option>
+          <option
+            *ngFor="let proveedor of proveedores"
+            [ngValue]="proveedor.id"
+          >
+            {{ proveedor.nombre }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button
+        type="button"
+        class="button light"
+        (click)="limpiarFiltros()"
+        [disabled]="cargando"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 4l16 16M10 6h10M4 6h2M4 12h8M16 12h4M4 18h14" />
+        </svg>
+        Limpiar filtros
+      </button>
+
+      <button
+        type="button"
+        class="button apply"
+        (click)="aplicarFiltros()"
+        [disabled]="cargando"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v6h-6" />
+        </svg>
+        {{ cargando ? 'Actualizando...' : 'Aplicar filtros' }}
+      </button>
+
+      <button
+        type="button"
+        class="button excel"
+        (click)="exportarExcel()"
+        [disabled]="cargando || exportando"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 3h9l3 3v15H6Z" />
+          <path d="M9 10l6 7M15 10l-6 7" />
+        </svg>
+        Exportar reporte Excel
+      </button>
+
+      <button
+        type="button"
+        class="button pdf"
+        (click)="exportarPdf()"
+        [disabled]="cargando || exportando"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 3h9l3 3v15H6Z" />
+          <path d="M9 15h6M9 11h6" />
+        </svg>
+        PDF reporte
+      </button>
+    </div>
+  </section>
+
+  <p class="message success" *ngIf="mensaje">
+    {{ mensaje }}
+  </p>
+
+  <p class="message error" *ngIf="error">
+    {{ error }}
+  </p>
+
+  <div class="loading-panel" *ngIf="cargando">
+    <span class="spinner"></span>
+    Consultando ventas, productos y proveedores...
   </div>
 
-  <div class="card"><h2>Productos más vendidos</h2><div class="table-wrap" *ngIf="productosMasVendidos.length; else emptyBest"><table><thead><tr><th>ID</th><th>Código</th><th>Producto</th><th>Unidades</th><th>Importe</th></tr></thead><tbody><tr *ngFor="let r of productosMasVendidos"><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td><td>{{ r[3] }}</td><td>S/ {{ r[4] | number:'1.2-2' }}</td></tr></tbody></table></div><ng-template #emptyBest><div class="empty">No hay ventas en el rango seleccionado.</div></ng-template></div>
-  <div class="card"><h2>Ventas diarias / por vendedor</h2><div class="table-wrap" *ngIf="ventasDiarias.length; else emptySales"><table><thead><tr><th>Fecha</th><th>Cantidad</th><th>Total</th><th>Efectivo</th><th>Yape</th><th>Transferencia</th></tr></thead><tbody><tr *ngFor="let r of ventasDiarias"><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>S/ {{ r[2] | number:'1.2-2' }}</td><td>S/ {{ r[3] | number:'1.2-2' }}</td><td>S/ {{ r[4] | number:'1.2-2' }}</td><td>S/ {{ r[5] | number:'1.2-2' }}</td></tr></tbody></table></div><ng-template #emptySales><div class="empty">No hay datos para mostrar.</div></ng-template></div>
-  <div class="card"><h2>Productos con bajo stock</h2><div class="table-wrap" *ngIf="bajoStock.length; else emptyLow"><table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Marca</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody><tr class="low-stock" *ngFor="let r of bajoStock"><td>{{ r[1] }}</td><td>{{ r[3] }}</td><td>{{ r[4] }}</td><td>{{ r[5] || '-' }}</td><td>{{ r[6] }}</td><td>{{ r[7] }}</td></tr></tbody></table></div><ng-template #emptyLow><div class="empty">No hay productos con bajo stock.</div></ng-template></div>
+  <ng-container *ngIf="!cargando">
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span class="stat-icon sales" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 5h2l2 10h9l2-7H7M10 20h.01M17 20h.01" />
+          </svg>
+        </span>
+        <div>
+          <small>Ventas registradas</small>
+          <strong>{{ resumen.cantidadVentas }}</strong>
+          <span>Órdenes en el rango</span>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon money" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 6h18v12H3Z" />
+            <path d="M7 9h.01M17 15h.01M12 9a3 3 0 1 1 0 6" />
+          </svg>
+        </span>
+        <div>
+          <small>Total vendido</small>
+          <strong>
+            S/ {{ resumen.totalVentas | number:'1.2-2' }}
+          </strong>
+          <span>En el rango seleccionado</span>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon profit" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 17l5-5 4 3 7-9M15 6h5v5" />
+          </svg>
+        </span>
+        <div>
+          <small>Ganancia estimada</small>
+          <strong>
+            S/ {{ resumen.gananciaEstimada | number:'1.2-2' }}
+          </strong>
+          <span>Venta menos costo registrado</span>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon stock" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3 2 21h20ZM12 9v5M12 18h.01" />
+          </svg>
+        </span>
+        <div>
+          <small>Bajo stock</small>
+          <strong>{{ resumen.bajoStock }}</strong>
+          <span>Productos por reponer</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="reports-grid">
+      <article class="report-card">
+        <header class="report-card-header">
+          <div class="report-title">
+            <span class="mini-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 18V9M10 18V5M16 18v-6M3 18h18" />
+              </svg>
+            </span>
+            <h2>Productos más vendidos</h2>
+          </div>
+
+          <button
+            type="button"
+            class="detail-button"
+            (click)="alternarProductos()"
+            *ngIf="productosMasVendidos.length > 5"
+          >
+            {{ mostrarTodosProductos ? 'Ver menos' : 'Ver detalle' }}
+          </button>
+        </header>
+
+        <div
+          class="table-wrapper"
+          *ngIf="productosVisibles.length; else sinProductos"
+        >
+          <table class="report-table products-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Total vendido</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let producto of productosVisibles; let i = index"
+              >
+                <td>{{ i + 1 }}</td>
+                <td>
+                  <div class="product-cell">
+                    <span class="product-dot"></span>
+                    <div>
+                      <strong>{{ producto.nombre }}</strong>
+                      <small>{{ producto.codigoInterno || 'Sin código' }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ producto.cantidadVendida }}</td>
+                <td>
+                  S/ {{ producto.totalVendido | number:'1.2-2' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #sinProductos>
+          <div class="empty-state">
+            No hay productos vendidos en el rango seleccionado.
+          </div>
+        </ng-template>
+      </article>
+
+      <article class="report-card">
+        <header class="report-card-header">
+          <div class="report-title">
+            <span class="mini-icon purple">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM5 21a7 7 0 0 1 14 0" />
+              </svg>
+            </span>
+            <h2>Ventas por vendedor</h2>
+          </div>
+
+          <button
+            type="button"
+            class="detail-button"
+            (click)="alternarVendedores()"
+            *ngIf="ventasPorVendedor.length > 5"
+          >
+            {{ mostrarTodosVendedores ? 'Ver menos' : 'Ver detalle' }}
+          </button>
+        </header>
+
+        <div
+          class="table-wrapper"
+          *ngIf="vendedoresVisibles.length; else sinVendedores"
+        >
+          <table class="report-table sellers-table">
+            <thead>
+              <tr>
+                <th>Vendedor</th>
+                <th>Órdenes</th>
+                <th>Total vendido</th>
+                <th>Ganancia</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let vendedor of vendedoresVisibles">
+                <td>
+                  <div class="seller-cell">
+                    <span class="avatar">
+                      {{ iniciales(vendedor.vendedor) }}
+                    </span>
+                    <strong>{{ vendedor.vendedor }}</strong>
+                  </div>
+                </td>
+                <td>{{ vendedor.ordenes }}</td>
+                <td>
+                  S/ {{ vendedor.totalVendido | number:'1.2-2' }}
+                </td>
+                <td>
+                  S/ {{ vendedor.gananciaEstimada | number:'1.2-2' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #sinVendedores>
+          <div class="empty-state">
+            No hay ventas por vendedor para mostrar.
+          </div>
+        </ng-template>
+      </article>
+    </section>
+
+    <article class="report-card wide-card">
+      <header class="report-card-header">
+        <div class="report-title">
+          <span class="mini-icon truck">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 6h11v10H3ZM14 10h4l3 3v3h-7ZM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+            </svg>
+          </span>
+          <h2>Ventas por proveedor</h2>
+        </div>
+
+        <button
+          type="button"
+          class="detail-button"
+          (click)="alternarProveedores()"
+          *ngIf="ventasPorProveedor.length > 5"
+        >
+          {{ mostrarTodosProveedores ? 'Ver menos' : 'Ver detalle' }}
+        </button>
+      </header>
+
+      <div
+        class="table-wrapper"
+        *ngIf="proveedoresVisibles.length; else sinProveedores"
+      >
+        <table class="report-table providers-table">
+          <thead>
+            <tr>
+              <th>Proveedor</th>
+              <th>Órdenes</th>
+              <th>Total comprado</th>
+              <th>Total vendido</th>
+              <th>Ganancia estimada</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let proveedor of proveedoresVisibles">
+              <td><strong>{{ proveedor.proveedor }}</strong></td>
+              <td>{{ proveedor.ordenes }}</td>
+              <td>
+                S/ {{ proveedor.totalComprado | number:'1.2-2' }}
+              </td>
+              <td>
+                S/ {{ proveedor.totalVendido | number:'1.2-2' }}
+              </td>
+              <td>
+                S/ {{ proveedor.gananciaEstimada | number:'1.2-2' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #sinProveedores>
+        <div class="empty-state">
+          No existen compras o ventas asociadas a proveedores en el rango.
+        </div>
+      </ng-template>
+    </article>
+
+    <article class="report-card wide-card stock-card">
+      <header class="report-card-header">
+        <div class="report-title">
+          <span class="mini-icon orange">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3 2 21h20ZM12 9v5M12 18h.01" />
+            </svg>
+          </span>
+          <h2>Productos con bajo stock</h2>
+        </div>
+
+        <button
+          type="button"
+          class="detail-button"
+          (click)="alternarBajoStock()"
+          *ngIf="bajoStock.length > 6"
+        >
+          {{ mostrarTodoBajoStock ? 'Ver menos' : 'Ver detalle' }}
+        </button>
+      </header>
+
+      <div
+        class="table-wrapper"
+        *ngIf="bajoStockVisible.length; else sinStock"
+      >
+        <table class="report-table stock-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Marca</th>
+              <th>Proveedor</th>
+              <th>Stock actual</th>
+              <th>Stock mínimo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let producto of bajoStockVisible">
+              <td>{{ producto.codigoInterno || '—' }}</td>
+              <td><strong>{{ producto.nombre }}</strong></td>
+              <td>{{ producto.categoria }}</td>
+              <td>{{ producto.marca }}</td>
+              <td>{{ producto.proveedor }}</td>
+              <td>
+                <span class="stock-badge">
+                  {{ producto.stockActual }}
+                </span>
+              </td>
+              <td>{{ producto.stockMinimo }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #sinStock>
+        <div class="empty-state success-empty">
+          No hay productos con bajo stock para el filtro seleccionado.
+        </div>
+      </ng-template>
+    </article>
+  </ng-container>
 </div>

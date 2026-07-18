@@ -1,61 +1,970 @@
-<div class="page-stack">
-  <div class="card">
-    <div class="toolbar">
-      <div class="search"><input [(ngModel)]="search" placeholder="Buscar cliente por nombres, DNI, teléfono o correo..." /></div>
-      <div class="actions">
-        <button class="btn" type="button" (click)="mostrarFormulario = !mostrarFormulario">+ Registrar cliente</button>
-        <button class="btn secondary" type="button" (click)="exportarExcel()">Exportar Excel</button>
-        <button class="btn secondary" type="button" (click)="imprimirFicha()">PDF ficha</button>
+<div class="clients-page">
+
+  <header class="clients-header">
+    <div class="header-title">
+      <span class="title-icon">♙</span>
+
+      <div>
+        <span class="page-kicker">
+          GESTIÓN DE CLIENTES
+        </span>
+
+        <h1>Clientes y recetas</h1>
+
+        <p>
+          Registra clientes, recetas ópticas, órdenes de trabajo y próximos controles.
+        </p>
       </div>
     </div>
 
-    <form class="client-work-form print-area" (ngSubmit)="guardar()" *ngIf="mostrarFormulario">
-      <div class="work-order-form">
-        <div class="work-title">ORDEN DE TRABAJO</div>
-        <div class="date-strip"><span>DÍA</span><span>MES</span><span>AÑO</span></div>
-        <div class="date-inputs">
-          <input maxlength="2" [value]="cliente.fecha.slice(8,10)" />
-          <input maxlength="2" [value]="cliente.fecha.slice(5,7)" />
-          <input maxlength="4" [value]="cliente.fecha.slice(0,4)" />
-        </div>
+    <div class="header-actions">
+      <input
+        #archivoRecetas
+        class="file-input"
+        type="file"
+        accept=".xlsx,.xls"
+        (change)="cargarRecetasExcel($event)"
+      />
 
-        <div class="client-line-grid">
-          <div class="field wide"><label>Cliente</label><input [(ngModel)]="cliente.nombres" name="nombres" required /></div>
-          <div class="field"><label>DNI</label><input [(ngModel)]="cliente.dni" name="dni" required /></div>
-          <div class="field"><label>Teléfono</label><input [(ngModel)]="cliente.telefono" name="telefono" /></div>
-          <div class="field"><label>Correo</label><input [(ngModel)]="cliente.correo" name="correo" type="email" /></div>
-          <div class="field wide"><label>Dirección</label><input [(ngModel)]="cliente.direccion" name="direccion" /></div>
-        </div>
+      <button
+        type="button"
+        class="secondary-button excel-button"
+        (click)="archivoRecetas.click()"
+        [disabled]="procesandoExcel"
+      >
+        {{ procesandoExcel ? 'Procesando...' : '↑ Cargar recetas' }}
+      </button>
 
-        <div class="rx-box">
-          <div class="rx-side">LEJOS</div>
-          <div class="rx-content">
-            <div class="rx-head"><span></span><span>ESF.</span><span>CYL</span><span>EJE</span></div>
-            <div class="rx-row"><b>OD:</b><input [(ngModel)]="lejos.esfOD" name="lejosEsfOD" /><input [(ngModel)]="lejos.cylOD" name="lejosCylOD" /><input [(ngModel)]="lejos.ejeOD" name="lejosEjeOD" /></div>
-            <div class="rx-row"><b>OI:</b><input [(ngModel)]="lejos.esfOI" name="lejosEsfOI" /><input [(ngModel)]="lejos.cylOI" name="lejosCylOI" /><input [(ngModel)]="lejos.ejeOI" name="lejosEjeOI" /></div>
-            <div class="dip-line"><label>DIP:</label><input [(ngModel)]="lejos.dip" name="lejosDip" /></div>
-          </div>
-        </div>
+      <button
+        type="button"
+        class="secondary-button excel-button"
+        (click)="descargarRecetasExcel()"
+        [disabled]="totalRecetas === 0"
+      >
+        ↓ Descargar recetas
+      </button>
 
-        <div class="rx-box">
-          <div class="rx-side">CERCA</div>
-          <div class="rx-content">
-            <div class="rx-head"><span></span><span>ESF.</span><span>CYL</span><span>EJE</span></div>
-            <div class="rx-row"><b>OD:</b><input [(ngModel)]="cerca.esfOD" name="cercaEsfOD" /><input [(ngModel)]="cerca.cylOD" name="cercaCylOD" /><input [(ngModel)]="cerca.ejeOD" name="cercaEjeOD" /></div>
-            <div class="rx-row"><b>OI:</b><input [(ngModel)]="cerca.esfOI" name="cercaEsfOI" /><input [(ngModel)]="cerca.cylOI" name="cercaCylOI" /><input [(ngModel)]="cerca.ejeOI" name="cercaEjeOI" /></div>
-            <div class="dip-line"><label>DIP:</label><input [(ngModel)]="cerca.dip" name="cercaDip" /></div>
-          </div>
-        </div>
+      <button
+        type="button"
+        class="secondary-button template-button"
+        (click)="descargarPlantillaExcel()"
+      >
+        Plantilla Excel
+      </button>
 
-        <div class="field wide"><label>Observaciones</label><textarea rows="3" [(ngModel)]="cliente.observaciones" name="observaciones"></textarea></div>
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="abrirNuevaReceta()"
+        [disabled]="!clienteSeleccionado"
+      >
+        ＋ Nueva receta
+      </button>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="abrirNuevoCliente()"
+      >
+        ＋ Registrar cliente
+      </button>
+    </div>
+  </header>
+
+  <section class="stats-grid">
+    <article class="stat-card">
+      <span class="stat-icon">♙</span>
+      <div>
+        <small>Clientes registrados</small>
+        <strong>{{ totalClientes }}</strong>
+        <span>Total de clientes</span>
       </div>
-      <div class="form-actions no-print" style="margin-top:14px;"><button class="btn" type="submit">Guardar cliente</button></div>
-    </form>
-  </div>
+    </article>
 
-  <div class="card">
-    <h2 class="section-title">Clientes registrados</h2>
-    <div class="table-wrap" *ngIf="filtrados.length; else emptyClients"><table><thead><tr><th>Cliente</th><th>DNI</th><th>Teléfono</th><th>Correo</th><th>Última receta</th></tr></thead><tbody><tr *ngFor="let c of filtrados"><td><b>{{ c.nombres }}</b><br><span class="muted">{{ c.direccion }}</span></td><td>{{ c.dni }}</td><td>{{ c.telefono }}</td><td>{{ c.correo }}</td><td>{{ c.fecha }}</td></tr></tbody></table></div>
-    <ng-template #emptyClients><div class="empty">Aún no hay clientes registrados.</div></ng-template>
+    <article class="stat-card">
+      <span class="stat-icon">▤</span>
+      <div>
+        <small>Recetas activas</small>
+        <strong>{{ recetasActivas }}</strong>
+        <span>{{ totalRecetas }} receta(s) registradas</span>
+      </div>
+    </article>
+
+    <article
+      class="stat-card warning"
+      [class.has-alert]="controlesPendientes > 0"
+    >
+      <span class="stat-icon">◷</span>
+      <div>
+        <small>Controles pendientes</small>
+        <strong>{{ controlesPendientes }}</strong>
+        <span>Por realizar</span>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-icon">⊕</span>
+      <div>
+        <small>Nuevos este mes</small>
+        <strong>{{ nuevosEsteMes }}</strong>
+        <span>Nuevos registros</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="search-controls">
+    <div class="search-box">
+      <span aria-hidden="true">⌕</span>
+
+      <input
+        type="search"
+        [(ngModel)]="search"
+        (ngModelChange)="paginaActual = 1"
+        placeholder="Buscar por cliente, DNI, orden, teléfono o marca..."
+        autocomplete="off"
+      />
+
+      <button
+        type="button"
+        *ngIf="search"
+        (click)="search = ''; paginaActual = 1"
+        aria-label="Limpiar búsqueda"
+      >
+        ×
+      </button>
+    </div>
+
+    <select
+      class="filter-select"
+      [(ngModel)]="filtro"
+      (ngModelChange)="paginaActual = 1"
+      aria-label="Filtrar clientes"
+    >
+      <option value="TODOS">Todos</option>
+      <option value="ACTIVOS">Clientes activos</option>
+      <option value="INACTIVOS">Clientes inactivos</option>
+      <option value="CONTROL_PENDIENTE">Control pendiente</option>
+      <option value="SIN_RECETA">Sin receta</option>
+    </select>
+
+    <button
+      type="button"
+      class="clear-button"
+      (click)="limpiarFiltros()"
+      *ngIf="search || filtro !== 'TODOS'"
+    >
+      Limpiar filtros
+    </button>
+  </section>
+
+  <p class="message success" *ngIf="ok">
+    {{ ok }}
+  </p>
+
+  <p
+    class="message error"
+    *ngIf="error && !mostrarFormulario"
+  >
+    {{ error }}
+  </p>
+
+  <section class="clients-content-grid">
+    <article class="table-card">
+      <div class="loading" *ngIf="cargando">
+        Cargando clientes y recetas...
+      </div>
+
+      <div
+        class="table-wrapper"
+        *ngIf="
+          !cargando &&
+          clientesPaginados.length > 0;
+          else clientesVacios
+        "
+      >
+        <table class="clients-table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Documento</th>
+              <th>Teléfono</th>
+              <th>Última orden</th>
+              <th>Entrada</th>
+              <th>Debe</th>
+              <th>Medida</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              *ngFor="let cliente of clientesPaginados"
+              [class.selected]="
+                clienteSeleccionado?.id === cliente.id
+              "
+              (click)="seleccionarCliente(cliente)"
+            >
+              <td>
+                <div class="client-cell">
+                  <span class="avatar">
+                    {{ iniciales(cliente) }}
+                  </span>
+
+                  <div>
+                    <strong>
+                      {{ cliente.nombreCompleto }}
+                    </strong>
+                    <small>
+                      {{ cliente.direccion || 'Sin dirección' }}
+                    </small>
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                {{ cliente.numeroDocumento || '—' }}
+              </td>
+
+              <td>
+                {{ cliente.telefono || '—' }}
+              </td>
+
+              <td>
+                {{
+                  cliente.ultimaReceta?.numeroOrden ||
+                  'Sin orden'
+                }}
+              </td>
+
+              <td>
+                {{
+                  cliente.ultimaReceta?.fechaEntrada ||
+                  '—'
+                }}
+              </td>
+
+              <td class="money-cell">
+                S/
+                {{
+                  (cliente.ultimaReceta?.montoDebe || 0)
+                  | number:'1.2-2'
+                }}
+              </td>
+
+              <td class="rx-summary">
+                {{ resumenLejos(cliente.ultimaReceta) }}
+              </td>
+
+              <td>
+                <span
+                  class="recipe-status"
+                  [ngClass]="claseEstadoReceta(cliente)"
+                >
+                  {{ estadoReceta(cliente) }}
+                </span>
+              </td>
+
+              <td>
+                <div
+                  class="row-actions"
+                  (click)="$event.stopPropagation()"
+                >
+                  <button
+                    type="button"
+                    class="view-button"
+                    (click)="seleccionarCliente(cliente)"
+                  >
+                    Ver ficha
+                  </button>
+
+                  <button
+                    type="button"
+                    class="recipe-button"
+                    (click)="abrirNuevaReceta(cliente)"
+                  >
+                    Receta
+                  </button>
+
+                  <button
+                    type="button"
+                    class="edit-button"
+                    (click)="abrirEditarCliente(cliente)"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    class="status-button"
+                    (click)="cambiarEstado(cliente)"
+                    [attr.aria-label]="
+                      cliente.activo
+                        ? 'Desactivar cliente'
+                        : 'Activar cliente'
+                    "
+                    [title]="
+                      cliente.activo
+                        ? 'Desactivar cliente'
+                        : 'Activar cliente'
+                    "
+                  >
+                    {{ cliente.activo ? '●' : '○' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #clientesVacios>
+        <div class="empty-state" *ngIf="!cargando">
+          <strong>No hay clientes registrados.</strong>
+          <span>
+            Registra el primero o carga el Excel de recetas. Al cargar una receta, se crea su cliente asociado cuando todavía no existe.
+          </span>
+        </div>
+      </ng-template>
+
+      <footer
+        class="pagination"
+        *ngIf="!cargando && filtrados.length > 0"
+      >
+        <span>
+          Mostrando {{ clientesPaginados.length }} de
+          {{ filtrados.length }} clientes
+        </span>
+
+        <div>
+          <button
+            type="button"
+            (click)="paginaAnterior()"
+            [disabled]="paginaActual === 1"
+          >
+            Anterior
+          </button>
+
+          <strong>
+            {{ paginaActual }} / {{ totalPaginas }}
+          </strong>
+
+          <button
+            type="button"
+            (click)="paginaSiguiente()"
+            [disabled]="paginaActual === totalPaginas"
+          >
+            Siguiente
+          </button>
+        </div>
+      </footer>
+    </article>
+
+    <aside class="quick-card">
+      <ng-container
+        *ngIf="clienteSeleccionado; else sinSeleccion"
+      >
+        <header class="quick-header">
+          <span class="quick-icon">▣</span>
+          <h2>Ficha rápida</h2>
+        </header>
+
+        <div class="quick-person">
+          <span class="avatar large">
+            {{ iniciales(clienteSeleccionado) }}
+          </span>
+
+          <div>
+            <strong>
+              {{ clienteSeleccionado.nombreCompleto }}
+            </strong>
+            <small>
+              Documento:
+              {{ clienteSeleccionado.numeroDocumento || '—' }}
+            </small>
+          </div>
+        </div>
+
+        <div class="quick-details">
+          <div>
+            <span>Orden de trabajo</span>
+            <strong>
+              {{
+                clienteSeleccionado.ultimaReceta?.numeroOrden ||
+                'Sin orden'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Fecha de entrada</span>
+            <strong>
+              {{
+                clienteSeleccionado.ultimaReceta?.fechaEntrada ||
+                '—'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Total</span>
+            <strong>
+              S/
+              {{
+                (clienteSeleccionado.ultimaReceta?.montoTotal || 0)
+                | number:'1.2-2'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Cancelado</span>
+            <strong>
+              S/
+              {{
+                (clienteSeleccionado.ultimaReceta?.montoCancelado || 0)
+                | number:'1.2-2'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Debe</span>
+            <strong class="debt-value">
+              S/
+              {{
+                (clienteSeleccionado.ultimaReceta?.montoDebe || 0)
+                | number:'1.2-2'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Montura</span>
+            <strong>
+              {{
+                clienteSeleccionado.ultimaReceta?.tipoMontura ||
+                'No registrada'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Marca</span>
+            <strong>
+              {{
+                clienteSeleccionado.ultimaReceta?.marca ||
+                'No registrada'
+              }}
+            </strong>
+          </div>
+
+          <div class="wide-detail">
+            <span>Medida</span>
+            <strong>
+              {{
+                clienteSeleccionado.ultimaReceta?.medida ||
+                resumenLejos(clienteSeleccionado.ultimaReceta)
+              }}
+            </strong>
+          </div>
+
+          <div class="wide-detail">
+            <span>Observación</span>
+            <strong>
+              {{
+                clienteSeleccionado.ultimaReceta?.observaciones ||
+                clienteSeleccionado.observaciones ||
+                'Sin observaciones'
+              }}
+            </strong>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="abrirEditarCliente(clienteSeleccionado)"
+          >
+            Editar cliente
+          </button>
+
+          <button
+            type="button"
+            class="primary-button"
+            (click)="abrirNuevaReceta(clienteSeleccionado)"
+          >
+            Nueva receta
+          </button>
+        </div>
+      </ng-container>
+
+      <ng-template #sinSeleccion>
+        <div class="empty-quick">
+          Selecciona un cliente para consultar su ficha.
+        </div>
+      </ng-template>
+    </aside>
+  </section>
+
+  <div
+    class="modal-backdrop"
+    *ngIf="mostrarFormulario"
+    (click)="cerrarFormulario()"
+  >
+    <section
+      class="client-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="clientModalTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal-header">
+        <div>
+          <span class="page-kicker">
+            {{
+              modoFormulario === 'NUEVO_CLIENTE'
+                ? 'NUEVO REGISTRO'
+                : modoFormulario === 'EDITAR_CLIENTE'
+                  ? 'DATOS DEL CLIENTE'
+                  : 'NUEVA RECETA ÓPTICA'
+            }}
+          </span>
+
+          <h2 id="clientModalTitle">
+            {{
+              modoFormulario === 'NUEVO_CLIENTE'
+                ? 'Registrar cliente'
+                : modoFormulario === 'EDITAR_CLIENTE'
+                  ? 'Editar cliente'
+                  : 'Registrar receta'
+            }}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="close-button"
+          (click)="cerrarFormulario()"
+          [disabled]="guardando"
+          aria-label="Cerrar formulario"
+        >
+          ×
+        </button>
+      </header>
+
+      <form
+        class="client-form"
+        (ngSubmit)="guardar()"
+      >
+        <section class="form-section">
+          <div class="section-heading">
+            <span>1</span>
+            <div>
+              <h3>Datos del cliente</h3>
+              <p>Información personal y de contacto.</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="tipoDocumento">Tipo de documento</label>
+              <select
+                id="tipoDocumento"
+                name="tipoDocumento"
+                [(ngModel)]="form.tipoDocumento"
+                [disabled]="modoFormulario === 'NUEVA_RECETA'"
+              >
+                <option
+                  *ngFor="let tipo of tiposDocumento"
+                  [value]="tipo"
+                >
+                  {{ tipo }}
+                </option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="numeroDocumento">Número de documento</label>
+              <input
+                id="numeroDocumento"
+                name="numeroDocumento"
+                type="text"
+                inputmode="numeric"
+                maxlength="20"
+                [(ngModel)]="form.numeroDocumento"
+                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                placeholder="Ej. 76543210"
+              />
+            </div>
+
+            <div class="field">
+              <label for="nombres">Nombres</label>
+              <input
+                id="nombres"
+                name="nombres"
+                type="text"
+                [(ngModel)]="form.nombres"
+                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                placeholder="Ej. Juan Carlos"
+              />
+            </div>
+
+            <div class="field">
+              <label for="apellidos">Apellidos</label>
+              <input
+                id="apellidos"
+                name="apellidos"
+                type="text"
+                [(ngModel)]="form.apellidos"
+                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                placeholder="Ej. Pérez Díaz"
+              />
+            </div>
+
+            <div class="field">
+              <label for="telefono">Teléfono</label>
+              <input
+                id="telefono"
+                name="telefono"
+                type="tel"
+                inputmode="numeric"
+                maxlength="9"
+                [(ngModel)]="form.telefono"
+                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                placeholder="Ej. 987654321"
+              />
+            </div>
+
+            <div class="field">
+              <label for="correo">Correo</label>
+              <input
+                id="correo"
+                name="correo"
+                type="email"
+                [(ngModel)]="form.correo"
+                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                placeholder="cliente@gmail.com"
+              />
+            </div>
+
+            <div class="field">
+              <label for="fechaNacimiento">Fecha de nacimiento</label>
+              <input
+                id="fechaNacimiento"
+                name="fechaNacimiento"
+                type="date"
+                [(ngModel)]="form.fechaNacimiento"
+                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+              />
+            </div>
+
+            <div class="field wide-field">
+              <label for="direccion">Dirección</label>
+              <input
+                id="direccion"
+                name="direccion"
+                type="text"
+                [(ngModel)]="form.direccion"
+                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                placeholder="Dirección del cliente"
+              />
+            </div>
+
+            <div class="field full-field">
+              <label for="observacionesCliente">Observaciones</label>
+              <textarea
+                id="observacionesCliente"
+                name="observacionesCliente"
+                rows="2"
+                [(ngModel)]="form.observaciones"
+                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                placeholder="Información adicional del cliente"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+
+        <label
+          class="recipe-toggle"
+          *ngIf="modoFormulario === 'NUEVO_CLIENTE'"
+        >
+          <input
+            type="checkbox"
+            name="incluirReceta"
+            [(ngModel)]="form.incluirReceta"
+          />
+          Registrar también la primera receta óptica
+        </label>
+
+        <section
+          class="form-section recipe-section"
+          *ngIf="
+            modoFormulario === 'NUEVA_RECETA' ||
+            (modoFormulario === 'NUEVO_CLIENTE' && form.incluirReceta)
+          "
+        >
+          <div class="section-heading">
+            <span>2</span>
+            <div>
+              <h3>Orden y receta óptica</h3>
+              <p>Datos económicos, montura, marca y graduación.</p>
+            </div>
+          </div>
+
+          <div class="work-order-grid">
+            <div class="field">
+              <label for="numeroOrden">Orden de trabajo</label>
+              <input
+                id="numeroOrden"
+                name="numeroOrden"
+                type="text"
+                [(ngModel)]="form.receta.numeroOrden"
+                placeholder="Automática si se deja vacía"
+              />
+            </div>
+
+            <div class="field">
+              <label for="fechaEntrada">Fecha de entrada</label>
+              <input
+                id="fechaEntrada"
+                name="fechaEntrada"
+                type="date"
+                [(ngModel)]="form.receta.fechaEntrada"
+              />
+            </div>
+
+            <div class="field">
+              <label for="montoTotal">Total</label>
+              <input
+                id="montoTotal"
+                name="montoTotal"
+                type="number"
+                min="0"
+                step="0.01"
+                [(ngModel)]="form.receta.montoTotal"
+                (ngModelChange)="recalcularDebe()"
+              />
+            </div>
+
+            <div class="field">
+              <label for="montoCancelado">Cancelado</label>
+              <input
+                id="montoCancelado"
+                name="montoCancelado"
+                type="number"
+                min="0"
+                step="0.01"
+                [(ngModel)]="form.receta.montoCancelado"
+                (ngModelChange)="recalcularDebe()"
+              />
+            </div>
+
+            <div class="field">
+              <label for="montoDebe">Debe</label>
+              <input
+                id="montoDebe"
+                name="montoDebe"
+                type="number"
+                step="0.01"
+                [(ngModel)]="form.receta.montoDebe"
+                readonly
+              />
+            </div>
+
+            <div class="field">
+              <label for="marca">Marca</label>
+              <input
+                id="marca"
+                name="marca"
+                type="text"
+                [(ngModel)]="form.receta.marca"
+                placeholder="Ej. Ray-Ban"
+              />
+            </div>
+
+            <div class="field">
+              <label for="tipoMontura">Montura</label>
+              <input
+                id="tipoMontura"
+                name="tipoMontura"
+                type="text"
+                [(ngModel)]="form.receta.tipoMontura"
+                placeholder="Ej. Acetato negro"
+              />
+            </div>
+
+            <div class="field">
+              <label for="fechaReceta">Fecha de receta</label>
+              <input
+                id="fechaReceta"
+                name="fechaReceta"
+                type="date"
+                [(ngModel)]="form.receta.fechaReceta"
+              />
+            </div>
+
+            <div class="field">
+              <label for="profesional">Profesional</label>
+              <input
+                id="profesional"
+                name="profesional"
+                type="text"
+                [(ngModel)]="form.receta.profesional"
+                placeholder="Nombre del profesional"
+              />
+            </div>
+
+            <div class="field">
+              <label for="proximoControl">Próximo control</label>
+              <input
+                id="proximoControl"
+                name="proximoControl"
+                type="date"
+                [(ngModel)]="form.receta.proximoControl"
+              />
+            </div>
+
+            <div class="field full-field">
+              <label for="medida">Medida para orden y Excel</label>
+              <textarea
+                id="medida"
+                name="medida"
+                rows="2"
+                [(ngModel)]="form.receta.medida"
+                placeholder="Se completa automáticamente con la graduación cuando se deja vacío"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="prescription-grid">
+            <div class="rx-card">
+              <div class="rx-title">LEJOS</div>
+
+              <div class="rx-table">
+                <div class="rx-header">
+                  <span></span>
+                  <span>ESF.</span>
+                  <span>CYL.</span>
+                  <span>EJE</span>
+                </div>
+
+                <div class="rx-row">
+                  <strong>OD</strong>
+                  <input name="lejosOdEsfera" type="number" step="0.25" [(ngModel)]="form.receta.lejosOdEsfera" />
+                  <input name="lejosOdCilindro" type="number" step="0.25" [(ngModel)]="form.receta.lejosOdCilindro" />
+                  <input name="lejosOdEje" type="number" min="0" max="180" [(ngModel)]="form.receta.lejosOdEje" />
+                </div>
+
+                <div class="rx-row">
+                  <strong>OI</strong>
+                  <input name="lejosOiEsfera" type="number" step="0.25" [(ngModel)]="form.receta.lejosOiEsfera" />
+                  <input name="lejosOiCilindro" type="number" step="0.25" [(ngModel)]="form.receta.lejosOiCilindro" />
+                  <input name="lejosOiEje" type="number" min="0" max="180" [(ngModel)]="form.receta.lejosOiEje" />
+                </div>
+
+                <div class="rx-extra">
+                  <label>DIP</label>
+                  <input name="lejosDip" type="number" step="0.5" [(ngModel)]="form.receta.lejosDip" />
+                </div>
+              </div>
+            </div>
+
+            <div class="rx-card">
+              <div class="rx-title">CERCA</div>
+
+              <div class="rx-table">
+                <div class="rx-header">
+                  <span></span>
+                  <span>ESF.</span>
+                  <span>CYL.</span>
+                  <span>EJE</span>
+                </div>
+
+                <div class="rx-row">
+                  <strong>OD</strong>
+                  <input name="cercaOdEsfera" type="number" step="0.25" [(ngModel)]="form.receta.cercaOdEsfera" />
+                  <input name="cercaOdCilindro" type="number" step="0.25" [(ngModel)]="form.receta.cercaOdCilindro" />
+                  <input name="cercaOdEje" type="number" min="0" max="180" [(ngModel)]="form.receta.cercaOdEje" />
+                </div>
+
+                <div class="rx-row">
+                  <strong>OI</strong>
+                  <input name="cercaOiEsfera" type="number" step="0.25" [(ngModel)]="form.receta.cercaOiEsfera" />
+                  <input name="cercaOiCilindro" type="number" step="0.25" [(ngModel)]="form.receta.cercaOiCilindro" />
+                  <input name="cercaOiEje" type="number" min="0" max="180" [(ngModel)]="form.receta.cercaOiEje" />
+                </div>
+
+                <div class="rx-extra">
+                  <label>DIP</label>
+                  <input name="cercaDip" type="number" step="0.5" [(ngModel)]="form.receta.cercaDip" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid recipe-details-grid">
+            <div class="field">
+              <label for="adicionOd">Adición OD</label>
+              <input id="adicionOd" name="adicionOd" type="number" step="0.25" [(ngModel)]="form.receta.adicionOd" />
+            </div>
+
+            <div class="field">
+              <label for="adicionOi">Adición OI</label>
+              <input id="adicionOi" name="adicionOi" type="number" step="0.25" [(ngModel)]="form.receta.adicionOi" />
+            </div>
+
+            <div class="field">
+              <label for="agudezaOd">Agudeza visual OD</label>
+              <input id="agudezaOd" name="agudezaOd" type="text" [(ngModel)]="form.receta.agudezaVisualOd" placeholder="Ej. 20/20" />
+            </div>
+
+            <div class="field">
+              <label for="agudezaOi">Agudeza visual OI</label>
+              <input id="agudezaOi" name="agudezaOi" type="text" [(ngModel)]="form.receta.agudezaVisualOi" placeholder="Ej. 20/20" />
+            </div>
+
+            <div class="field">
+              <label for="tipoLente">Tipo de lente</label>
+              <input id="tipoLente" name="tipoLente" type="text" [(ngModel)]="form.receta.tipoLente" placeholder="Ej. Antirreflejo azul" />
+            </div>
+
+            <div class="field full-field">
+              <label for="diagnostico">Diagnóstico</label>
+              <textarea id="diagnostico" name="diagnostico" rows="2" [(ngModel)]="form.receta.diagnostico"></textarea>
+            </div>
+
+            <div class="field full-field">
+              <label for="observacionesReceta">Observaciones de la receta</label>
+              <textarea id="observacionesReceta" name="observacionesReceta" rows="3" [(ngModel)]="form.receta.observaciones"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <p class="modal-error" *ngIf="error">
+          {{ error }}
+        </p>
+
+        <footer class="modal-actions">
+          <button
+            type="button"
+            class="cancel-button"
+            (click)="cerrarFormulario()"
+            [disabled]="guardando"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="guardando"
+          >
+            {{ guardando ? 'Guardando...' : 'Guardar' }}
+          </button>
+        </footer>
+      </form>
+    </section>
   </div>
 </div>

@@ -26,7 +26,6 @@ const routes: Routes = [
       { path: 'dashboard', component: AdminDashboardComponent },
       { path: 'ventas', component: VentasComponent },
       { path: 'productos', component: ProductosComponent },
-      { path: 'codigos', component: CodigosBarrasComponent },
       { path: 'clientes', component: ClientesRecetasComponent },
       { path: 'ordenes', component: OrdenesRecibosComponent },
       { path: 'proveedores', component: ProveedoresComponent },

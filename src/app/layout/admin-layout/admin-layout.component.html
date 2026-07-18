@@ -8,10 +8,12 @@
     [class.open]="sidebarOpen"
   >
     <div class="brand">
-      <div class="brand-icon">👓</div>
+      <div class="brand-icon">
+        👓
+      </div>
 
       <div class="brand-text">
-        <h2>Óptica alba</h2>
+        <h2>Óptica Alba</h2>
         <span>Sistema para ópticas</span>
       </div>
 
@@ -58,7 +60,7 @@
     </div>
   </aside>
 
-  <!-- FONDO OSCURO EN CELULAR -->
+  <!-- FONDO OSCURO EN TABLET Y CELULAR -->
   <button
     class="sidebar-backdrop"
     type="button"
@@ -70,57 +72,20 @@
   <!-- CONTENIDO PRINCIPAL -->
   <section class="content">
 
-    <!-- BARRA DE LAS PÁGINAS INTERNAS -->
-    <div
-      class="topbar no-print"
-      *ngIf="mostrarTopbar"
-    >
-      <div class="topbar-information">
-        <button
-          class="mobile-menu"
-          type="button"
-          aria-label="Abrir menú"
-          (click)="toggleSidebar()"
-        >
-          ☰
-        </button>
-
-        <div class="topbar-title">
-          <h1>
-            {{ pageTitle.icon }}
-            {{ pageTitle.label }}
-          </h1>
-
-          <div class="muted">
-            Control de ventas, inventario, clientes y códigos de barras.
-          </div>
-        </div>
-      </div>
-
-      <div class="topbar-actions">
-        <button
-          class="btn ghost"
-          type="button"
-          (click)="quickScanner()"
-        >
-          Escanear rápido
-        </button>
-      </div>
-    </div>
-
-    <!-- BOTÓN MÓVIL PARA EL DASHBOARD -->
+    <!-- BOTÓN RESPONSIVE PARA ABRIR EL MENÚ -->
     <button
-      class="mobile-menu dashboard-menu-button no-print"
+      class="mobile-menu global-mobile-menu no-print"
       type="button"
-      *ngIf="!mostrarTopbar"
       aria-label="Abrir menú"
       (click)="toggleSidebar()"
     >
       ☰
     </button>
 
+    <!-- CONTENIDO DE CADA PÁGINA -->
     <div class="route-content">
       <router-outlet></router-outlet>
     </div>
+
   </section>
 </div>

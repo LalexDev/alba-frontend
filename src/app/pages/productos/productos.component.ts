@@ -15,6 +15,11 @@ import {
 } from 'rxjs';
 
 import {
+  utils,
+  writeFileXLSX
+} from 'xlsx';
+
+import {
   Categoria,
   Producto,
   ProductoRequest,
@@ -47,6 +52,9 @@ export class ProductosComponent
   guardando = false;
   cargando = false;
   mostrarSoloBajoStock = false;
+
+  marcaSeleccionada = 'TODAS';
+  categoriaSeleccionada = 'TODAS';
 
   paginaActual = 1;
   readonly tamanioPagina = 10;
@@ -178,16 +186,111 @@ export class ProductosComponent
     );
   }
 
+  get marcasDisponibles(): string[] {
+    return Array.from(
+      new Set(
+        this.productos
+          .map(
+            producto =>
+              producto.marca?.nombre?.trim()
+          )
+          .filter(
+            (marca): marca is string =>
+              Boolean(marca)
+          )
+      )
+    ).sort((a, b) =>
+      a.localeCompare(
+        b,
+        'es',
+        { sensitivity: 'base' }
+      )
+    );
+  }
+
+  get categoriasDisponibles(): string[] {
+    return Array.from(
+      new Set(
+        this.productos
+          .map(
+            producto =>
+              producto.categoria?.nombre?.trim()
+          )
+          .filter(
+            (categoria): categoria is string =>
+              Boolean(categoria)
+          )
+      )
+    ).sort((a, b) =>
+      a.localeCompare(
+        b,
+        'es',
+        { sensitivity: 'base' }
+      )
+    );
+  }
+
+  get categoriasVisibles(): Categoria[] {
+    return this.categorias.filter(
+      categoria =>
+        !this.esCategoriaOtros(categoria)
+    );
+  }
+
   get filtrados(): Producto[] {
     const termino =
-      this.search.trim().toLowerCase();
+      this.normalizarTexto(this.search);
+
+    const marcaFiltro =
+      this.normalizarTexto(
+        this.marcaSeleccionada
+      );
+
+    const categoriaFiltro =
+      this.normalizarTexto(
+        this.categoriaSeleccionada
+      );
 
     return this.productos.filter(
       producto => {
+        const stockActual =
+          Number(producto.stockActual || 0);
+
+        const stockMinimo =
+          Number(
+            producto.stockMinimo ?? 5
+          );
+
         if (
           this.mostrarSoloBajoStock &&
-          Number(producto.stockActual) >
-          Number(producto.stockMinimo ?? 5)
+          stockActual > stockMinimo
+        ) {
+          return false;
+        }
+
+        const marcaProducto =
+          this.normalizarTexto(
+            producto.marca?.nombre || ''
+          );
+
+        if (
+          this.marcaSeleccionada !==
+            'TODAS' &&
+          marcaProducto !== marcaFiltro
+        ) {
+          return false;
+        }
+
+        const categoriaProducto =
+          this.normalizarTexto(
+            producto.categoria?.nombre || ''
+          );
+
+        if (
+          this.categoriaSeleccionada !==
+            'TODAS' &&
+          categoriaProducto !==
+            categoriaFiltro
         ) {
           return false;
         }
@@ -206,14 +309,15 @@ export class ProductosComponent
           producto.modelo,
           producto.color,
           producto.medida,
+          producto.material,
           producto.proveedor?.razonSocial
         ];
 
         return campos.some(
           valor =>
-            String(valor || '')
-              .toLowerCase()
-              .includes(termino)
+            this.normalizarTexto(
+              String(valor || '')
+            ).includes(termino)
         );
       }
     );
@@ -545,7 +649,98 @@ export class ProductosComponent
 
   limpiarBusqueda(): void {
     this.search = '';
+    this.marcaSeleccionada = 'TODAS';
+    this.categoriaSeleccionada = 'TODAS';
+    this.mostrarSoloBajoStock = false;
     this.paginaActual = 1;
+  }
+
+  exportarInventarioExcel(): void {
+    this.error = '';
+    this.ok = '';
+
+    if (!this.productos.length) {
+      this.error =
+        'No existen productos para exportar.';
+
+      return;
+    }
+
+    /*
+     * Se exporta this.productos para incluir
+     * todo el inventario, sin depender de filtros.
+     */
+    const filasInventario =
+      this.productos.map(
+        producto => ({
+          'Categoría':
+            producto.categoria?.nombre ||
+            'Sin categoría',
+
+          'Marca':
+            producto.marca?.nombre ||
+            'Sin marca',
+
+          'Modelo':
+            producto.modelo ||
+            'Sin modelo',
+
+          'Color':
+            producto.color ||
+            'Sin color',
+
+          'Medida':
+            producto.medida ||
+            'Sin medida',
+
+          'Material':
+            producto.material ||
+            'Sin material',
+
+          'Stock actual':
+            Number(
+              producto.stockActual || 0
+            ),
+
+          'Stock mínimo':
+            Number(
+              producto.stockMinimo ?? 5
+            )
+        })
+      );
+
+    const hoja =
+      utils.json_to_sheet(
+        filasInventario
+      );
+
+    hoja['!cols'] = [
+      { wch: 24 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 14 },
+      { wch: 14 }
+    ];
+
+    const libro =
+      utils.book_new();
+
+    utils.book_append_sheet(
+      libro,
+      hoja,
+      'Inventario'
+    );
+
+    writeFileXLSX(
+      libro,
+      `inventario-optica-alba-${this.fechaArchivo()}.xlsx`
+    );
+
+    this.ok =
+      'Inventario descargado correctamente.';
   }
 
   paginaAnterior(): void {
@@ -716,6 +911,44 @@ export class ProductosComponent
             emitEvent: false
           });
       });
+  }
+
+  private normalizarTexto(
+    valor: string
+  ): string {
+    return String(valor || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(
+        /[\u0300-\u036f]/g,
+        ''
+      );
+  }
+
+  private esCategoriaOtros(
+    categoria: Categoria
+  ): boolean {
+    return this.normalizarTexto(
+      categoria.nombre
+    ) === this.normalizarTexto('otros');
+  }
+
+  private fechaArchivo(): string {
+    const fecha = new Date();
+
+    const anio =
+      fecha.getFullYear();
+
+    const mes =
+      String(fecha.getMonth() + 1)
+        .padStart(2, '0');
+
+    const dia =
+      String(fecha.getDate())
+        .padStart(2, '0');
+
+    return `${anio}-${mes}-${dia}`;
   }
 
   private fechaActual(): string {

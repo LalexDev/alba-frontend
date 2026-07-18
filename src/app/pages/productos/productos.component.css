@@ -205,7 +205,13 @@
 
 .inventory-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns:
+    minmax(260px, 1fr)
+    minmax(150px, 190px)
+    minmax(175px, 215px)
+    auto
+    auto;
+  align-items: end;
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -213,6 +219,7 @@
 .search-box {
   display: flex;
   align-items: center;
+  min-width: 0;
   min-height: 52px;
   padding: 0 14px;
   border: 1px solid var(--blue-border);
@@ -248,21 +255,103 @@
   cursor: pointer;
 }
 
-.filter-button {
-  min-height: 52px;
-  padding: 10px 16px;
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.filter-field label {
+  color: #25324a;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.filter-field select {
+  width: 100%;
+  min-width: 0;
+  height: 52px;
+  padding: 0 12px;
   border: 1px solid var(--blue-border);
   border-radius: 14px;
+  outline: none;
   color: var(--black);
   background: var(--white);
-  font-weight: 800;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 750;
   cursor: pointer;
+}
+
+.filter-field select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(21, 147, 199, 0.12);
+}
+
+.filter-button,
+.excel-button,
+.clear-filter-button {
+  min-height: 52px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.filter-button {
+  border: 1px solid var(--blue-border);
+  color: var(--black);
+  background: var(--white);
 }
 
 .filter-button.active {
   color: var(--blue-dark);
   border-color: var(--blue);
   background: var(--blue-soft);
+}
+
+.excel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--blue);
+  color: var(--white);
+  background: var(--blue);
+  box-shadow: 0 7px 18px rgba(21, 147, 199, 0.16);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.excel-button:hover {
+  background: var(--blue-dark);
+  transform: translateY(-1px);
+}
+
+.excel-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.excel-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.clear-filter-button {
+  border: 1px solid #d0d5dd;
+  color: var(--black);
+  background: var(--white);
 }
 
 /* MENSAJES */
@@ -718,10 +807,16 @@ button:disabled {
   }
 
   .inventory-controls {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .filter-button {
+  .search-box {
+    grid-column: 1 / -1;
+  }
+
+  .filter-button,
+  .excel-button,
+  .clear-filter-button {
     width: 100%;
   }
 
@@ -736,6 +831,22 @@ button:disabled {
 
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .inventory-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .search-box {
+    grid-column: auto;
+  }
+
+  .filter-button,
+  .excel-button,
+  .clear-filter-button {
+    width: 100%;
   }
 }
 
@@ -818,5 +929,314 @@ button:disabled {
   .inventory-card {
     border: 0;
     box-shadow: none;
+  }
+}
+
+/* =====================================================
+   RESPONSIVE COMPLETO
+   ===================================================== */
+
+/* Evita desbordamientos */
+.productos-page,
+.inventory-card,
+.inventory-controls,
+.stats-grid,
+.product-form,
+.form-grid {
+  width: 100%;
+  min-width: 0;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+/* =====================================================
+   LAPTOP PEQUEÑA
+   ===================================================== */
+
+@media (max-width: 1250px) {
+  .productos-page {
+    padding: 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-controls {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .search-box {
+    grid-column: 1 / -1;
+  }
+
+  .products-table {
+    min-width: 1180px;
+  }
+}
+
+/* =====================================================
+   TABLET
+   ===================================================== */
+
+@media (max-width: 900px) {
+  .productos-page {
+    padding:
+      68px
+      16px
+      20px;
+  }
+
+  .productos-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .productos-header h1 {
+    font-size: 26px;
+  }
+
+  .productos-header p {
+    line-height: 1.5;
+  }
+
+  .primary-button {
+    width: 100%;
+  }
+
+  .stats-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .search-box {
+    grid-column: auto;
+  }
+
+  .filter-field,
+  .filter-field select,
+  .filter-button,
+  .excel-button,
+  .clear-filter-button {
+    width: 100%;
+  }
+
+  .stock-alert {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .stock-alert button {
+    width: 100%;
+  }
+
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .products-table {
+    min-width: 1100px;
+  }
+
+  .form-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .product-modal {
+    width: min(94vw, 900px);
+  }
+}
+
+/* =====================================================
+   CELULAR
+   ===================================================== */
+
+@media (max-width: 640px) {
+  .productos-page {
+    padding:
+      62px
+      12px
+      18px;
+  }
+
+  .productos-header h1 {
+    font-size: 23px;
+    line-height: 1.2;
+  }
+
+  .productos-header p {
+    font-size: 11px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .stat-card {
+    min-height: 100px;
+    padding: 15px;
+  }
+
+  .stat-card .stat-icon {
+    width: 45px;
+    height: 45px;
+  }
+
+  .stat-card strong {
+    font-size: 21px;
+  }
+
+  .search-box {
+    min-height: 48px;
+  }
+
+  .filter-field select,
+  .filter-button,
+  .excel-button,
+  .clear-filter-button {
+    min-height: 48px;
+  }
+
+  .inventory-card {
+    border-radius: 14px;
+  }
+
+  .products-table {
+    min-width: 1050px;
+  }
+
+  .pagination {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pagination > span {
+    text-align: center;
+  }
+
+  .pagination div {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .pagination button {
+    flex: 1;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    align-items: flex-start;
+    padding: 8px;
+  }
+
+  .product-modal {
+    width: 100%;
+    max-height: calc(100vh - 16px);
+    border-radius: 14px;
+  }
+
+  .modal-header {
+    padding:
+      16px
+      15px
+      12px;
+  }
+
+  .modal-header h2 {
+    font-size: 20px;
+  }
+
+  .product-form {
+    padding:
+      15px
+      15px
+      18px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  .field.full-width,
+  .other-category {
+    grid-column: auto;
+  }
+
+  .input-with-button {
+    grid-template-columns: 1fr;
+  }
+
+  .input-with-button button {
+    min-height: 42px;
+  }
+
+  .field input,
+  .field select {
+    height: 45px;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+    margin:
+      18px
+      -15px
+      -18px;
+    padding:
+      14px
+      15px;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+
+  .save-button {
+    min-width: 0;
+  }
+}
+
+/* =====================================================
+   CELULARES PEQUEÑOS
+   ===================================================== */
+
+@media (max-width: 380px) {
+  .productos-page {
+    padding-inline: 9px;
+  }
+
+  .productos-header h1 {
+    font-size: 21px;
+  }
+
+  .stat-card {
+    padding: 13px;
+  }
+
+  .stock-alert {
+    padding: 12px;
+  }
+
+  .search-box {
+    padding-inline: 10px;
+  }
+
+  .modal-header h2 {
+    font-size: 18px;
   }
 }

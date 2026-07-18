@@ -1,4 +1,874 @@
-<div class="card">
-  <div class="toolbar"><h2>Usuarios y roles</h2><button class="btn">+ Nuevo usuario</button></div>
-  <div class="table-wrap"><table><thead><tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th></tr></thead><tbody><tr *ngFor="let u of usuarios"><td>{{ u.nombres }}</td><td>{{ u.correo }}</td><td><span class="badge">{{ u.rol }}</span></td><td><span class="badge success">{{ u.estado }}</span></td></tr></tbody></table></div>
+<div class="users-page">
+
+  <header class="users-header">
+    <div class="header-title">
+      <span class="header-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M19 8v6M16 11h6" />
+        </svg>
+      </span>
+
+      <div>
+        <span class="page-kicker">
+          SEGURIDAD Y ACCESOS
+        </span>
+
+        <h1>Usuarios y roles</h1>
+
+        <p>
+          Gestiona accesos, roles y estados de los usuarios del sistema.
+        </p>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="primary-button"
+      (click)="abrirNuevoUsuario()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      Nuevo usuario
+    </button>
+  </header>
+
+  <section class="stats-grid">
+    <article class="stat-card">
+      <span class="stat-icon total" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      </span>
+
+      <div>
+        <small>Usuarios registrados</small>
+        <strong>{{ totalUsuarios }}</strong>
+        <span>Total de usuarios</span>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-icon admin" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+      </span>
+
+      <div>
+        <small>Administradores</small>
+        <strong>{{ totalAdministradores }}</strong>
+        <span>Con acceso completo</span>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-icon seller" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 5h2l2 10h9l2-7H7M10 20h.01M17 20h.01" />
+        </svg>
+      </span>
+
+      <div>
+        <small>Vendedores</small>
+        <strong>{{ totalVendedores }}</strong>
+        <span>Acceso operativo</span>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-icon active" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <circle cx="9" cy="7" r="4" />
+          <path d="M3 21a6 6 0 0 1 12 0M16 15l2 2 4-5" />
+        </svg>
+      </span>
+
+      <div>
+        <small>Usuarios activos</small>
+        <strong>{{ totalActivos }}</strong>
+        <span>Actualmente habilitados</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="search-controls">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </svg>
+
+      <input
+        type="search"
+        [(ngModel)]="buscar"
+        (ngModelChange)="paginaActual = 1"
+        placeholder="Buscar usuario por nombre, correo o teléfono..."
+        autocomplete="off"
+      />
+
+      <button
+        type="button"
+        *ngIf="buscar"
+        (click)="buscar = ''; paginaActual = 1"
+        aria-label="Limpiar búsqueda"
+      >
+        ×
+      </button>
+    </div>
+
+    <select
+      class="filter-select"
+      [(ngModel)]="filtro"
+      (ngModelChange)="paginaActual = 1"
+      aria-label="Filtrar usuarios"
+    >
+      <option value="TODOS">Todos</option>
+      <option value="ACTIVOS">Activos</option>
+      <option value="INACTIVOS">Inactivos</option>
+      <option value="ADMINISTRADOR">
+        Administradores
+      </option>
+      <option value="VENDEDOR">
+        Vendedores
+      </option>
+    </select>
+
+    <button
+      type="button"
+      class="clear-button"
+      (click)="limpiarFiltros()"
+      *ngIf="
+        buscar ||
+        filtro !== 'TODOS'
+      "
+    >
+      Limpiar filtros
+    </button>
+  </section>
+
+  <p class="message success" *ngIf="mensaje">
+    {{ mensaje }}
+  </p>
+
+  <p
+    class="message error"
+    *ngIf="
+      error &&
+      !mostrarFormulario
+    "
+  >
+    {{ error }}
+  </p>
+
+  <div class="loading-panel" *ngIf="cargando">
+    <span class="spinner"></span>
+    Cargando usuarios y roles...
+  </div>
+
+  <section
+    class="users-content-grid"
+    *ngIf="!cargando"
+  >
+    <article class="table-card">
+      <div
+        class="table-wrapper"
+        *ngIf="
+          usuariosPaginados.length;
+          else sinUsuarios
+        "
+      >
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Teléfono</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Último acceso</th>
+              <th>Creado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              *ngFor="
+                let usuario of usuariosPaginados
+              "
+              [class.selected]="
+                usuarioSeleccionado?.id ===
+                usuario.id
+              "
+              (click)="
+                seleccionarUsuario(usuario)
+              "
+            >
+              <td>
+                <div class="user-cell">
+                  <span class="avatar">
+                    {{ iniciales(usuario) }}
+                  </span>
+
+                  <div>
+                    <strong>
+                      {{ usuario.nombreCompleto }}
+                    </strong>
+
+                    <small *ngIf="esCuentaActual(usuario)">
+                      Tu cuenta actual
+                    </small>
+                  </div>
+                </div>
+              </td>
+
+              <td>{{ usuario.email }}</td>
+
+              <td>
+                {{ usuario.telefono || '—' }}
+              </td>
+
+              <td>
+                <span
+                  class="role-badge"
+                  [class.admin]="
+                    usuario.rol ===
+                    'ADMINISTRADOR'
+                  "
+                >
+                  {{ usuario.rol }}
+                </span>
+              </td>
+
+              <td>
+                <span
+                  class="status-badge"
+                  [class.inactive]="
+                    !usuario.activo
+                  "
+                >
+                  {{
+                    usuario.activo
+                      ? 'Activo'
+                      : 'Inactivo'
+                  }}
+                </span>
+              </td>
+
+              <td>
+                {{
+                  (
+                    usuario.ultimoAcceso
+                    | date:'dd/MM/yyyy, hh:mm a'
+                  ) || 'Sin registro'
+                }}
+              </td>
+
+              <td>
+                {{
+                  (
+                    usuario.creadoEn
+                    | date:'dd/MM/yyyy, hh:mm a'
+                  ) || '—'
+                }}
+              </td>
+
+              <td>
+                <div
+                  class="row-actions"
+                  (click)="
+                    $event.stopPropagation()
+                  "
+                >
+                  <button
+                    type="button"
+                    title="Ver ficha"
+                    aria-label="Ver ficha"
+                    (click)="
+                      seleccionarUsuario(usuario)
+                    "
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12Z" />
+                      <circle cx="12" cy="12" r="2.5" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Editar usuario"
+                    aria-label="Editar usuario"
+                    (click)="
+                      abrirEditarUsuario(usuario)
+                    "
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m4 20 4-1 11-11-3-3L5 16Z" />
+                      <path d="m14 6 3 3" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="state-button"
+                    [class.activate]="
+                      !usuario.activo
+                    "
+                    [disabled]="
+                      guardando ||
+                      !puedeCambiarEstado(usuario)
+                    "
+                    [title]="
+                      esCuentaActual(usuario)
+                        ? 'No puedes desactivar tu propia cuenta'
+                        : usuario.activo
+                          ? 'Desactivar usuario'
+                          : 'Activar usuario'
+                    "
+                    [attr.aria-label]="
+                      usuario.activo
+                        ? 'Desactivar usuario'
+                        : 'Activar usuario'
+                    "
+                    (click)="
+                      cambiarEstado(usuario)
+                    "
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 2v10M6.3 5.3a8 8 0 1 0 11.4 0" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #sinUsuarios>
+        <div class="empty-state">
+          <span class="empty-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8" />
+            </svg>
+          </span>
+
+          <strong>
+            No se encontraron usuarios.
+          </strong>
+
+          <p>
+            Registra el primer usuario o modifica los filtros.
+          </p>
+        </div>
+      </ng-template>
+
+      <footer
+        class="pagination"
+        *ngIf="
+          usuariosFiltrados.length > 0
+        "
+      >
+        <span>
+          Mostrando
+          {{ usuariosPaginados.length }}
+          de
+          {{ usuariosFiltrados.length }}
+          usuarios
+        </span>
+
+        <div class="page-controls">
+          <button
+            type="button"
+            (click)="paginaAnterior()"
+            [disabled]="paginaActual === 1"
+            aria-label="Página anterior"
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            *ngFor="
+              let pagina of paginasVisibles
+            "
+            (click)="irPagina(pagina)"
+            [class.active]="
+              pagina === paginaActual
+            "
+          >
+            {{ pagina }}
+          </button>
+
+          <button
+            type="button"
+            (click)="paginaSiguiente()"
+            [disabled]="
+              paginaActual === totalPaginas
+            "
+            aria-label="Página siguiente"
+          >
+            ›
+          </button>
+        </div>
+      </footer>
+    </article>
+
+    <aside class="quick-card">
+      <ng-container
+        *ngIf="
+          usuarioSeleccionado;
+          else sinSeleccion
+        "
+      >
+        <header class="quick-header">
+          <span class="quick-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="7" r="4" />
+              <path d="M5 21a7 7 0 0 1 14 0" />
+            </svg>
+          </span>
+
+          <h2>Ficha rápida</h2>
+        </header>
+
+        <div class="quick-profile">
+          <span class="avatar large">
+            {{
+              iniciales(
+                usuarioSeleccionado
+              )
+            }}
+          </span>
+
+          <strong>
+            {{
+              usuarioSeleccionado
+                .nombreCompleto
+            }}
+          </strong>
+
+          <span
+            class="role-badge"
+            [class.admin]="
+              usuarioSeleccionado.rol ===
+              'ADMINISTRADOR'
+            "
+          >
+            {{ usuarioSeleccionado.rol }}
+          </span>
+        </div>
+
+        <div class="quick-details">
+          <div>
+            <span>Correo</span>
+            <strong>
+              {{
+                usuarioSeleccionado
+                  .email
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Teléfono</span>
+            <strong>
+              {{
+                usuarioSeleccionado
+                  .telefono ||
+                'No registrado'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Último acceso</span>
+            <strong>
+              {{
+                (
+                  usuarioSeleccionado
+                    .ultimoAcceso
+                  | date:'dd/MM/yyyy, hh:mm a'
+                ) || 'Sin registro'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Estado</span>
+            <strong
+              [class.inactive-value]="
+                !usuarioSeleccionado
+                  .activo
+              "
+            >
+              {{
+                usuarioSeleccionado
+                  .activo
+                  ? 'Activo'
+                  : 'Inactivo'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Creado</span>
+            <strong>
+              {{
+                (
+                  usuarioSeleccionado
+                    .creadoEn
+                  | date:'dd/MM/yyyy'
+                ) || '—'
+              }}
+            </strong>
+          </div>
+        </div>
+
+        <section class="permissions-card">
+          <span>Permisos asignados</span>
+
+          <ul>
+            <li
+              *ngFor="
+                let permiso of
+                usuarioSeleccionado
+                  .permisos
+              "
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m5 12 4 4L19 6" />
+              </svg>
+              {{ permiso }}
+            </li>
+          </ul>
+        </section>
+
+        <div class="quick-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="
+              abrirEditarUsuario(
+                usuarioSeleccionado
+              )
+            "
+          >
+            Editar usuario
+          </button>
+
+          <button
+            type="button"
+            class="primary-button"
+            (click)="
+              cambiarEstado(
+                usuarioSeleccionado
+              )
+            "
+            [disabled]="
+              guardando ||
+              !puedeCambiarEstado(
+                usuarioSeleccionado
+              )
+            "
+          >
+            {{
+              usuarioSeleccionado.activo
+                ? 'Desactivar'
+                : 'Activar'
+            }}
+          </button>
+        </div>
+      </ng-container>
+
+      <ng-template #sinSeleccion>
+        <div class="empty-quick">
+          Selecciona un usuario para consultar sus permisos.
+        </div>
+      </ng-template>
+    </aside>
+  </section>
+
+  <!-- MODAL -->
+  <div
+    class="modal-backdrop"
+    *ngIf="mostrarFormulario"
+    (click)="cerrarFormulario()"
+  >
+    <section
+      class="user-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="userModalTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal-header">
+        <div>
+          <span class="page-kicker">
+            {{
+              modoFormulario === 'CREAR'
+                ? 'NUEVO USUARIO'
+                : 'EDITAR USUARIO'
+            }}
+          </span>
+
+          <h2 id="userModalTitle">
+            {{
+              modoFormulario === 'CREAR'
+                ? 'Registrar usuario'
+                : 'Actualizar usuario'
+            }}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="close-button"
+          (click)="cerrarFormulario()"
+          [disabled]="guardando"
+          aria-label="Cerrar formulario"
+        >
+          ×
+        </button>
+      </header>
+
+      <form
+        class="user-form"
+        (ngSubmit)="guardar()"
+      >
+        <section class="form-section">
+          <div class="section-heading">
+            <span>1</span>
+
+            <div>
+              <h3>Datos personales</h3>
+              <p>
+                Información del trabajador y datos para iniciar sesión.
+              </p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="nombresUsuario">
+                Nombres
+              </label>
+
+              <input
+                id="nombresUsuario"
+                name="nombresUsuario"
+                type="text"
+                required
+                [(ngModel)]="
+                  form.nombres
+                "
+                placeholder="Ej. Ana María"
+              />
+            </div>
+
+            <div class="field">
+              <label for="apellidosUsuario">
+                Apellidos
+              </label>
+
+              <input
+                id="apellidosUsuario"
+                name="apellidosUsuario"
+                type="text"
+                [(ngModel)]="
+                  form.apellidos
+                "
+                placeholder="Ej. Torres Díaz"
+              />
+            </div>
+
+            <div class="field">
+              <label for="correoUsuario">
+                Correo de acceso
+              </label>
+
+              <input
+                id="correoUsuario"
+                name="correoUsuario"
+                type="email"
+                required
+                [(ngModel)]="
+                  form.email
+                "
+                placeholder="usuario@correo.com"
+              />
+            </div>
+
+            <div class="field">
+              <label for="telefonoUsuario">
+                Teléfono
+              </label>
+
+              <input
+                id="telefonoUsuario"
+                name="telefonoUsuario"
+                type="tel"
+                inputmode="numeric"
+                maxlength="15"
+                [(ngModel)]="
+                  form.telefono
+                "
+                placeholder="Ej. 987654321"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="section-heading">
+            <span>2</span>
+
+            <div>
+              <h3>Rol y seguridad</h3>
+              <p>
+                Define los permisos y la contraseña de acceso.
+              </p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field full-field">
+              <label for="rolUsuario">
+                Rol del usuario
+              </label>
+
+              <select
+                id="rolUsuario"
+                name="rolUsuario"
+                [(ngModel)]="
+                  form.rolId
+                "
+                (ngModelChange)="
+                  actualizarRolFormulario()
+                "
+              >
+                <option
+                  [ngValue]="null"
+                >
+                  Seleccionar rol
+                </option>
+
+                <option
+                  *ngFor="
+                    let rol of roles
+                  "
+                  [ngValue]="rol.id"
+                >
+                  {{ textoRol(rol.nombre) }}
+                </option>
+              </select>
+            </div>
+
+            <div class="role-description full-field">
+              <strong>
+                {{
+                  form.rol ===
+                    'ADMINISTRADOR'
+                    ? 'Acceso completo'
+                    : 'Acceso de vendedor'
+                }}
+              </strong>
+
+              <span>
+                {{
+                  form.rol ===
+                    'ADMINISTRADOR'
+                    ? 'Puede gestionar todos los módulos, reportes y usuarios.'
+                    : 'Puede registrar ventas, consultar productos, clientes y órdenes.'
+                }}
+              </span>
+            </div>
+
+            <div class="field">
+              <label for="passwordUsuario">
+                {{
+                  modoFormulario === 'CREAR'
+                    ? 'Contraseña'
+                    : 'Nueva contraseña (opcional)'
+                }}
+              </label>
+
+              <input
+                id="passwordUsuario"
+                name="passwordUsuario"
+                type="password"
+                minlength="8"
+                [(ngModel)]="
+                  form.password
+                "
+                placeholder="Mínimo 8 caracteres"
+              />
+            </div>
+
+            <div class="field">
+              <label for="confirmarPasswordUsuario">
+                Confirmar contraseña
+              </label>
+
+              <input
+                id="confirmarPasswordUsuario"
+                name="confirmarPasswordUsuario"
+                type="password"
+                minlength="8"
+                [(ngModel)]="
+                  form.confirmarPassword
+                "
+                placeholder="Repite la contraseña"
+              />
+            </div>
+
+            <label class="status-control full-field">
+              <input
+                type="checkbox"
+                name="activoUsuario"
+                [(ngModel)]="
+                  form.activo
+                "
+              />
+
+              <span>
+                Usuario activo y habilitado para iniciar sesión
+              </span>
+            </label>
+          </div>
+        </section>
+
+        <p class="modal-error" *ngIf="error">
+          {{ error }}
+        </p>
+
+        <footer class="modal-actions">
+          <button
+            type="button"
+            class="cancel-button"
+            (click)="cerrarFormulario()"
+            [disabled]="guardando"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="guardando"
+          >
+            {{
+              guardando
+                ? 'Guardando...'
+                : 'Guardar usuario'
+            }}
+          </button>
+        </footer>
+      </form>
+    </section>
+  </div>
 </div>

@@ -65,12 +65,6 @@ export class AdminLayoutComponent implements OnInit {
         roles: ['ADMINISTRADOR', 'VENDEDOR']
       },
       {
-        label: 'Códigos de barras',
-        icon: '🏷️',
-        path: '/admin/codigos',
-        roles: ['ADMINISTRADOR']
-      },
-      {
         label: 'Clientes y recetas',
         icon: '👤',
         path:
@@ -98,6 +92,12 @@ export class AdminLayoutComponent implements OnInit {
         label: 'Movimientos de inventario',
         icon: '🔄',
         path: '/admin/movimientos',
+        roles: ['ADMINISTRADOR']
+      },
+      {
+        label: 'Usuarios y roles',
+        icon: '👥',
+        path: '/admin/usuarios',
         roles: ['ADMINISTRADOR']
       },
       {

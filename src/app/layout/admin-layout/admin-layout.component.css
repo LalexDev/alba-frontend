@@ -272,63 +272,10 @@
    ===================================================== */
 
 .topbar {
-  position: relative;
-  z-index: 100;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-
-  min-height: 88px;
-  padding: 18px 26px;
-
-  border-bottom: 1px solid var(--azul-borde);
-  background: var(--blanco);
+  display: none !important;
 }
 
-.topbar-information {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 
-  min-width: 0;
-}
-
-.topbar-title {
-  min-width: 0;
-}
-
-.topbar h1 {
-  margin: 0;
-
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  color: var(--negro);
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.muted {
-  margin-top: 5px;
-
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  color: var(--texto-secundario);
-  font-size: 11px;
-}
-
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-
-  flex: 0 0 auto;
-}
 
 /* =====================================================
    BOTONES
