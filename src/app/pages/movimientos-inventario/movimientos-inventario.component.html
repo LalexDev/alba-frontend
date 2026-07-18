@@ -1,0 +1,13 @@
+<div class="page-stack">
+  <div class="card">
+    <h2>Registrar movimiento</h2>
+    <form class="form-grid" (ngSubmit)="guardar()">
+      <div class="field"><label>Producto</label><input [(ngModel)]="nuevo.producto" name="producto" placeholder="Código o producto" required /></div>
+      <div class="field"><label>Tipo</label><select [(ngModel)]="nuevo.tipo" name="tipo"><option>ENTRADA_COMPRA</option><option>AJUSTE_ENTRADA</option><option>AJUSTE_SALIDA</option><option>SALIDA_VENTA</option></select></div>
+      <div class="field"><label>Cantidad</label><input type="number" [(ngModel)]="nuevo.cantidad" name="cantidad" min="1" /></div>
+      <div class="field wide"><label>Motivo</label><input [(ngModel)]="nuevo.motivo" name="motivo" /></div>
+      <div class="wide form-actions"><button class="btn" type="submit">Guardar movimiento</button></div>
+    </form>
+  </div>
+  <div class="card"><div class="toolbar"><h2>Historial de movimientos</h2><div class="actions"><button class="btn secondary">Exportar Excel</button><button class="btn secondary">PDF historial</button></div></div><div class="table-wrap" *ngIf="movimientos.length; else empty"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Motivo</th></tr></thead><tbody><tr *ngFor="let m of movimientos"><td>{{ m.fecha | date:'short' }}</td><td>{{ m.producto }}</td><td>{{ m.tipo }}</td><td>{{ m.cantidad }}</td><td>{{ m.motivo }}</td></tr></tbody></table></div><ng-template #empty><div class="empty">Aún no hay movimientos.</div></ng-template></div>
+</div>

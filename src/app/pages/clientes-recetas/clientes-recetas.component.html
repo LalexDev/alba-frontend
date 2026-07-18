@@ -1,0 +1,61 @@
+<div class="page-stack">
+  <div class="card">
+    <div class="toolbar">
+      <div class="search"><input [(ngModel)]="search" placeholder="Buscar cliente por nombres, DNI, teléfono o correo..." /></div>
+      <div class="actions">
+        <button class="btn" type="button" (click)="mostrarFormulario = !mostrarFormulario">+ Registrar cliente</button>
+        <button class="btn secondary" type="button" (click)="exportarExcel()">Exportar Excel</button>
+        <button class="btn secondary" type="button" (click)="imprimirFicha()">PDF ficha</button>
+      </div>
+    </div>
+
+    <form class="client-work-form print-area" (ngSubmit)="guardar()" *ngIf="mostrarFormulario">
+      <div class="work-order-form">
+        <div class="work-title">ORDEN DE TRABAJO</div>
+        <div class="date-strip"><span>DÍA</span><span>MES</span><span>AÑO</span></div>
+        <div class="date-inputs">
+          <input maxlength="2" [value]="cliente.fecha.slice(8,10)" />
+          <input maxlength="2" [value]="cliente.fecha.slice(5,7)" />
+          <input maxlength="4" [value]="cliente.fecha.slice(0,4)" />
+        </div>
+
+        <div class="client-line-grid">
+          <div class="field wide"><label>Cliente</label><input [(ngModel)]="cliente.nombres" name="nombres" required /></div>
+          <div class="field"><label>DNI</label><input [(ngModel)]="cliente.dni" name="dni" required /></div>
+          <div class="field"><label>Teléfono</label><input [(ngModel)]="cliente.telefono" name="telefono" /></div>
+          <div class="field"><label>Correo</label><input [(ngModel)]="cliente.correo" name="correo" type="email" /></div>
+          <div class="field wide"><label>Dirección</label><input [(ngModel)]="cliente.direccion" name="direccion" /></div>
+        </div>
+
+        <div class="rx-box">
+          <div class="rx-side">LEJOS</div>
+          <div class="rx-content">
+            <div class="rx-head"><span></span><span>ESF.</span><span>CYL</span><span>EJE</span></div>
+            <div class="rx-row"><b>OD:</b><input [(ngModel)]="lejos.esfOD" name="lejosEsfOD" /><input [(ngModel)]="lejos.cylOD" name="lejosCylOD" /><input [(ngModel)]="lejos.ejeOD" name="lejosEjeOD" /></div>
+            <div class="rx-row"><b>OI:</b><input [(ngModel)]="lejos.esfOI" name="lejosEsfOI" /><input [(ngModel)]="lejos.cylOI" name="lejosCylOI" /><input [(ngModel)]="lejos.ejeOI" name="lejosEjeOI" /></div>
+            <div class="dip-line"><label>DIP:</label><input [(ngModel)]="lejos.dip" name="lejosDip" /></div>
+          </div>
+        </div>
+
+        <div class="rx-box">
+          <div class="rx-side">CERCA</div>
+          <div class="rx-content">
+            <div class="rx-head"><span></span><span>ESF.</span><span>CYL</span><span>EJE</span></div>
+            <div class="rx-row"><b>OD:</b><input [(ngModel)]="cerca.esfOD" name="cercaEsfOD" /><input [(ngModel)]="cerca.cylOD" name="cercaCylOD" /><input [(ngModel)]="cerca.ejeOD" name="cercaEjeOD" /></div>
+            <div class="rx-row"><b>OI:</b><input [(ngModel)]="cerca.esfOI" name="cercaEsfOI" /><input [(ngModel)]="cerca.cylOI" name="cercaCylOI" /><input [(ngModel)]="cerca.ejeOI" name="cercaEjeOI" /></div>
+            <div class="dip-line"><label>DIP:</label><input [(ngModel)]="cerca.dip" name="cercaDip" /></div>
+          </div>
+        </div>
+
+        <div class="field wide"><label>Observaciones</label><textarea rows="3" [(ngModel)]="cliente.observaciones" name="observaciones"></textarea></div>
+      </div>
+      <div class="form-actions no-print" style="margin-top:14px;"><button class="btn" type="submit">Guardar cliente</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">Clientes registrados</h2>
+    <div class="table-wrap" *ngIf="filtrados.length; else emptyClients"><table><thead><tr><th>Cliente</th><th>DNI</th><th>Teléfono</th><th>Correo</th><th>Última receta</th></tr></thead><tbody><tr *ngFor="let c of filtrados"><td><b>{{ c.nombres }}</b><br><span class="muted">{{ c.direccion }}</span></td><td>{{ c.dni }}</td><td>{{ c.telefono }}</td><td>{{ c.correo }}</td><td>{{ c.fecha }}</td></tr></tbody></table></div>
+    <ng-template #emptyClients><div class="empty">Aún no hay clientes registrados.</div></ng-template>
+  </div>
+</div>

@@ -1,0 +1,638 @@
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+
+  --azul-principal: #1593c7;
+  --azul-oscuro: #0e78a5;
+  --azul-claro: #eaf7fc;
+  --azul-borde: #8fd1ec;
+
+  --blanco: #ffffff;
+  --negro: #000000;
+  --texto-secundario: #333333;
+  --fondo-general: #f4fbfe;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--fondo-general);
+}
+
+/* =====================================================
+   MENÚ LATERAL
+   ===================================================== */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+
+  display: flex;
+  flex-direction: column;
+
+  width: 245px;
+  min-width: 245px;
+  height: 100vh;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  background: var(--blanco);
+  border-right: 1px solid var(--azul-borde);
+  box-shadow: 4px 0 20px rgba(21, 147, 199, 0.1);
+
+  transition:
+    width 0.25s ease,
+    transform 0.25s ease;
+}
+
+.brand {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  min-height: 82px;
+  padding: 18px 20px;
+
+  border-bottom: 1px solid var(--azul-borde);
+}
+
+.brand-icon {
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 12px;
+
+  color: var(--blanco);
+  background: var(--azul-principal);
+
+  font-size: 21px;
+}
+
+.brand-text {
+  min-width: 0;
+}
+
+.brand h2 {
+  margin: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: var(--negro);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.brand span {
+  display: block;
+  margin-top: 3px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: var(--texto-secundario);
+  font-size: 10px;
+}
+
+.sidebar-close {
+  display: none;
+
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+
+  border: 1px solid var(--azul-principal);
+  border-radius: 9px;
+
+  color: var(--negro);
+  background: var(--blanco);
+
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.sidebar-close:hover {
+  color: var(--blanco);
+  background: var(--azul-principal);
+}
+
+.user-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  margin: 14px;
+  padding: 13px 14px;
+
+  overflow: hidden;
+
+  border: 1px solid var(--azul-borde);
+  border-radius: 11px;
+  background: var(--azul-claro);
+}
+
+.user-card strong,
+.user-card span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-card strong {
+  color: var(--negro);
+  font-size: 12px;
+}
+
+.user-card span {
+  color: var(--azul-oscuro);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+
+  padding: 4px 12px 18px;
+}
+
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  min-height: 45px;
+  padding: 10px 13px;
+
+  border-radius: 10px;
+
+  color: var(--negro);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.nav a:hover {
+  color: var(--azul-oscuro);
+  background: var(--azul-claro);
+  transform: translateX(2px);
+}
+
+.nav a.active {
+  color: var(--blanco);
+  background: var(--azul-principal);
+  box-shadow: 0 7px 16px rgba(21, 147, 199, 0.25);
+}
+
+.nav a.active .emoji,
+.nav a.active .nav-label {
+  color: var(--blanco);
+}
+
+.emoji {
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  width: 21px;
+  font-size: 15px;
+}
+
+.nav-label {
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 14px;
+
+  border-top: 1px solid var(--azul-borde);
+  background: var(--blanco);
+}
+
+/* =====================================================
+   CONTENIDO
+   ===================================================== */
+
+.content {
+  width: calc(100% - 245px);
+  min-width: 0;
+  min-height: 100vh;
+  margin-left: 245px;
+
+  overflow-x: hidden;
+
+  background: var(--fondo-general);
+
+  transition:
+    width 0.25s ease,
+    margin-left 0.25s ease;
+}
+
+.route-content {
+  width: 100%;
+  min-width: 0;
+}
+
+/* =====================================================
+   BARRA SUPERIOR
+   ===================================================== */
+
+.topbar {
+  position: relative;
+  z-index: 100;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  min-height: 88px;
+  padding: 18px 26px;
+
+  border-bottom: 1px solid var(--azul-borde);
+  background: var(--blanco);
+}
+
+.topbar-information {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  min-width: 0;
+}
+
+.topbar-title {
+  min-width: 0;
+}
+
+.topbar h1 {
+  margin: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: var(--negro);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.muted {
+  margin-top: 5px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: var(--texto-secundario);
+  font-size: 11px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  flex: 0 0 auto;
+}
+
+/* =====================================================
+   BOTONES
+   ===================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  min-height: 40px;
+  padding: 9px 15px;
+
+  border: 1px solid transparent;
+  border-radius: 9px;
+
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn.ghost {
+  color: var(--azul-oscuro);
+  background: var(--azul-claro);
+  border-color: var(--azul-principal);
+}
+
+.btn.ghost:hover {
+  color: var(--blanco);
+  background: var(--azul-principal);
+}
+
+.btn.secondary {
+  color: var(--negro);
+  background: var(--blanco);
+  border-color: var(--azul-principal);
+}
+
+.btn.secondary:hover {
+  color: var(--blanco);
+  background: var(--azul-principal);
+}
+
+.btn.full {
+  width: 100%;
+}
+
+.mobile-menu {
+  display: none;
+
+  width: 42px;
+  height: 42px;
+  padding: 0;
+
+  border: 1px solid var(--azul-principal);
+  border-radius: 10px;
+
+  color: var(--negro);
+  background: var(--blanco);
+
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.mobile-menu:hover {
+  color: var(--blanco);
+  background: var(--azul-principal);
+}
+
+.dashboard-menu-button {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 900;
+
+  box-shadow: 0 5px 14px rgba(21, 147, 199, 0.25);
+}
+
+/* =====================================================
+   FONDO AL ABRIR EL MENÚ EN CELULAR
+   ===================================================== */
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+
+  display: block;
+  visibility: hidden;
+
+  width: 100%;
+  height: 100%;
+
+  padding: 0;
+  border: 0;
+
+  opacity: 0;
+  background: rgba(0, 0, 0, 0.48);
+
+  cursor: pointer;
+
+  transition:
+    opacity 0.25s ease,
+    visibility 0.25s ease;
+}
+
+.sidebar-backdrop.visible {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* =====================================================
+   LAPTOP PEQUEÑA Y TABLET HORIZONTAL
+   ===================================================== */
+
+@media (max-width: 1180px) {
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+  }
+
+  .content {
+    width: calc(100% - 220px);
+    margin-left: 220px;
+  }
+
+  .topbar {
+    padding: 16px 20px;
+  }
+
+  .topbar h1 {
+    font-size: 20px;
+  }
+}
+
+/* =====================================================
+   TABLET Y CELULAR
+   ===================================================== */
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: min(290px, 86vw);
+    min-width: 0;
+
+    transform: translateX(-105%);
+    box-shadow: 12px 0 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-close {
+    display: grid;
+    place-items: center;
+  }
+
+  .content {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .mobile-menu {
+    display: inline-grid;
+    place-items: center;
+
+    flex: 0 0 auto;
+  }
+
+  .topbar {
+    min-height: 78px;
+    padding: 14px 18px;
+  }
+
+  .topbar h1 {
+    font-size: 19px;
+  }
+
+  .muted {
+    max-width: 500px;
+  }
+}
+
+/* =====================================================
+   CELULAR
+   ===================================================== */
+
+@media (max-width: 640px) {
+  .topbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+
+    min-height: auto;
+    padding: 13px 14px;
+  }
+
+  .topbar-information {
+    width: 100%;
+  }
+
+  .topbar-title {
+    width: calc(100% - 54px);
+  }
+
+  .topbar h1 {
+    font-size: 17px;
+  }
+
+  .muted {
+    white-space: normal;
+    line-height: 1.4;
+  }
+
+  .topbar-actions {
+    width: 100%;
+  }
+
+  .topbar-actions .btn {
+    width: 100%;
+  }
+
+  .brand {
+    min-height: 74px;
+    padding: 15px;
+  }
+
+  .user-card {
+    margin: 11px;
+  }
+
+  .nav {
+    padding-inline: 10px;
+  }
+
+  .nav a {
+    min-height: 43px;
+    padding: 9px 11px;
+  }
+
+  .dashboard-menu-button {
+    top: 10px;
+    left: 10px;
+  }
+}
+
+/* =====================================================
+   CELULARES PEQUEÑOS
+   ===================================================== */
+
+@media (max-width: 380px) {
+  .sidebar {
+    width: 92vw;
+  }
+
+  .topbar {
+    padding-inline: 10px;
+  }
+
+  .topbar h1 {
+    font-size: 16px;
+  }
+
+  .brand h2 {
+    font-size: 15px;
+  }
+}
+
+/* =====================================================
+   IMPRESIÓN
+   ===================================================== */
+
+@media print {
+  .sidebar,
+  .topbar,
+  .mobile-menu,
+  .sidebar-backdrop,
+  .no-print {
+    display: none !important;
+  }
+
+  .content {
+    width: 100% !important;
+    margin: 0 !important;
+    background: var(--blanco) !important;
+  }
+}

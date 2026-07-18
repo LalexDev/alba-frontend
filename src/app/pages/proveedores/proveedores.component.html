@@ -1,0 +1,19 @@
+<div class="page-stack">
+  <div class="card">
+    <h2 class="section-title">Registrar proveedor</h2>
+    <form class="form-grid" (ngSubmit)="guardar()">
+      <div class="field"><label>Razón social</label><input [(ngModel)]="nuevo.razonSocial" name="razonSocial" required /></div>
+      <div class="field"><label>RUC</label><input [(ngModel)]="nuevo.ruc" name="ruc" /></div>
+      <div class="field"><label>Contacto</label><input [(ngModel)]="nuevo.contacto" name="contacto" /></div>
+      <div class="field"><label>Teléfono</label><input [(ngModel)]="nuevo.telefono" name="telefono" /></div>
+      <div class="field"><label>Correo</label><input [(ngModel)]="nuevo.correo" name="correo" /></div>
+      <div class="field wide"><label>Dirección</label><input [(ngModel)]="nuevo.direccion" name="direccion" /></div>
+      <div class="wide form-actions"><button class="btn" type="submit">Guardar proveedor</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <div class="toolbar"><h2>Proveedores</h2><button class="btn secondary">Exportar Excel</button></div>
+    <div class="table-wrap" *ngIf="proveedores.length; else empty"><table><thead><tr><th>Proveedor</th><th>RUC</th><th>Contacto</th><th>Teléfono</th><th>Correo</th></tr></thead><tbody><tr *ngFor="let p of proveedores"><td>{{ p.razonSocial }}</td><td>{{ p.ruc }}</td><td>{{ p.contacto }}</td><td>{{ p.telefono }}</td><td>{{ p.correo }}</td></tr></tbody></table></div>
+    <ng-template #empty><div class="empty">Aún no hay proveedores registrados.</div></ng-template>
+  </div>
+</div>

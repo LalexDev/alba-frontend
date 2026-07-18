@@ -1,0 +1,913 @@
+:host {
+  display: block;
+  width: 100%;
+
+  --azul-principal: #1593c7;
+  --azul-oscuro: #0e78a5;
+  --azul-claro: #eaf7fc;
+  --azul-borde: #8fd1ec;
+
+  --blanco: #ffffff;
+  --negro: #000000;
+  --gris-texto: #333333;
+  --gris-suave: #666666;
+  --fondo: #f4fbfe;
+
+  --sombra:
+    0 5px 18px rgba(21, 147, 199, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.dashboard-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 26px;
+
+  color: var(--negro);
+  background: var(--fondo);
+}
+
+/* =====================================================
+   ENCABEZADO
+   ===================================================== */
+
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+
+  margin-bottom: 24px;
+}
+
+.dashboard-kicker {
+  display: block;
+  margin-bottom: 5px;
+
+  color: var(--azul-principal);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+
+  color: var(--negro);
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.dashboard-header p {
+  margin: 6px 0 0;
+
+  color: var(--gris-texto);
+  font-size: 13px;
+}
+
+.dashboard-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-box {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 130px;
+  padding: 9px 14px;
+
+  border: 1px solid var(--azul-borde);
+  border-radius: 9px;
+
+  background: var(--blanco);
+}
+
+.date-box span {
+  color: var(--azul-oscuro);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.date-box strong {
+  margin-top: 3px;
+
+  color: var(--negro);
+  font-size: 12px;
+}
+
+.refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  height: 47px;
+  padding: 0 17px;
+
+  border: 1px solid var(--azul-principal);
+  border-radius: 9px;
+
+  color: var(--negro);
+  background: var(--blanco);
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.refresh-button:hover {
+  color: var(--blanco);
+  background: var(--azul-principal);
+  transform: translateY(-1px);
+}
+
+.refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+}
+
+/* =====================================================
+   TARJETAS
+   ===================================================== */
+
+.dashboard-card {
+  min-width: 0;
+
+  border: 1px solid var(--azul-borde);
+  border-radius: 13px;
+
+  background: var(--blanco);
+  box-shadow: var(--sombra);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 14px;
+
+  margin-bottom: 14px;
+}
+
+.stat-card {
+  min-height: 118px;
+  padding: 18px;
+}
+
+.stat-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  color: var(--gris-texto);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.stat-icon {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 auto;
+
+  width: 33px;
+  height: 33px;
+
+  border-radius: 9px;
+
+  color: var(--blanco);
+  background: var(--azul-principal);
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.money-icon,
+.product-icon,
+.warning-icon,
+.movement-icon {
+  color: var(--blanco);
+  background: var(--azul-principal);
+}
+
+.stat-value {
+  display: block;
+  margin-top: 12px;
+
+  color: var(--negro);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.stat-footer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  margin-top: 12px;
+}
+
+.stat-footer small {
+  color: var(--gris-suave);
+  font-size: 10px;
+}
+
+.trend {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px 6px;
+
+  border-radius: 5px;
+
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.trend.positive,
+.trend.negative,
+.trend.neutral {
+  color: var(--azul-oscuro);
+  background: var(--azul-claro);
+}
+
+/* =====================================================
+   PARTE CENTRAL
+   ===================================================== */
+
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.8fr)
+    minmax(280px, 0.8fr);
+  gap: 14px;
+
+  margin-bottom: 14px;
+}
+
+.sales-overview-card,
+.stock-summary-card {
+  min-height: 340px;
+  padding: 20px;
+}
+
+.card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.card-heading h2 {
+  margin: 0;
+
+  color: var(--negro);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.card-heading p {
+  margin: 5px 0 0;
+
+  color: var(--gris-suave);
+  font-size: 10px;
+}
+
+.card-menu {
+  color: var(--azul-principal);
+  font-weight: 800;
+}
+
+/* =====================================================
+   ESTADO VACÍO
+   ===================================================== */
+
+.empty-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 220px;
+
+  color: var(--gris-suave);
+  text-align: center;
+}
+
+.empty-chart-icon {
+  display: grid;
+  place-items: center;
+
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+
+  border-radius: 12px;
+
+  color: var(--azul-oscuro);
+  background: var(--azul-claro);
+
+  font-size: 20px;
+}
+
+.empty-chart strong {
+  color: var(--negro);
+  font-size: 13px;
+}
+
+.empty-chart span {
+  max-width: 310px;
+  margin-top: 6px;
+
+  color: var(--gris-suave);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+/* =====================================================
+   BARRAS DE PRODUCTOS
+   ===================================================== */
+
+.sales-bars {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+
+  min-height: 220px;
+  padding-top: 20px;
+}
+
+.bar-information {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+
+  margin-bottom: 7px;
+
+  color: var(--gris-texto);
+  font-size: 10px;
+}
+
+.bar-information span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-information strong {
+  flex: 0 0 auto;
+  color: var(--negro);
+}
+
+.bar-track {
+  height: 14px;
+  overflow: hidden;
+
+  border-radius: 4px;
+
+  background: var(--azul-claro);
+}
+
+.bar-value {
+  min-width: 8px;
+  height: 100%;
+
+  border-radius: 4px;
+
+  background: linear-gradient(
+    90deg,
+    var(--azul-principal),
+    var(--azul-oscuro)
+  );
+}
+
+.chart-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  margin-top: 17px;
+  padding-top: 14px;
+
+  border-top: 1px solid var(--azul-borde);
+
+  color: var(--gris-texto);
+  font-size: 10px;
+}
+
+.chart-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-legend a,
+.text-button {
+  color: var(--azul-oscuro);
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.chart-legend a:hover,
+.text-button:hover {
+  text-decoration: underline;
+}
+
+.legend-dot {
+  display: inline-block;
+
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+}
+
+.primary-dot,
+.warning-dot {
+  background: var(--azul-principal);
+}
+
+/* =====================================================
+   GRÁFICO CIRCULAR
+   ===================================================== */
+
+.donut-container {
+  display: flex;
+  justify-content: center;
+
+  padding: 28px 0 18px;
+}
+
+.donut-chart {
+  --percentage: 70;
+
+  position: relative;
+
+  display: grid;
+  place-items: center;
+
+  width: 150px;
+  height: 150px;
+
+  border-radius: 50%;
+
+  background:
+    conic-gradient(
+      var(--azul-principal)
+      calc(var(--percentage) * 1%),
+
+      var(--azul-claro) 0
+    );
+}
+
+.donut-chart::before {
+  position: absolute;
+
+  width: 108px;
+  height: 108px;
+
+  border-radius: 50%;
+
+  background: var(--blanco);
+
+  content: '';
+}
+
+.donut-center {
+  position: relative;
+  z-index: 1;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.donut-center strong {
+  color: var(--negro);
+  font-size: 25px;
+}
+
+.donut-center span {
+  margin-top: 3px;
+
+  color: var(--gris-suave);
+  font-size: 9px;
+}
+
+.stock-details {
+  display: grid;
+  gap: 10px;
+
+  margin-top: 5px;
+}
+
+.stock-details div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  color: var(--gris-texto);
+  font-size: 10px;
+}
+
+.stock-details span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.stock-details strong {
+  color: var(--negro);
+}
+
+/* =====================================================
+   PARTE INFERIOR
+   ===================================================== */
+
+.dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.4fr)
+    minmax(300px, 0.8fr);
+  gap: 14px;
+}
+
+.dashboard-bottom-grid > .dashboard-card {
+  min-height: 280px;
+  padding: 20px;
+}
+
+.table-empty {
+  display: grid;
+  place-items: center;
+
+  min-height: 190px;
+  padding: 20px;
+
+  color: var(--gris-suave);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* =====================================================
+   TABLAS
+   ===================================================== */
+
+.dashboard-table-container {
+  width: 100%;
+  margin-top: 17px;
+
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.dashboard-table {
+  width: 100%;
+  min-width: 520px;
+
+  border-collapse: collapse;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+  padding: 12px 8px;
+
+  border-bottom: 1px solid var(--azul-borde);
+
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dashboard-table th {
+  color: var(--azul-oscuro);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.dashboard-table td {
+  color: var(--gris-texto);
+  font-size: 10px;
+}
+
+.dashboard-table td strong {
+  color: var(--negro);
+}
+
+.dashboard-table tbody tr:hover {
+  background: var(--azul-claro);
+}
+
+/* =====================================================
+   MÉTODOS DE PAGO
+   ===================================================== */
+
+.payment-status,
+.payment-status.yape,
+.payment-status.transfer {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 4px 8px;
+
+  border-radius: 5px;
+
+  color: var(--blanco);
+  background: var(--azul-principal);
+
+  font-size: 9px;
+  font-weight: 800;
+}
+
+/* =====================================================
+   RANKING
+   ===================================================== */
+
+.product-ranking {
+  display: grid;
+  gap: 4px;
+
+  margin-top: 15px;
+}
+
+.ranking-row {
+  display: grid;
+  grid-template-columns:
+    30px
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 10px;
+
+  padding: 11px 0;
+
+  border-bottom: 1px solid var(--azul-borde);
+}
+
+.ranking-number {
+  display: grid;
+  place-items: center;
+
+  width: 25px;
+  height: 25px;
+
+  border-radius: 7px;
+
+  color: var(--blanco);
+  background: var(--azul-principal);
+
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.ranking-product {
+  min-width: 0;
+}
+
+.ranking-product strong,
+.ranking-product small {
+  display: block;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranking-product strong {
+  color: var(--negro);
+  font-size: 10px;
+}
+
+.ranking-product small {
+  margin-top: 3px;
+
+  color: var(--gris-suave);
+  font-size: 8px;
+}
+
+.ranking-result {
+  text-align: right;
+}
+
+.ranking-result strong {
+  display: block;
+
+  color: var(--negro);
+  font-size: 11px;
+}
+
+.ranking-result small {
+  color: var(--gris-suave);
+  font-size: 8px;
+}
+
+/* =====================================================
+   ALERTA
+   ===================================================== */
+
+.dashboard-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-bottom: 14px;
+  padding: 11px 14px;
+
+  border: 1px solid var(--azul-principal);
+  border-radius: 9px;
+
+  color: var(--negro);
+  background: var(--azul-claro);
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* =====================================================
+   TABLET Y LAPTOP PEQUEÑA
+   ===================================================== */
+
+@media (max-width: 1100px) {
+  .dashboard-page {
+    padding: 22px;
+  }
+
+  .stats-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-main-grid,
+  .dashboard-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-summary-card {
+    min-height: auto;
+  }
+}
+
+/* =====================================================
+   TABLET VERTICAL
+   ===================================================== */
+
+@media (max-width: 760px) {
+  .dashboard-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .dashboard-header-actions {
+    width: 100%;
+  }
+
+  .date-box {
+    flex: 1;
+  }
+
+  .refresh-button {
+    flex: 0 0 auto;
+  }
+}
+
+/* =====================================================
+   CELULAR
+   ===================================================== */
+
+@media (max-width: 680px) {
+  .dashboard-page {
+    padding: 64px 14px 18px;
+  }
+
+  .dashboard-header {
+    margin-bottom: 18px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 23px;
+  }
+
+  .dashboard-header p {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .dashboard-header-actions {
+    flex-direction: column;
+  }
+
+  .date-box,
+  .refresh-button {
+    width: 100%;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    min-height: 108px;
+    padding: 16px;
+  }
+
+  .sales-overview-card,
+  .stock-summary-card,
+  .dashboard-bottom-grid > .dashboard-card {
+    min-height: auto;
+    padding: 16px;
+  }
+
+  .chart-legend {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .donut-chart {
+    width: 138px;
+    height: 138px;
+  }
+
+  .donut-chart::before {
+    width: 98px;
+    height: 98px;
+  }
+
+  .card-heading {
+    gap: 10px;
+  }
+
+  .card-heading h2 {
+    font-size: 13px;
+  }
+
+  .ranking-row {
+    grid-template-columns:
+      28px
+      minmax(0, 1fr)
+      auto;
+  }
+}
+
+/* =====================================================
+   CELULARES PEQUEÑOS
+   ===================================================== */
+
+@media (max-width: 380px) {
+  .dashboard-page {
+    padding-inline: 10px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 21px;
+  }
+
+  .stat-value {
+    font-size: 21px;
+  }
+
+  .ranking-result {
+    max-width: 65px;
+  }
+}
+
+/* =====================================================
+   IMPRESIÓN
+   ===================================================== */
+
+@media print {
+  .dashboard-page {
+    min-height: auto;
+    padding: 0;
+
+    background: var(--blanco);
+  }
+
+  .refresh-button {
+    display: none;
+  }
+
+  .dashboard-card {
+    box-shadow: none;
+  }
+}

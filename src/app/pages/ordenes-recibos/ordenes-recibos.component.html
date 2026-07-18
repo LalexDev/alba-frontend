@@ -1,0 +1,8 @@
+<div class="page-stack">
+  <div class="card">
+    <div class="toolbar"><h2>Órdenes de trabajo y recibos</h2><div class="actions"><button class="btn secondary">Exportar Excel</button><button class="btn secondary">PDF formato Excel</button></div></div>
+    <div class="table-wrap" *ngIf="ordenes.length; else empty"><table><thead><tr><th>N° Orden</th><th>Cliente</th><th>Total</th><th>A cuenta</th><th>Saldo</th><th>Estado</th></tr></thead><tbody><tr *ngFor="let o of ordenes"><td>{{ o.numero }}</td><td>{{ o.cliente }}</td><td>{{ o.total }}</td><td>{{ o.aCuenta }}</td><td>{{ o.saldo }}</td><td>{{ o.estado }}</td></tr></tbody></table></div>
+    <ng-template #empty><div class="empty">Aún no hay órdenes registradas. Se crearán desde el módulo de ventas.</div></ng-template>
+  </div>
+  <div class="card receipt-preview"><div class="receipt"><h2>Óptica Alba</h2><p class="muted" style="text-align:center;">Cajamarca, Perú</p><div class="line"></div><h3>ORDEN DE TRABAJO / RECIBO</h3><p><b>Total:</b> S/ 0.00</p><p><b>A cuenta:</b> S/ 0.00</p><p><b>Saldo:</b> S/ 0.00</p><p><b>Método de pago:</b> EFECTIVO</p></div></div>
+</div>

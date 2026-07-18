@@ -1,0 +1,17 @@
+<div class="page-stack">
+  <div class="card no-print">
+    <div class="toolbar"><h2>Códigos de barras</h2><button class="btn" type="button" (click)="imprimir()">Imprimir etiquetas</button></div>
+    <p class="muted">Etiquetas listas para pegar en monturas, lunas y accesorios.</p>
+  </div>
+  <div class="card print-area">
+    <div *ngIf="productos.length; else emptyCodes">
+      <div class="barcode-card" *ngFor="let p of productos">
+        <strong>{{ p.nombre }}</strong>
+        <div style="font-size:34px;letter-spacing:2px;margin:10px 0;">||||||||||||</div>
+        <div>{{ p.codigoBarras }}</div>
+        <small>S/ {{ p.precioVenta | number:'1.2-2' }}</small>
+      </div>
+    </div>
+    <ng-template #emptyCodes><div class="empty">Registra productos para generar etiquetas.</div></ng-template>
+  </div>
+</div>

@@ -1,0 +1,18 @@
+<div class="page-stack">
+  <div class="card">
+    <div class="toolbar">
+      <div class="actions"><div class="field" style="margin:0;"><label>Desde</label><input type="date"></div><div class="field" style="margin:0;"><label>Hasta</label><input type="date"></div></div>
+      <div class="actions"><button class="btn secondary">Limpiar filtros</button><button class="btn">Exportar Excel</button><button class="btn secondary">PDF formato Excel</button></div>
+    </div>
+    <div class="grid cards">
+      <div class="card stat"><div><h3>Ventas registradas</h3><strong>{{ resumen.cantidadVentas }}</strong></div><div class="icon">🧾</div></div>
+      <div class="card stat"><div><h3>Total vendido</h3><strong>S/ {{ resumen.totalVentas | number:'1.2-2' }}</strong></div><div class="icon">💵</div></div>
+      <div class="card stat"><div><h3>Productos</h3><strong>{{ resumen.totalProductos }}</strong></div><div class="icon">👓</div></div>
+      <div class="card stat"><div><h3>Bajo stock</h3><strong>{{ resumen.bajoStock }}</strong></div><div class="icon">⚠️</div></div>
+    </div>
+  </div>
+
+  <div class="card"><h2>Productos más vendidos</h2><div class="table-wrap" *ngIf="productosMasVendidos.length; else emptyBest"><table><thead><tr><th>ID</th><th>Código</th><th>Producto</th><th>Unidades</th><th>Importe</th></tr></thead><tbody><tr *ngFor="let r of productosMasVendidos"><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td><td>{{ r[3] }}</td><td>S/ {{ r[4] | number:'1.2-2' }}</td></tr></tbody></table></div><ng-template #emptyBest><div class="empty">No hay ventas en el rango seleccionado.</div></ng-template></div>
+  <div class="card"><h2>Ventas diarias / por vendedor</h2><div class="table-wrap" *ngIf="ventasDiarias.length; else emptySales"><table><thead><tr><th>Fecha</th><th>Cantidad</th><th>Total</th><th>Efectivo</th><th>Yape</th><th>Transferencia</th></tr></thead><tbody><tr *ngFor="let r of ventasDiarias"><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>S/ {{ r[2] | number:'1.2-2' }}</td><td>S/ {{ r[3] | number:'1.2-2' }}</td><td>S/ {{ r[4] | number:'1.2-2' }}</td><td>S/ {{ r[5] | number:'1.2-2' }}</td></tr></tbody></table></div><ng-template #emptySales><div class="empty">No hay datos para mostrar.</div></ng-template></div>
+  <div class="card"><h2>Productos con bajo stock</h2><div class="table-wrap" *ngIf="bajoStock.length; else emptyLow"><table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Marca</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody><tr class="low-stock" *ngFor="let r of bajoStock"><td>{{ r[1] }}</td><td>{{ r[3] }}</td><td>{{ r[4] }}</td><td>{{ r[5] || '-' }}</td><td>{{ r[6] }}</td><td>{{ r[7] }}</td></tr></tbody></table></div><ng-template #emptyLow><div class="empty">No hay productos con bajo stock.</div></ng-template></div>
+</div>

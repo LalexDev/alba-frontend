@@ -1,0 +1,470 @@
+<div class="dashboard-page">
+
+  <!-- ENCABEZADO NUEVO -->
+  <header class="dashboard-header">
+    <div>
+      <span class="dashboard-kicker">
+        PANEL ADMINISTRATIVO
+      </span>
+
+      <h1>Dashboard</h1>
+
+      <p>
+        Resumen general de ventas, productos e inventario.
+      </p>
+    </div>
+
+    <div class="dashboard-header-actions">
+      <div class="date-box">
+        <span>Periodo</span>
+
+        <strong>
+          {{ fechaActual | date:'dd MMM yyyy' }}
+        </strong>
+      </div>
+
+      <button
+        type="button"
+        class="refresh-button"
+        (click)="cargarDashboard()"
+        [disabled]="loading"
+      >
+        <span>↻</span>
+
+        {{
+          loading
+            ? 'Actualizando...'
+            : 'Actualizar'
+        }}
+      </button>
+    </div>
+  </header>
+
+  <!-- ERROR -->
+  <div
+    class="dashboard-alert"
+    *ngIf="error"
+  >
+    <span>⚠</span>
+    {{ error }}
+  </div>
+
+  <!-- INDICADORES -->
+  <section class="stats-grid">
+
+    <article class="dashboard-card stat-card">
+      <div class="stat-card-header">
+        <span>Ventas del día</span>
+
+        <div class="stat-icon money-icon">
+          S/
+        </div>
+      </div>
+
+      <strong class="stat-value">
+        S/
+        {{
+          resumen.totalVentas
+            | number:'1.2-2'
+        }}
+      </strong>
+
+      <div class="stat-footer">
+        <span class="trend positive">
+          + {{ resumen.cantidadVentas }}
+        </span>
+
+        <small>ventas registradas</small>
+      </div>
+    </article>
+
+    <article class="dashboard-card stat-card">
+      <div class="stat-card-header">
+        <span>Total productos</span>
+
+        <div class="stat-icon product-icon">
+          👓
+        </div>
+      </div>
+
+      <strong class="stat-value">
+        {{ resumen.totalProductos }}
+      </strong>
+
+      <div class="stat-footer">
+        <span class="trend neutral">
+          Inventario
+        </span>
+
+        <small>productos activos</small>
+      </div>
+    </article>
+
+    <article class="dashboard-card stat-card">
+      <div class="stat-card-header">
+        <span>Productos bajo stock</span>
+
+        <div class="stat-icon warning-icon">
+          !
+        </div>
+      </div>
+
+      <strong class="stat-value">
+        {{ resumen.bajoStock }}
+      </strong>
+
+      <div class="stat-footer">
+        <span
+          class="trend"
+          [class.negative]="resumen.bajoStock > 0"
+          [class.positive]="resumen.bajoStock === 0"
+        >
+          {{
+            resumen.bajoStock > 0
+              ? 'Revisar'
+              : 'Correcto'
+          }}
+        </span>
+
+        <small>nivel de existencias</small>
+      </div>
+    </article>
+
+    <article class="dashboard-card stat-card">
+      <div class="stat-card-header">
+        <span>Movimientos</span>
+
+        <div class="stat-icon movement-icon">
+          ↔
+        </div>
+      </div>
+
+      <strong class="stat-value">
+        {{ resumen.movimientosInventario }}
+      </strong>
+
+      <div class="stat-footer">
+        <span class="trend neutral">
+          Kardex
+        </span>
+
+        <small>registros acumulados</small>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- SECCIÓN CENTRAL -->
+  <section class="dashboard-main-grid">
+
+    <!-- RESUMEN DE VENTAS -->
+    <article class="dashboard-card sales-overview-card">
+      <div class="card-heading">
+        <div>
+          <h2>Resumen de ventas</h2>
+          <p>Comportamiento de los productos vendidos.</p>
+        </div>
+
+        <span class="card-menu">•••</span>
+      </div>
+
+      <div
+        class="empty-chart"
+        *ngIf="
+          !loading &&
+          productosMasVendidos.length === 0
+        "
+      >
+        <div class="empty-chart-icon">▥</div>
+
+        <strong>Aún no existen ventas</strong>
+
+        <span>
+          El gráfico aparecerá cuando se registren productos vendidos.
+        </span>
+      </div>
+
+      <div
+        class="sales-bars"
+        *ngIf="productosMasVendidos.length > 0"
+      >
+        <div
+          class="sales-bar-item"
+          *ngFor="
+            let producto of productosMasVendidos
+          "
+        >
+          <div class="bar-information">
+            <span>
+              {{ producto.nombre }}
+            </span>
+
+            <strong>
+              {{ producto.cantidadVendida }}
+            </strong>
+          </div>
+
+          <div class="bar-track">
+            <div
+              class="bar-value"
+              [style.width.%]="
+                porcentajeProducto(
+                  producto.cantidadVendida
+                )
+              "
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-legend">
+        <span>
+          <i class="legend-dot primary-dot"></i>
+          Unidades vendidas
+        </span>
+
+        <a routerLink="/admin/reportes">
+          Ver reporte completo
+        </a>
+      </div>
+    </article>
+
+    <!-- RESUMEN DE EXISTENCIAS -->
+    <article class="dashboard-card stock-summary-card">
+      <div class="card-heading">
+        <div>
+          <h2>Estado del inventario</h2>
+          <p>Disponibilidad general.</p>
+        </div>
+
+        <span class="card-menu">•••</span>
+      </div>
+
+      <div class="donut-container">
+        <div
+          class="donut-chart"
+          [style.--percentage]="
+            resumen.totalProductos > 0
+              ? (
+                  (
+                    resumen.totalProductos -
+                    resumen.bajoStock
+                  ) * 100 /
+                  resumen.totalProductos
+                )
+              : 100
+          "
+        >
+          <div class="donut-center">
+            <strong>
+              {{
+                resumen.totalProductos > 0
+                  ? (
+                      (
+                        resumen.totalProductos -
+                        resumen.bajoStock
+                      ) * 100 /
+                      resumen.totalProductos
+                      | number:'1.0-0'
+                    )
+                  : 100
+              }}%
+            </strong>
+
+            <span>Disponible</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stock-details">
+        <div>
+          <span>
+            <i class="legend-dot primary-dot"></i>
+            Productos disponibles
+          </span>
+
+          <strong>
+            {{
+              resumen.totalProductos -
+              resumen.bajoStock
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>
+            <i class="legend-dot warning-dot"></i>
+            Bajo stock
+          </span>
+
+          <strong>
+            {{ resumen.bajoStock }}
+          </strong>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- SECCIÓN INFERIOR -->
+  <section class="dashboard-bottom-grid">
+
+    <!-- ÚLTIMAS VENTAS -->
+    <article class="dashboard-card">
+      <div class="card-heading">
+        <div>
+          <h2>Últimas ventas</h2>
+          <p>Operaciones registradas recientemente.</p>
+        </div>
+
+        <a
+          class="text-button"
+          routerLink="/admin/ventas"
+        >
+          Nueva venta
+        </a>
+      </div>
+
+      <div
+        class="table-empty"
+        *ngIf="
+          !loading &&
+          ultimasVentas.length === 0
+        "
+      >
+        No existen ventas registradas.
+      </div>
+
+      <div
+        class="dashboard-table-container"
+        *ngIf="ultimasVentas.length > 0"
+      >
+        <table class="dashboard-table">
+          <thead>
+            <tr>
+              <th>Venta</th>
+              <th>Fecha</th>
+              <th>Método</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              *ngFor="let venta of ultimasVentas"
+            >
+              <td>
+                <strong>
+                  {{ venta.numero_venta }}
+                </strong>
+              </td>
+
+              <td>
+                {{
+                  venta.fecha_venta
+                    | date:'dd/MM/yyyy HH:mm'
+                }}
+              </td>
+
+              <td>
+                <span
+                  class="payment-status"
+                  [class.yape]="
+                    venta.metodo_pago === 'YAPE'
+                  "
+                  [class.transfer]="
+                    venta.metodo_pago ===
+                    'TRANSFERENCIA'
+                  "
+                >
+                  {{
+                    etiquetaMetodoPago(
+                      venta.metodo_pago
+                    )
+                  }}
+                </span>
+              </td>
+
+              <td>
+                <strong>
+                  S/
+                  {{
+                    venta.total
+                      | number:'1.2-2'
+                  }}
+                </strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <!-- PRODUCTOS MÁS VENDIDOS -->
+    <article class="dashboard-card">
+      <div class="card-heading">
+        <div>
+          <h2>Productos más vendidos</h2>
+          <p>Clasificación por cantidad de ventas.</p>
+        </div>
+
+        <a
+          class="text-button"
+          routerLink="/admin/reportes"
+        >
+          Ver todos
+        </a>
+      </div>
+
+      <div
+        class="table-empty"
+        *ngIf="
+          !loading &&
+          productosMasVendidos.length === 0
+        "
+      >
+        No existen estadísticas de ventas.
+      </div>
+
+      <div
+        class="product-ranking"
+        *ngIf="productosMasVendidos.length > 0"
+      >
+        <div
+          class="ranking-row"
+          *ngFor="
+            let producto of productosMasVendidos;
+            let posicion = index
+          "
+        >
+          <span class="ranking-number">
+            {{ posicion + 1 }}
+          </span>
+
+          <div class="ranking-product">
+            <strong>
+              {{ producto.nombre }}
+            </strong>
+
+            <small>
+              {{
+                producto.codigoInterno ||
+                'Sin código'
+              }}
+            </small>
+          </div>
+
+          <div class="ranking-result">
+            <strong>
+              {{ producto.cantidadVendida }}
+            </strong>
+
+            <small>unidades</small>
+          </div>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+</div>

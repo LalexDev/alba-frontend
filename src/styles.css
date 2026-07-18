@@ -1,0 +1,26 @@
+:root {
+  --color-primary: #1593c7;
+  --color-primary-dark: #0e78a5;
+  --color-primary-light: #eaf7fc;
+
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --color-text: #000000;
+  --color-text-soft: #333333;
+
+  --color-border: #1593c7;
+  --color-border-light: rgba(21, 147, 199, 0.25);
+
+  --color-background: #ffffff;
+  --color-background-soft: #f5fbfe;
+
+  --color-success: #1593c7;
+  --color-warning: #1593c7;
+}
+
+html,
+body {
+  background: var(--color-white);
+  color: var(--color-black);
+}

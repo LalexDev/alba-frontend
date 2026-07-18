@@ -1,0 +1,919 @@
+<div class="productos-page">
+
+  <!-- ===================================================
+       ENCABEZADO
+       =================================================== -->
+
+  <header class="productos-header">
+    <div>
+      <span class="page-kicker">
+        INVENTARIO
+      </span>
+
+      <h1>
+        Productos e inventario
+      </h1>
+
+      <p>
+        Controla productos, precios, proveedores y niveles mínimos
+        de stock.
+      </p>
+    </div>
+
+    <button
+      class="primary-button"
+      type="button"
+      (click)="abrirFormulario()"
+    >
+      <span aria-hidden="true">＋</span>
+      Registrar producto
+    </button>
+  </header>
+
+  <!-- ===================================================
+       TARJETAS DE RESUMEN
+       =================================================== -->
+
+  <section class="stats-grid">
+
+    <!-- PRODUCTOS -->
+    <article class="stat-card">
+      <span
+        class="stat-icon"
+        aria-hidden="true"
+      >
+        ▣
+      </span>
+
+      <div>
+        <small>
+          Productos registrados
+        </small>
+
+        <strong>
+          {{ totalProductos }}
+        </strong>
+
+        <span>
+          Productos en catálogo
+        </span>
+      </div>
+    </article>
+
+    <!-- STOCK BAJO -->
+    <article
+      class="stat-card warning"
+      [class.has-alert]="totalBajoStock > 0"
+    >
+      <span
+        class="stat-icon"
+        aria-hidden="true"
+      >
+        ⚠
+      </span>
+
+      <div>
+        <small>
+          Stock bajo
+        </small>
+
+        <strong>
+          {{ totalBajoStock }}
+        </strong>
+
+        <span>
+          Stock mínimo: 5 por defecto
+        </span>
+      </div>
+    </article>
+
+    <!-- CATEGORÍAS -->
+    <article class="stat-card">
+      <span
+        class="stat-icon"
+        aria-hidden="true"
+      >
+        ◇
+      </span>
+
+      <div>
+        <small>
+          Categorías
+        </small>
+
+        <strong>
+          {{ totalCategorias }}
+        </strong>
+
+        <span>
+          Categorías activas
+        </span>
+      </div>
+    </article>
+
+    <!-- VALORIZACIÓN -->
+    <article class="stat-card value-card">
+      <span
+        class="stat-icon"
+        aria-hidden="true"
+      >
+        S/
+      </span>
+
+      <div>
+        <small>
+          Valorización
+        </small>
+
+        <strong>
+          S/
+          {{
+            valorizacionInventario
+              | number:'1.2-2'
+          }}
+        </strong>
+
+        <span>
+          Valor de compra del stock
+        </span>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- ===================================================
+       ALERTA DE STOCK BAJO
+       =================================================== -->
+
+  <section
+    class="stock-alert"
+    *ngIf="totalBajoStock > 0"
+  >
+    <div>
+      <strong>
+        Hay {{ totalBajoStock }}
+        producto(s) con stock bajo.
+      </strong>
+
+      <span>
+        Revisa los productos resaltados y contacta al proveedor
+        para solicitar reposición.
+      </span>
+    </div>
+
+    <button
+      type="button"
+      (click)="cambiarFiltroStock()"
+    >
+      {{
+        mostrarSoloBajoStock
+          ? 'Mostrar todos'
+          : 'Ver solo stock bajo'
+      }}
+    </button>
+  </section>
+
+  <!-- ===================================================
+       BUSCADOR Y FILTRO
+       =================================================== -->
+
+  <section class="inventory-controls">
+
+    <div class="search-box">
+      <span aria-hidden="true">
+        ⌕
+      </span>
+
+      <input
+        type="search"
+        [(ngModel)]="search"
+        (ngModelChange)="paginaActual = 1"
+        placeholder="Buscar por código, producto, marca, modelo, color o proveedor..."
+        autocomplete="off"
+      />
+
+      <button
+        type="button"
+        *ngIf="search"
+        (click)="limpiarBusqueda()"
+        aria-label="Limpiar búsqueda"
+      >
+        ×
+      </button>
+    </div>
+
+    <button
+      class="filter-button"
+      type="button"
+      [class.active]="mostrarSoloBajoStock"
+      (click)="cambiarFiltroStock()"
+    >
+      <span aria-hidden="true">⚠</span>
+
+      {{
+        mostrarSoloBajoStock
+          ? 'Mostrando stock bajo'
+          : 'Filtrar stock bajo'
+      }}
+    </button>
+
+  </section>
+
+  <!-- ===================================================
+       MENSAJES
+       =================================================== -->
+
+  <p
+    class="message success"
+    *ngIf="ok"
+  >
+    {{ ok }}
+  </p>
+
+  <p
+    class="message error"
+    *ngIf="error && !mostrarFormulario"
+  >
+    {{ error }}
+  </p>
+
+  <!-- ===================================================
+       INVENTARIO
+       =================================================== -->
+
+  <section class="inventory-card">
+
+    <!-- CARGANDO -->
+    <div
+      class="loading"
+      *ngIf="cargando"
+    >
+      Cargando inventario...
+    </div>
+
+    <!-- TABLA -->
+    <div
+      class="table-wrapper"
+      *ngIf="
+        !cargando &&
+        productosPaginados.length > 0;
+        else inventarioVacio
+      "
+    >
+      <table class="products-table">
+
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th>Marca / modelo</th>
+            <th>Medida</th>
+            <th>Compra</th>
+            <th>Venta</th>
+            <th>Stock</th>
+            <th>Proveedor</th>
+            <th>Estado</th>
+            <th>Reposición</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            *ngFor="let producto of productosPaginados"
+            [class.low-stock-row]="esBajoStock(producto)"
+            [class.out-stock-row]="sinStock(producto)"
+          >
+
+            <!-- CÓDIGO -->
+            <td>
+              <strong>
+                {{
+                  producto.codigoInterno ||
+                  producto.codigoBarras
+                }}
+              </strong>
+
+              <small>
+                {{ producto.codigoBarras }}
+              </small>
+            </td>
+
+            <!-- PRODUCTO -->
+            <td>
+              <div class="product-cell">
+
+                <span
+                  class="product-placeholder"
+                  aria-hidden="true"
+                >
+                  👓
+                </span>
+
+                <div>
+                  <strong>
+                    {{ producto.nombre }}
+                  </strong>
+
+                  <small>
+                    {{
+                      producto.color ||
+                      producto.descripcion ||
+                      'Sin descripción'
+                    }}
+                  </small>
+                </div>
+
+              </div>
+            </td>
+
+            <!-- CATEGORÍA -->
+            <td>
+              {{
+                producto.categoria?.nombre ||
+                'Sin categoría'
+              }}
+            </td>
+
+            <!-- MARCA / MODELO -->
+            <td>
+              <strong>
+                {{
+                  producto.marca?.nombre ||
+                  'Sin marca'
+                }}
+              </strong>
+
+              <small>
+                {{
+                  producto.modelo ||
+                  'Sin modelo'
+                }}
+              </small>
+            </td>
+
+            <!-- MEDIDA -->
+            <td>
+              {{
+                producto.medida ||
+                '—'
+              }}
+            </td>
+
+            <!-- PRECIO COMPRA -->
+            <td>
+              S/
+              {{
+                (producto.precioCompra || 0)
+                  | number:'1.2-2'
+              }}
+            </td>
+
+            <!-- PRECIO VENTA -->
+            <td>
+              <strong>
+                S/
+                {{
+                  producto.precioVenta
+                    | number:'1.2-2'
+                }}
+              </strong>
+            </td>
+
+            <!-- STOCK -->
+            <td>
+              <span
+                class="stock-badge"
+                [class.low]="esBajoStock(producto)"
+                [class.zero]="sinStock(producto)"
+              >
+                {{ producto.stockActual }}
+
+                <small
+                  *ngIf="esBajoStock(producto)"
+                >
+                  mínimo
+                  {{ producto.stockMinimo ?? 5 }}
+                </small>
+              </span>
+            </td>
+
+            <!-- PROVEEDOR -->
+            <td>
+              <strong>
+                {{
+                  producto.proveedor?.razonSocial ||
+                  'Sin proveedor'
+                }}
+              </strong>
+
+              <small>
+                {{
+                  producto.proveedor?.contacto ||
+                  ''
+                }}
+              </small>
+            </td>
+
+            <!-- ESTADO -->
+            <td>
+              <span
+                class="status-badge"
+                [class.inactive]="!producto.estado"
+              >
+                {{
+                  producto.estado
+                    ? 'Activo'
+                    : 'Inactivo'
+                }}
+              </span>
+            </td>
+
+            <!-- CONTACTAR PROVEEDOR -->
+            <td>
+              <div
+                class="supplier-actions"
+                *ngIf="
+                  esBajoStock(producto);
+                  else stockCorrecto
+                "
+              >
+                <button
+                  type="button"
+                  class="whatsapp-button"
+                  (click)="contactarWhatsApp(producto)"
+                  title="Contactar al proveedor por WhatsApp"
+                >
+                  WhatsApp
+                </button>
+
+                <button
+                  type="button"
+                  class="email-button"
+                  (click)="contactarCorreo(producto)"
+                  title="Contactar al proveedor por correo"
+                >
+                  Correo
+                </button>
+              </div>
+
+              <ng-template #stockCorrecto>
+                <span class="stock-ok">
+                  Correcto
+                </span>
+              </ng-template>
+            </td>
+
+          </tr>
+        </tbody>
+
+      </table>
+    </div>
+
+    <!-- INVENTARIO VACÍO -->
+    <ng-template #inventarioVacio>
+      <div
+        class="empty-state"
+        *ngIf="!cargando"
+      >
+        <strong>
+          No se encontraron productos.
+        </strong>
+
+        <span>
+          Registra un producto o modifica los filtros
+          de búsqueda.
+        </span>
+      </div>
+    </ng-template>
+
+    <!-- PAGINACIÓN -->
+    <footer
+      class="pagination"
+      *ngIf="
+        !cargando &&
+        filtrados.length > 0
+      "
+    >
+      <span>
+        Mostrando
+        {{ productosPaginados.length }}
+        de
+        {{ filtrados.length }}
+        productos
+      </span>
+
+      <div>
+        <button
+          type="button"
+          (click)="paginaAnterior()"
+          [disabled]="paginaActual === 1"
+        >
+          Anterior
+        </button>
+
+        <strong>
+          {{ paginaActual }}
+          /
+          {{ totalPaginas }}
+        </strong>
+
+        <button
+          type="button"
+          (click)="paginaSiguiente()"
+          [disabled]="paginaActual === totalPaginas"
+        >
+          Siguiente
+        </button>
+      </div>
+    </footer>
+
+  </section>
+
+  <!-- ===================================================
+       MODAL PARA REGISTRAR PRODUCTO
+       =================================================== -->
+
+  <div
+    class="modal-backdrop"
+    *ngIf="mostrarFormulario"
+    (click)="cerrarFormulario()"
+  >
+    <section
+      class="product-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tituloRegistroProducto"
+      (click)="$event.stopPropagation()"
+    >
+
+      <!-- ENCABEZADO DEL MODAL -->
+      <header class="modal-header">
+        <div>
+          <span class="modal-kicker">
+            NUEVO PRODUCTO
+          </span>
+
+          <h2 id="tituloRegistroProducto">
+            Registrar producto
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="close-button"
+          (click)="cerrarFormulario()"
+          [disabled]="guardando"
+          aria-label="Cerrar formulario"
+        >
+          ×
+        </button>
+      </header>
+
+      <!-- FORMULARIO -->
+      <form
+        class="product-form"
+        [formGroup]="form"
+        (ngSubmit)="guardar()"
+      >
+        <div class="form-grid">
+
+          <!-- CÓDIGO DE BARRAS -->
+          <div class="field">
+            <label for="codigoProducto">
+              Código de barras
+            </label>
+
+            <div class="input-with-button">
+              <input
+                id="codigoProducto"
+                type="text"
+                formControlName="codigoBarras"
+                placeholder="OPT-000001"
+                autocomplete="off"
+              />
+
+              <button
+                type="button"
+                (click)="generarCodigo()"
+              >
+                Generar
+              </button>
+            </div>
+          </div>
+
+          <!-- NOMBRE -->
+          <div class="field">
+            <label for="nombreProducto">
+              Nombre
+            </label>
+
+            <input
+              id="nombreProducto"
+              type="text"
+              formControlName="nombre"
+              placeholder="Montura metálica clásica"
+            />
+          </div>
+
+          <!-- CATEGORÍA -->
+          <div class="field">
+            <label for="categoriaProducto">
+              Categoría
+            </label>
+
+            <select
+              id="categoriaProducto"
+              formControlName="categoriaId"
+            >
+              <option
+                [ngValue]="null"
+                disabled
+              >
+                Selecciona una categoría
+              </option>
+
+              <option
+                *ngFor="let categoria of categorias"
+                [ngValue]="categoria.id"
+              >
+                {{ categoria.nombre }}
+              </option>
+
+              <option
+                [ngValue]="categoriaOtros"
+              >
+                Otros
+              </option>
+            </select>
+          </div>
+
+          <!-- NUEVA CATEGORÍA -->
+          <div
+            class="field full-width other-category"
+            *ngIf="
+              form.get('categoriaId')?.value ===
+              categoriaOtros
+            "
+          >
+            <label for="nuevaCategoria">
+              Nueva categoría
+            </label>
+
+            <input
+              id="nuevaCategoria"
+              type="text"
+              formControlName="nuevaCategoria"
+              placeholder="Escribe la categoría que no aparece en la lista"
+            />
+
+            <small>
+              La categoría se guardará en Supabase y aparecerá
+              automáticamente en los siguientes registros.
+            </small>
+          </div>
+
+          <!-- MARCA -->
+          <div class="field">
+            <label for="marcaProducto">
+              Marca
+            </label>
+
+            <input
+              id="marcaProducto"
+              type="text"
+              formControlName="marcaNombre"
+              placeholder="Ej. RayStyle"
+            />
+          </div>
+
+          <!-- MODELO -->
+          <div class="field">
+            <label for="modeloProducto">
+              Modelo
+            </label>
+
+            <input
+              id="modeloProducto"
+              type="text"
+              formControlName="modelo"
+              placeholder="Ej. RS-120"
+            />
+          </div>
+
+          <!-- COLOR -->
+          <div class="field">
+            <label for="colorProducto">
+              Color
+            </label>
+
+            <input
+              id="colorProducto"
+              type="text"
+              formControlName="color"
+              placeholder="Ej. Negro"
+            />
+          </div>
+
+          <!-- MEDIDA -->
+          <div class="field">
+            <label for="medidaProducto">
+              Medida
+            </label>
+
+            <input
+              id="medidaProducto"
+              type="text"
+              formControlName="medida"
+              placeholder="Ej. 52-18-140"
+            />
+          </div>
+
+          <!-- MATERIAL -->
+          <div class="field">
+            <label for="materialProducto">
+              Material
+            </label>
+
+            <input
+              id="materialProducto"
+              type="text"
+              formControlName="material"
+              placeholder="Ej. Acetato"
+            />
+          </div>
+
+          <!-- PRECIO COMPRA -->
+          <div class="field">
+            <label for="precioCompra">
+              Precio compra
+            </label>
+
+            <input
+              id="precioCompra"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="precioCompra"
+            />
+          </div>
+
+          <!-- PRECIO VENTA -->
+          <div class="field">
+            <label for="precioVenta">
+              Precio venta
+            </label>
+
+            <input
+              id="precioVenta"
+              type="number"
+              min="0.01"
+              step="0.01"
+              formControlName="precioVenta"
+            />
+          </div>
+
+          <!-- STOCK ACTUAL -->
+          <div class="field">
+            <label for="stockActual">
+              Stock actual
+            </label>
+
+            <input
+              id="stockActual"
+              type="number"
+              min="0"
+              step="1"
+              formControlName="stockActual"
+            />
+          </div>
+
+          <!-- STOCK MÍNIMO -->
+          <div class="field">
+            <label for="stockMinimo">
+              Stock mínimo
+            </label>
+
+            <input
+              id="stockMinimo"
+              type="number"
+              min="0"
+              step="1"
+              formControlName="stockMinimo"
+            />
+
+            <small>
+              Valor recomendado: 5 unidades.
+            </small>
+          </div>
+
+          <!-- PROVEEDOR -->
+          <div class="field">
+            <label for="proveedorProducto">
+              Proveedor
+            </label>
+
+            <select
+              id="proveedorProducto"
+              formControlName="proveedorId"
+            >
+              <option
+                [ngValue]="null"
+                disabled
+              >
+                Selecciona un proveedor
+              </option>
+
+              <option
+                *ngFor="let proveedor of proveedores"
+                [ngValue]="proveedor.id"
+              >
+                {{
+                  proveedor.razonSocial ||
+                  proveedor.contacto
+                }}
+              </option>
+            </select>
+          </div>
+
+          <!-- FECHA -->
+          <div class="field">
+            <label for="fechaIngreso">
+              Fecha ingreso
+            </label>
+
+            <input
+              id="fechaIngreso"
+              type="date"
+              formControlName="fechaIngreso"
+              readonly
+            />
+          </div>
+
+          <!-- ESTADO -->
+          <div class="field">
+            <label for="estadoProducto">
+              Estado
+            </label>
+
+            <input
+              id="estadoProducto"
+              type="text"
+              value="ACTIVO"
+              readonly
+            />
+          </div>
+
+          <!-- DESCRIPCIÓN -->
+          <div class="field full-width">
+            <label for="descripcionProducto">
+              Descripción
+            </label>
+
+            <textarea
+              id="descripcionProducto"
+              rows="3"
+              formControlName="descripcion"
+              placeholder="Agrega observaciones o características adicionales"
+            ></textarea>
+          </div>
+
+        </div>
+
+        <!-- ERROR DEL MODAL -->
+        <p
+          class="modal-error"
+          *ngIf="error"
+        >
+          {{ error }}
+        </p>
+
+        <!-- ACCIONES -->
+        <footer class="modal-actions">
+          <button
+            type="button"
+            class="cancel-button"
+            (click)="cerrarFormulario()"
+            [disabled]="guardando"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="save-button"
+            [disabled]="guardando"
+          >
+            {{
+              guardando
+                ? 'Guardando...'
+                : 'Guardar producto'
+            }}
+          </button>
+        </footer>
+
+      </form>
+    </section>
+  </div>
+
+</div>

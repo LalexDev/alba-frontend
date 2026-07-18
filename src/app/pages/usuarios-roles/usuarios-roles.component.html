@@ -1,0 +1,4 @@
+<div class="card">
+  <div class="toolbar"><h2>Usuarios y roles</h2><button class="btn">+ Nuevo usuario</button></div>
+  <div class="table-wrap"><table><thead><tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th></tr></thead><tbody><tr *ngFor="let u of usuarios"><td>{{ u.nombres }}</td><td>{{ u.correo }}</td><td><span class="badge">{{ u.rol }}</span></td><td><span class="badge success">{{ u.estado }}</span></td></tr></tbody></table></div>
+</div>

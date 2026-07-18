@@ -1,0 +1,201 @@
+<section class="login-page">
+
+  <!-- Oscurece la fotografía para mejorar la lectura -->
+  <div class="login-page__overlay"></div>
+
+  <div class="login-container">
+
+    <!-- INFORMACIÓN IZQUIERDA -->
+    <div class="login-information">
+
+      <div class="brand-badge">
+        <div class="brand-icon">👓</div>
+
+        <div>
+          <strong>Óptica alba</strong>
+          <span>Sistema de ventas e inventario</span>
+        </div>
+      </div>
+
+      <div class="information-badge">
+        <span>✓</span>
+        Gestión rápida, segura y organizada
+      </div>
+
+      <h1>
+        Controla tus ventas,
+        <span>clientes e inventario.</span>
+      </h1>
+
+      <p class="information-description">
+        Administra monturas, lunas, accesorios, recetas ópticas,
+        órdenes de trabajo y productos mediante lector de código
+        de barras.
+      </p>
+
+      <div class="information-features">
+
+        <div class="feature-card">
+          <div class="feature-icon">📦</div>
+
+          <strong>Inventario actualizado</strong>
+
+          <span>
+            Controla entradas, salidas y productos con stock bajo.
+          </span>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">▥</div>
+
+          <strong>Ventas por escáner</strong>
+
+          <span>
+            Registra productos rápidamente con el lector de barras.
+          </span>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">👥</div>
+
+          <strong>Clientes y recetas</strong>
+
+          <span>
+            Consulta el historial de atención de cada cliente.
+          </span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FORMULARIO DERECHO -->
+    <div class="login-card-container">
+
+      <form
+        class="login-card"
+        [formGroup]="form"
+        (ngSubmit)="submit()"
+      >
+
+        <div class="login-card__icon">👓</div>
+
+        <h2>Óptica alba</h2>
+
+        <p class="login-subtitle">
+          Ingresa con un usuario autorizado
+        </p>
+
+        <div class="field">
+          <label for="usernameOrCorreo">
+            Correo electrónico
+          </label>
+
+          <input
+            id="usernameOrCorreo"
+            type="email"
+            formControlName="usernameOrCorreo"
+            placeholder="correo@ejemplo.com"
+            autocomplete="username"
+          />
+          <small
+            class="field-error"
+            *ngIf="
+              form.get('usernameOrCorreo')?.touched &&
+              form.get('usernameOrCorreo')?.hasError('required')
+            "
+          >
+            El correo es obligatorio.
+          </small>
+
+          <small
+            class="field-error"
+            *ngIf="
+              form.get('usernameOrCorreo')?.touched &&
+              form.get('usernameOrCorreo')?.hasError('email')
+            "
+          >
+            Ingresa un correo electrónico válido.
+          </small>
+          
+        </div>
+
+        <div class="field">
+          <label for="password">
+            Contraseña
+          </label>
+
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            placeholder="Ingresa tu contraseña"
+            autocomplete="current-password"
+          />
+          <small
+            class="field-error"
+            *ngIf="
+              form.get('password')?.touched &&
+              form.get('password')?.hasError('required')
+            "
+          >
+            La contraseña es obligatoria.
+          </small>
+        </div>
+
+        <button
+          class="login-button"
+          type="submit"
+          [disabled]="loading || form.invalid"
+        >
+          <span class="button-icon">↪</span>
+
+          <span>
+            {{ loading ? 'Validando...' : 'Ingresar al sistema' }}
+          </span>
+
+          <span>›</span>
+        </button>
+
+        <p
+          class="alert-text"
+          *ngIf="error"
+        >
+          {{ error }}
+        </p>
+
+        <p class="question-title">
+          ¿Qué deseas gestionar hoy?
+        </p>
+
+        <div class="login-options">
+
+          <div class="login-option">
+            <span>▥</span>
+            <strong>Realizar venta</strong>
+            <small>Escanear productos</small>
+          </div>
+
+          <div class="login-option">
+            <span>📦</span>
+            <strong>Ver inventario</strong>
+            <small>Consultar existencias</small>
+          </div>
+
+          <div class="login-option">
+            <span>👤</span>
+            <strong>Buscar cliente</strong>
+            <small>Historial y recetas</small>
+          </div>
+
+        </div>
+
+        <div class="login-security">
+          <span>◷ Atención rápida</span>
+          <span>🔒 Acceso seguro</span>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</section>
