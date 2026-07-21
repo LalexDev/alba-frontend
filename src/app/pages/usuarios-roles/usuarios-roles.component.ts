@@ -4,6 +4,9 @@ import {
   inject
 } from '@angular/core';
 import {
+  NgForm
+} from '@angular/forms';
+import {
   finalize,
   forkJoin
 } from 'rxjs';
@@ -62,6 +65,18 @@ export class UsuariosRolesComponent
 
   form: UsuarioForm =
     this.crearFormularioVacio();
+
+  mostrarPassword = false;
+  mostrarConfirmarPassword = false;
+
+  readonly patronNombre =
+    "^[A-Za-zÁÉÍÓÚáéíóúÑñÜü'\\- ]+$";
+
+  readonly patronTelefono =
+    '^[0-9]{7,15}$';
+
+  readonly patronPassword =
+    '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$';
 
   ngOnInit(): void {
     this.cargar();
@@ -252,6 +267,14 @@ export class UsuariosRolesComponent
           this.authUserIdActual =
             resultado.authUserId;
 
+          if (
+            this.modoFormulario ===
+              'CREAR' &&
+            !this.form.rolId
+          ) {
+            this.asignarRolPredeterminado();
+          }
+
           this.paginaActual = 1;
 
           if (
@@ -287,11 +310,22 @@ export class UsuariosRolesComponent
   }
 
   abrirNuevoUsuario(): void {
+    if (!this.roles.length) {
+      this.error =
+        'No hay roles disponibles. Ejecuta el archivo 19_corregir_catalogo_roles.sql y actualiza la página.';
+      return;
+    }
+
     this.modoFormulario =
       'CREAR';
 
     this.form =
       this.crearFormularioVacio();
+
+    this.asignarRolPredeterminado();
+
+    this.mostrarPassword = false;
+    this.mostrarConfirmarPassword = false;
 
     this.mostrarFormulario =
       true;
@@ -310,10 +344,8 @@ export class UsuariosRolesComponent
       'EDITAR';
 
     this.form = {
-      nombres:
-        usuario.nombres,
-      apellidos:
-        usuario.apellidos,
+      nombreCompleto:
+        usuario.nombreCompleto,
       email:
         usuario.email,
       telefono:
@@ -327,6 +359,9 @@ export class UsuariosRolesComponent
       password: '',
       confirmarPassword: ''
     };
+
+    this.mostrarPassword = false;
+    this.mostrarConfirmarPassword = false;
 
     this.mostrarFormulario =
       true;
@@ -343,6 +378,8 @@ export class UsuariosRolesComponent
     this.mostrarFormulario =
       false;
 
+    this.mostrarPassword = false;
+    this.mostrarConfirmarPassword = false;
     this.error = '';
   }
 
@@ -360,24 +397,106 @@ export class UsuariosRolesComponent
     }
   }
 
-  guardar(): void {
+  alternarVisibilidadPassword(
+    campo:
+      'PASSWORD' |
+      'CONFIRMACION'
+  ): void {
+    if (campo === 'PASSWORD') {
+      this.mostrarPassword =
+        !this.mostrarPassword;
+      return;
+    }
+
+    this.mostrarConfirmarPassword =
+      !this.mostrarConfirmarPassword;
+  }
+
+  limpiarTelefono(
+    valor: string
+  ): void {
+    this.form.telefono =
+      String(valor || '')
+        .replace(/\D/g, '')
+        .slice(0, 15);
+  }
+
+  get passwordCumpleSeguridad():
+    boolean {
+    if (!this.form.password) {
+      return false;
+    }
+
+    return new RegExp(
+      this.patronPassword
+    ).test(
+      this.form.password
+    );
+  }
+
+  get contrasenasNoCoinciden():
+    boolean {
+    return Boolean(
+      this.form.confirmarPassword &&
+      this.form.password !==
+        this.form.confirmarPassword
+    );
+  }
+
+  guardar(
+    formulario:
+      NgForm
+  ): void {
     if (this.guardando) {
       return;
     }
 
-    const nombres =
-      this.form.nombres.trim();
+    formulario.control
+      .markAllAsTouched();
+
+    if (formulario.invalid) {
+      this.error =
+        'Revisa los campos marcados antes de guardar.';
+      return;
+    }
+
+    const nombreCompleto =
+      this.form.nombreCompleto
+        .replace(
+          /\s+/g,
+          ' '
+        )
+        .trim();
 
     const email =
       this.form.email
         .trim()
         .toLowerCase();
 
-    if (!nombres) {
+    if (!nombreCompleto) {
       this.error =
-        'Ingresa los nombres del usuario.';
+        'Ingresa los nombres completos del usuario.';
       return;
     }
+
+    if (nombreCompleto.length < 3) {
+      this.error =
+        'Los nombres completos deben contener al menos 3 caracteres.';
+      return;
+    }
+
+    if (
+      !new RegExp(
+        this.patronNombre
+      ).test(nombreCompleto)
+    ) {
+      this.error =
+        'Los nombres completos solo pueden contener letras, espacios, apóstrofes y guiones.';
+      return;
+    }
+
+    this.form.nombreCompleto =
+      nombreCompleto;
 
     if (
       !email ||
@@ -398,8 +517,13 @@ export class UsuariosRolesComponent
     const telefono =
       this.form.telefono.trim();
 
+    if (!telefono) {
+      this.error =
+        'Ingresa el teléfono del usuario.';
+      return;
+    }
+
     if (
-      telefono &&
       !/^\d{7,15}$/
         .test(telefono)
     ) {
@@ -408,22 +532,34 @@ export class UsuariosRolesComponent
       return;
     }
 
+    this.form.telefono =
+      telefono;
+
     if (
       this.modoFormulario ===
         'CREAR' &&
-      this.form.password.length < 8
+      !this.form.password
     ) {
       this.error =
-        'La contraseña debe contener al menos 8 caracteres.';
+        'Ingresa una contraseña.';
       return;
     }
 
     if (
       this.form.password &&
-      this.form.password.length < 8
+      !this.passwordCumpleSeguridad
     ) {
       this.error =
-        'La nueva contraseña debe contener al menos 8 caracteres.';
+        'La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.';
+      return;
+    }
+
+    if (
+      this.form.password &&
+      !this.form.confirmarPassword
+    ) {
+      this.error =
+        'Confirma la contraseña.';
       return;
     }
 
@@ -613,26 +749,43 @@ export class UsuariosRolesComponent
 
   private crearFormularioVacio():
     UsuarioForm {
-    const rolVendedor =
-      this.roles.find(
-        rol =>
-          rol.nombre ===
-          'VENDEDOR'
-      );
-
     return {
-      nombres: '',
-      apellidos: '',
+      nombreCompleto: '',
       email: '',
       telefono: '',
-      rolId:
-        rolVendedor?.id ??
-        null,
+      rolId: null,
       rol: 'VENDEDOR',
       activo: true,
       password: '',
       confirmarPassword: ''
     };
+  }
+
+  private asignarRolPredeterminado():
+    void {
+    const rol =
+      this.roles.find(
+        item =>
+          item.nombre ===
+          'VENDEDOR'
+      ) ||
+      this.roles.find(
+        item =>
+          item.nombre ===
+          'ADMINISTRADOR'
+      );
+
+    if (!rol) {
+      this.form.rolId =
+        null;
+      return;
+    }
+
+    this.form.rolId =
+      rol.id;
+
+    this.form.rol =
+      rol.nombre;
   }
 
   private normalizar(

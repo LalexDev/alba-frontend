@@ -3,10 +3,7 @@
   <header class="orders-header">
     <div class="header-title">
       <span class="header-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M6 3h9l3 3v15H6Z" />
-          <path d="M9 10h6M9 14h6M9 18h4M15 3v4h4" />
-        </svg>
+        <i class="bi bi-receipt-cutoff" aria-hidden="true"></i>
       </span>
 
       <div>
@@ -27,9 +24,7 @@
       class="new-order-button"
       (click)="nuevaOrden()"
     >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 5v14M5 12h14" />
-      </svg>
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
       Nueva orden
     </button>
   </header>
@@ -37,10 +32,7 @@
   <section class="filters-card">
     <div class="filters-grid">
       <div class="search-box">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-4-4" />
-        </svg>
+        <i class="bi bi-search" aria-hidden="true"></i>
 
         <input
           type="search"
@@ -137,9 +129,7 @@
         class="filter-button"
         (click)="alternarFiltrosAvanzados()"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 6h16M7 12h10M10 18h4" />
-        </svg>
+        <i class="bi bi-funnel" aria-hidden="true"></i>
         {{
           mostrarAvanzados
             ? 'Ocultar filtros'
@@ -152,10 +142,7 @@
         class="clear-button"
         (click)="limpiarFiltros()"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 4v6h6M20 20v-6h-6" />
-          <path d="M19 9a8 8 0 0 0-14-3M5 15a8 8 0 0 0 14 3" />
-        </svg>
+        <i class="bi bi-funnel-x" aria-hidden="true"></i>
         Limpiar filtros
       </button>
     </div>
@@ -178,10 +165,7 @@
     <section class="stats-grid">
       <article class="stat-card">
         <span class="stat-icon total">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 3h9l3 3v15H6Z" />
-            <path d="M9 10h6M9 14h6M9 18h4" />
-          </svg>
+          <i class="bi bi-collection" aria-hidden="true"></i>
         </span>
 
         <div>
@@ -193,10 +177,7 @@
 
       <article class="stat-card">
         <span class="stat-icon completed">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" />
-            <path d="m8 12 3 3 5-6" />
-          </svg>
+          <i class="bi bi-check-circle" aria-hidden="true"></i>
         </span>
 
         <div>
@@ -208,10 +189,7 @@
 
       <article class="stat-card">
         <span class="stat-icon pending">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7v6l4 2" />
-          </svg>
+          <i class="bi bi-hourglass-split" aria-hidden="true"></i>
         </span>
 
         <div>
@@ -223,10 +201,7 @@
 
       <article class="stat-card">
         <span class="stat-icon cancelled">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" />
-            <path d="m9 9 6 6M15 9l-6 6" />
-          </svg>
+          <i class="bi bi-x-circle" aria-hidden="true"></i>
         </span>
 
         <div>
@@ -255,10 +230,7 @@
             ordenesFiltradas.length === 0
           "
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 3h9l3 3v15H6Z" />
-            <path d="M9 10l6 7M15 10l-6 7" />
-          </svg>
+          <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
           {{
             exportando
               ? 'Exportando...'
@@ -356,10 +328,7 @@
                     title="Ver detalle"
                     aria-label="Ver detalle"
                   >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12Z" />
-                      <circle cx="12" cy="12" r="2.5" />
-                    </svg>
+                    <i class="bi bi-eye" aria-hidden="true"></i>
                   </button>
 
                   <button
@@ -368,9 +337,7 @@
                     title="Imprimir"
                     aria-label="Imprimir"
                   >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M6 9V3h12v6M6 18H4V10h16v8h-2M7 14h10v7H7Z" />
-                    </svg>
+                    <i class="bi bi-printer" aria-hidden="true"></i>
                   </button>
 
                   <button
@@ -379,11 +346,7 @@
                     title="Más acciones"
                     aria-label="Más acciones"
                   >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <circle cx="5" cy="12" r="1" />
-                      <circle cx="12" cy="12" r="1" />
-                      <circle cx="19" cy="12" r="1" />
-                    </svg>
+                    <i class="bi bi-three-dots" aria-hidden="true"></i>
                   </button>
                 </div>
               </td>
@@ -395,10 +358,7 @@
       <ng-template #sinOrdenes>
         <div class="empty-state">
           <span class="empty-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 3h9l3 3v15H6Z" />
-              <path d="M9 11h6M9 15h4" />
-            </svg>
+            <i class="bi bi-receipt" aria-hidden="true"></i>
           </span>
           <strong>No se encontraron órdenes.</strong>
           <p>
@@ -660,9 +620,7 @@
             class="primary-action"
             (click)="imprimirSeleccionada()"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 9V3h12v6M6 18H4V10h16v8h-2M7 14h10v7H7Z" />
-            </svg>
+            <i class="bi bi-printer" aria-hidden="true"></i>
             Imprimir
           </button>
         </footer>

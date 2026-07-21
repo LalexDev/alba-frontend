@@ -3,9 +3,7 @@
   <header class="reports-header">
     <div class="header-title">
       <span class="header-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M4 19V9M10 19V5M16 19v-8M3 19h18M3 12l5-5 4 3 7-7" />
-        </svg>
+        <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
       </span>
 
       <div>
@@ -21,9 +19,7 @@
 
     <div class="date-card">
       <span class="date-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
-        </svg>
+        <i class="bi bi-calendar3" aria-hidden="true"></i>
       </span>
       <div>
         <strong>
@@ -96,9 +92,7 @@
         (click)="limpiarFiltros()"
         [disabled]="cargando"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 4l16 16M10 6h10M4 6h2M4 12h8M16 12h4M4 18h14" />
-        </svg>
+        <i class="bi bi-funnel-x" aria-hidden="true"></i>
         Limpiar filtros
       </button>
 
@@ -108,9 +102,7 @@
         (click)="aplicarFiltros()"
         [disabled]="cargando"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v6h-6" />
-        </svg>
+        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
         {{ cargando ? 'Actualizando...' : 'Aplicar filtros' }}
       </button>
 
@@ -120,10 +112,7 @@
         (click)="exportarExcel()"
         [disabled]="cargando || exportando"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 3h9l3 3v15H6Z" />
-          <path d="M9 10l6 7M15 10l-6 7" />
-        </svg>
+        <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
         Exportar reporte Excel
       </button>
 
@@ -133,10 +122,7 @@
         (click)="exportarPdf()"
         [disabled]="cargando || exportando"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 3h9l3 3v15H6Z" />
-          <path d="M9 15h6M9 11h6" />
-        </svg>
+        <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
         PDF reporte
       </button>
     </div>
@@ -159,9 +145,7 @@
     <section class="stats-grid">
       <article class="stat-card">
         <span class="stat-icon sales" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M4 5h2l2 10h9l2-7H7M10 20h.01M17 20h.01" />
-          </svg>
+          <i class="bi bi-cart-check" aria-hidden="true"></i>
         </span>
         <div>
           <small>Ventas registradas</small>
@@ -172,10 +156,7 @@
 
       <article class="stat-card">
         <span class="stat-icon money" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M3 6h18v12H3Z" />
-            <path d="M7 9h.01M17 15h.01M12 9a3 3 0 1 1 0 6" />
-          </svg>
+          <i class="bi bi-cash-coin" aria-hidden="true"></i>
         </span>
         <div>
           <small>Total vendido</small>
@@ -188,9 +169,7 @@
 
       <article class="stat-card">
         <span class="stat-icon profit" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M4 17l5-5 4 3 7-9M15 6h5v5" />
-          </svg>
+          <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
         </span>
         <div>
           <small>Ganancia estimada</small>
@@ -203,9 +182,7 @@
 
       <article class="stat-card">
         <span class="stat-icon stock" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 3 2 21h20ZM12 9v5M12 18h.01" />
-          </svg>
+          <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
         </span>
         <div>
           <small>Bajo stock</small>
@@ -220,9 +197,7 @@
         <header class="report-card-header">
           <div class="report-title">
             <span class="mini-icon">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 18V9M10 18V5M16 18v-6M3 18h18" />
-              </svg>
+              <i class="bi bi-bar-chart" aria-hidden="true"></i>
             </span>
             <h2>Productos más vendidos</h2>
           </div>
@@ -284,9 +259,7 @@
         <header class="report-card-header">
           <div class="report-title">
             <span class="mini-icon purple">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM5 21a7 7 0 0 1 14 0" />
-              </svg>
+              <i class="bi bi-person-badge" aria-hidden="true"></i>
             </span>
             <h2>Ventas por vendedor</h2>
           </div>
@@ -348,9 +321,7 @@
       <header class="report-card-header">
         <div class="report-title">
           <span class="mini-icon truck">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 6h11v10H3ZM14 10h4l3 3v3h-7ZM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
-            </svg>
+            <i class="bi bi-truck" aria-hidden="true"></i>
           </span>
           <h2>Ventas por proveedor</h2>
         </div>
@@ -408,9 +379,7 @@
       <header class="report-card-header">
         <div class="report-title">
           <span class="mini-icon orange">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 3 2 21h20ZM12 9v5M12 18h.01" />
-            </svg>
+            <i class="bi bi-boxes" aria-hidden="true"></i>
           </span>
           <h2>Productos con bajo stock</h2>
         </div>

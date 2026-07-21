@@ -21,6 +21,10 @@
   box-sizing: border-box;
 }
 
+.bi {
+  line-height: 1;
+}
+
 .dashboard-page {
   width: 100%;
   min-height: 100vh;
@@ -44,13 +48,20 @@
 }
 
 .dashboard-kicker {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
   margin-bottom: 5px;
 
   color: var(--azul-principal);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.12em;
+}
+
+.dashboard-kicker i {
+  font-size: 13px;
 }
 
 .dashboard-header h1 {
@@ -89,6 +100,10 @@
 }
 
 .date-box span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
   color: var(--azul-oscuro);
   font-size: 9px;
   font-weight: 800;
@@ -106,7 +121,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
 
   height: 47px;
   padding: 0 17px;
@@ -129,10 +144,19 @@
     transform 0.2s ease;
 }
 
+.refresh-button i {
+  color: var(--azul-principal);
+  font-size: 15px;
+}
+
 .refresh-button:hover {
   color: var(--blanco);
   background: var(--azul-principal);
   transform: translateY(-1px);
+}
+
+.refresh-button:hover i {
+  color: var(--blanco);
 }
 
 .refresh-button:disabled {
@@ -157,8 +181,7 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 
   margin-bottom: 14px;
@@ -186,16 +209,21 @@
 
   flex: 0 0 auto;
 
-  width: 33px;
-  height: 33px;
+  width: 36px;
+  height: 36px;
 
-  border-radius: 9px;
+  border-radius: 10px;
 
   color: var(--blanco);
   background: var(--azul-principal);
 
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
+}
+
+.stat-icon i {
+  font-size: 17px;
+  color: var(--blanco);
 }
 
 .money-icon,
@@ -231,6 +259,7 @@
 .trend {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
 
   padding: 3px 6px;
 
@@ -238,6 +267,10 @@
 
   font-size: 9px;
   font-weight: 800;
+}
+
+.trend i {
+  font-size: 10px;
 }
 
 .trend.positive,
@@ -253,9 +286,7 @@
 
 .dashboard-main-grid {
   display: grid;
-  grid-template-columns:
-    minmax(0, 1.8fr)
-    minmax(280px, 0.8fr);
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.8fr);
   gap: 14px;
 
   margin-bottom: 14px;
@@ -275,11 +306,20 @@
 }
 
 .card-heading h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
   margin: 0;
 
   color: var(--negro);
   font-size: 14px;
   font-weight: 800;
+}
+
+.card-heading h2 i {
+  color: var(--azul-principal);
+  font-size: 16px;
 }
 
 .card-heading p {
@@ -290,8 +330,16 @@
 }
 
 .card-menu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
   color: var(--azul-principal);
   font-weight: 800;
+}
+
+.card-menu i {
+  font-size: 18px;
 }
 
 /* =====================================================
@@ -324,6 +372,11 @@
   background: var(--azul-claro);
 
   font-size: 20px;
+}
+
+.empty-chart-icon i {
+  color: var(--azul-principal);
+  font-size: 23px;
 }
 
 .empty-chart strong {
@@ -413,10 +466,12 @@
   font-size: 10px;
 }
 
-.chart-legend span {
-  display: flex;
+.chart-legend span,
+.chart-legend a,
+.text-button {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .chart-legend a,
@@ -474,7 +529,6 @@
     conic-gradient(
       var(--azul-principal)
       calc(var(--percentage) * 1%),
-
       var(--azul-claro) 0
     );
 }
@@ -546,9 +600,7 @@
 
 .dashboard-bottom-grid {
   display: grid;
-  grid-template-columns:
-    minmax(0, 1.4fr)
-    minmax(300px, 0.8fr);
+  grid-template-columns: minmax(0, 1.4fr) minmax(300px, 0.8fr);
   gap: 14px;
 }
 
@@ -558,8 +610,10 @@
 }
 
 .table-empty {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 
   min-height: 190px;
   padding: 20px;
@@ -567,6 +621,11 @@
   color: var(--gris-suave);
   font-size: 11px;
   text-align: center;
+}
+
+.table-empty i {
+  color: var(--azul-principal);
+  font-size: 17px;
 }
 
 /* =====================================================
@@ -627,6 +686,7 @@
 .payment-status.transfer {
   display: inline-flex;
   align-items: center;
+  gap: 5px;
 
   padding: 4px 8px;
 
@@ -637,6 +697,11 @@
 
   font-size: 9px;
   font-weight: 800;
+}
+
+.payment-status i {
+  color: var(--blanco);
+  font-size: 10px;
 }
 
 /* =====================================================
@@ -652,10 +717,7 @@
 
 .ranking-row {
   display: grid;
-  grid-template-columns:
-    30px
-    minmax(0, 1fr)
-    auto;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
 
@@ -743,6 +805,11 @@
   font-weight: 700;
 }
 
+.dashboard-alert i {
+  color: var(--azul-principal);
+  font-size: 15px;
+}
+
 /* =====================================================
    TABLET Y LAPTOP PEQUEÑA
    ===================================================== */
@@ -753,8 +820,7 @@
   }
 
   .stats-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .dashboard-main-grid,
@@ -862,10 +928,7 @@
   }
 
   .ranking-row {
-    grid-template-columns:
-      28px
-      minmax(0, 1fr)
-      auto;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
   }
 }
 

@@ -42,13 +42,13 @@ export class AdminLayoutComponent implements OnInit {
     this.navItems = [
       {
         label: 'Dashboard',
-        icon: '📊',
+        icon: 'bi bi-speedometer2',
         path: '/admin/dashboard',
         roles: ['ADMINISTRADOR']
       },
       {
         label: 'Ventas / Escáner',
-        icon: '🛒',
+        icon: 'bi bi-upc-scan',
         path:
           this.role === 'VENDEDOR'
             ? '/vendedor/ventas'
@@ -57,7 +57,7 @@ export class AdminLayoutComponent implements OnInit {
       },
       {
         label: 'Productos e inventario',
-        icon: '👓',
+        icon: 'bi bi-box-seam',
         path:
           this.role === 'VENDEDOR'
             ? '/vendedor/productos'
@@ -66,7 +66,7 @@ export class AdminLayoutComponent implements OnInit {
       },
       {
         label: 'Clientes y recetas',
-        icon: '👤',
+        icon: 'bi bi-person-vcard',
         path:
           this.role === 'VENDEDOR'
             ? '/vendedor/clientes'
@@ -75,7 +75,7 @@ export class AdminLayoutComponent implements OnInit {
       },
       {
         label: 'Órdenes y recibos',
-        icon: '🧾',
+        icon: 'bi bi-receipt',
         path:
           this.role === 'VENDEDOR'
             ? '/vendedor/ordenes'
@@ -84,25 +84,25 @@ export class AdminLayoutComponent implements OnInit {
       },
       {
         label: 'Proveedores',
-        icon: '🚚',
+        icon: 'bi bi-truck',
         path: '/admin/proveedores',
         roles: ['ADMINISTRADOR']
       },
       {
         label: 'Movimientos de inventario',
-        icon: '🔄',
+        icon: 'bi bi-arrow-repeat',
         path: '/admin/movimientos',
         roles: ['ADMINISTRADOR']
       },
       {
         label: 'Usuarios y roles',
-        icon: '👥',
+        icon: 'bi bi-people',
         path: '/admin/usuarios',
         roles: ['ADMINISTRADOR']
       },
       {
         label: 'Reportes',
-        icon: '📈',
+        icon: 'bi bi-bar-chart-line',
         path: '/admin/reportes',
         roles: ['ADMINISTRADOR']
       }
@@ -133,7 +133,7 @@ export class AdminLayoutComponent implements OnInit {
 
     return {
       label: 'Sistema de Óptica',
-      icon: '👓'
+      icon: 'bi bi-eyeglasses'
     };
   }
 

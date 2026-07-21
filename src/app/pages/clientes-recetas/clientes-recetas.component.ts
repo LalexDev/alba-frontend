@@ -58,6 +58,8 @@ export class ClientesRecetasComponent
   ok = '';
 
   mostrarFormulario = false;
+  mostrarFicha = false;
+
   modoFormulario: ModoFormulario =
     'NUEVO_CLIENTE';
 
@@ -179,7 +181,6 @@ export class ClientesRecetasComponent
           cliente.nombreCompleto,
           cliente.numeroDocumento,
           cliente.telefono,
-          cliente.correo,
           cliente.direccion,
           cliente.ultimaReceta?.numeroOrden,
           cliente.ultimaReceta?.marca
@@ -288,13 +289,12 @@ export class ClientesRecetasComponent
         cliente.tipoDocumento,
       numeroDocumento:
         cliente.numeroDocumento || '',
-      nombres: cliente.nombres,
-      apellidos: cliente.apellidos,
+      nombres: cliente.nombreCompleto,
+      apellidos: '',
       telefono: cliente.telefono || '',
-      correo: cliente.correo || '',
+      correo: '',
       direccion: cliente.direccion || '',
-      fechaNacimiento:
-        cliente.fechaNacimiento || '',
+      fechaNacimiento: '',
       observaciones:
         cliente.observaciones || '',
       incluirReceta: false,
@@ -330,13 +330,12 @@ export class ClientesRecetasComponent
         seleccionado.tipoDocumento,
       numeroDocumento:
         seleccionado.numeroDocumento || '',
-      nombres: seleccionado.nombres,
-      apellidos: seleccionado.apellidos,
+      nombres: seleccionado.nombreCompleto,
+      apellidos: '',
       telefono: seleccionado.telefono || '',
-      correo: seleccionado.correo || '',
+      correo: '',
       direccion: seleccionado.direccion || '',
-      fechaNacimiento:
-        seleccionado.fechaNacimiento || '',
+      fechaNacimiento: '',
       observaciones:
         seleccionado.observaciones || '',
       incluirReceta: true,
@@ -349,6 +348,749 @@ export class ClientesRecetasComponent
     this.ok = '';
   }
 
+  abrirFicha(
+    cliente: Cliente
+  ): void {
+    this.clienteSeleccionado = cliente;
+
+    if (!cliente.ultimaReceta) {
+      this.error =
+        'El cliente todavía no tiene una receta registrada.';
+      return;
+    }
+
+    this.mostrarFicha = true;
+    this.error = '';
+  }
+
+  cerrarFicha(): void {
+    this.mostrarFicha = false;
+  }
+
+  imprimirFicha(): void {
+    void this.abrirFicha70x70(
+      'IMPRIMIR'
+    );
+  }
+
+  descargarFichaPdf(): void {
+    void this.abrirFicha70x70(
+      'PDF'
+    );
+  }
+
+  private async abrirFicha70x70(
+    modo: 'IMPRIMIR' | 'PDF'
+  ): Promise<void> {
+    const cliente =
+      this.clienteSeleccionado;
+    const receta =
+      cliente?.ultimaReceta;
+
+    if (!cliente || !receta) {
+      this.error =
+        'No hay una ficha disponible para imprimir.';
+      return;
+    }
+
+    // Se abre antes del await para evitar que el navegador
+    // bloquee la ventana emergente.
+    const ventana = window.open(
+      '',
+      '_blank',
+      'width=520,height=620'
+    );
+
+    if (!ventana) {
+      this.error =
+        'El navegador bloqueó la ventana de impresión.';
+      return;
+    }
+
+    ventana.document.write(`
+      <!doctype html>
+      <html lang="es">
+        <head>
+          <meta charset="utf-8">
+          <title>Preparando receta...</title>
+        </head>
+        <body
+          style="
+            margin:0;
+            padding:24px;
+            font-family:Arial,sans-serif;
+          "
+        >
+          Preparando formato 70 × 70 mm...
+        </body>
+      </html>
+    `);
+
+    ventana.document.close();
+
+    const logo =
+      await this.obtenerLogoReceta();
+
+    const fechaTexto = String(
+      receta.fechaEntrada ||
+      receta.fechaReceta ||
+      ''
+    );
+
+    const fechaPartes =
+      fechaTexto.split('-');
+
+    const anio =
+      fechaPartes[0] || '—';
+    const mes =
+      fechaPartes[1] || '—';
+    const dia =
+      fechaPartes[2] || '—';
+
+    const graduacion = (
+      valor:
+        | number
+        | null
+        | undefined
+    ): string =>
+      this.formatearGraduacion(valor);
+
+    const valorTexto = (
+      valor:
+        | string
+        | number
+        | null
+        | undefined
+    ): string => {
+      if (
+        valor === null ||
+        valor === undefined ||
+        String(valor).trim() === ''
+      ) {
+        return '—';
+      }
+
+      return this.escapeHtml(
+        String(valor)
+      );
+    };
+
+    const observaciones =
+      receta.observaciones ||
+      cliente.observaciones ||
+      '—';
+
+    const tituloVentana =
+      modo === 'PDF'
+        ? `Guardar PDF - ${cliente.nombreCompleto}`
+        : `Imprimir - ${cliente.nombreCompleto}`;
+
+    ventana.document.open();
+
+    ventana.document.write(`
+      <!doctype html>
+      <html lang="es">
+        <head>
+          <meta charset="utf-8">
+
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1"
+          >
+
+          <title>
+            ${this.escapeHtml(
+              tituloVentana
+            )}
+          </title>
+
+          <style>
+            @page {
+              size: 70mm 70mm;
+              margin: 0;
+            }
+
+            * {
+              box-sizing: border-box;
+            }
+
+            html,
+            body {
+              width: 70mm;
+              height: 70mm;
+              margin: 0;
+              padding: 0;
+              overflow: hidden;
+              background: #ffffff;
+            }
+
+            body {
+              color: #11344e;
+              font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+
+            .receta {
+              width: 70mm;
+              height: 70mm;
+              padding: 1.8mm;
+              overflow: hidden;
+              border: 0.45mm solid #1593c7;
+              border-radius: 4mm;
+              background: #ffffff;
+            }
+
+            .marca {
+              display: grid;
+              justify-items: center;
+              margin-bottom: 0.6mm;
+              text-align: center;
+            }
+
+            .logo {
+              display: block;
+              width: auto;
+              max-width: 38mm;
+              height: 7mm;
+              object-fit: contain;
+            }
+
+            .logo-fallback {
+              color: #1593c7;
+              font-size: 9pt;
+              font-weight: 900;
+              letter-spacing: 0.05em;
+            }
+
+            .contacto {
+              margin-top: 0.25mm;
+              color: #147ca8;
+              font-size: 4.2pt;
+              font-weight: 800;
+              letter-spacing: 0.02em;
+              white-space: nowrap;
+            }
+
+            .titulo {
+              margin: 0.8mm 0 0.55mm;
+              color: #126f98;
+              font-size: 6.1pt;
+              font-weight: 900;
+              letter-spacing: 0.27em;
+              text-align: center;
+            }
+
+            .fecha {
+              width: 29mm;
+              margin: 0 auto 0.8mm;
+              overflow: hidden;
+              border: 0.22mm solid #1593c7;
+              border-radius: 1.7mm;
+            }
+
+            .fecha-cabecera,
+            .fecha-valores {
+              display: grid;
+              grid-template-columns:
+                repeat(3, 1fr);
+              text-align: center;
+            }
+
+            .fecha-cabecera {
+              color: #ffffff;
+              background: #1593c7;
+              font-size: 4.6pt;
+              font-weight: 900;
+            }
+
+            .fecha-valores {
+              color: #11344e;
+              font-size: 4.9pt;
+              font-weight: 900;
+            }
+
+            .fecha span {
+              padding: 0.45mm 0.2mm;
+              border-right:
+                0.18mm solid #1593c7;
+            }
+
+            .fecha span:last-child {
+              border-right: 0;
+            }
+
+            .cliente {
+              display: flex;
+              align-items: flex-end;
+              gap: 1mm;
+              min-width: 0;
+              margin-bottom: 0.75mm;
+              font-size: 5.1pt;
+            }
+
+            .cliente strong {
+              flex: 0 0 auto;
+              color: #126f98;
+              font-weight: 900;
+            }
+
+            .cliente span {
+              flex: 1 1 auto;
+              min-width: 0;
+              padding: 0 0.6mm 0.25mm;
+              overflow: hidden;
+              border-bottom:
+                0.2mm solid #1593c7;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+
+            .cristales {
+              margin-bottom: 0.4mm;
+              padding: 0.35mm;
+              color: #ffffff;
+              background: #1593c7;
+              font-size: 4.5pt;
+              font-weight: 900;
+              letter-spacing: 0.35em;
+              text-align: center;
+            }
+
+            .graduacion {
+              display: grid;
+              grid-template-columns:
+                5.2mm
+                minmax(0, 1fr);
+              gap: 0.55mm;
+              align-items: stretch;
+            }
+
+            .lateral {
+              display: grid;
+              place-items: center;
+              border-radius: 1.4mm;
+              color: #ffffff;
+              background: #1593c7;
+              font-size: 4.4pt;
+              font-weight: 900;
+              letter-spacing: 0.07em;
+              writing-mode: vertical-rl;
+              transform: rotate(180deg);
+            }
+
+            table {
+              width: 100%;
+              border-collapse: separate;
+              border-spacing: 0.55mm 0.45mm;
+              table-layout: fixed;
+            }
+
+            th,
+            td {
+              height: 3.7mm;
+              padding: 0.25mm;
+              overflow: hidden;
+              border: 0.18mm solid #78c6e5;
+              border-radius: 0.8mm;
+              font-size: 4.7pt;
+              line-height: 1;
+              text-align: center;
+              vertical-align: middle;
+              white-space: nowrap;
+            }
+
+            thead th {
+              height: 2.4mm;
+              padding: 0.1mm;
+              border: 0;
+              color: #126f98;
+              background: transparent;
+              font-size: 4.1pt;
+              font-weight: 900;
+            }
+
+            tbody th {
+              width: 7mm;
+              border: 0;
+              color: #11344e;
+              background: transparent;
+              font-weight: 900;
+            }
+
+            .dip {
+              display: flex;
+              align-items: flex-end;
+              gap: 1mm;
+              margin: 0.35mm 0 0.65mm
+                5.8mm;
+              font-size: 4.8pt;
+            }
+
+            .dip strong {
+              color: #126f98;
+              font-weight: 900;
+            }
+
+            .dip span {
+              flex: 1;
+              max-width: 25mm;
+              padding-bottom: 0.18mm;
+              border-bottom:
+                0.18mm solid #1593c7;
+            }
+
+            .extras {
+              display: grid;
+              grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+              gap: 0.45mm 0.65mm;
+              margin-bottom: 0.55mm;
+            }
+
+            .extra {
+              display: flex;
+              align-items: center;
+              gap: 0.5mm;
+              min-width: 0;
+              min-height: 3mm;
+              padding: 0.35mm 0.55mm;
+              border:
+                0.16mm solid #9fd7ec;
+              border-radius: 0.7mm;
+              font-size: 4.25pt;
+              line-height: 1.05;
+            }
+
+            .extra strong {
+              flex: 0 0 auto;
+              color: #126f98;
+              font-size: 3.8pt;
+              font-weight: 900;
+              text-transform: uppercase;
+            }
+
+            .extra span {
+              min-width: 0;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+
+            .linea {
+              min-height: 3.4mm;
+              margin-top: 0.45mm;
+              padding:
+                0.35mm
+                0.55mm
+                0.25mm;
+              overflow: hidden;
+              border-bottom:
+                0.18mm solid #1593c7;
+              font-size: 4.15pt;
+              line-height: 1.08;
+            }
+
+            .linea strong {
+              color: #126f98;
+              font-size: 3.8pt;
+              font-weight: 900;
+              text-transform: uppercase;
+            }
+
+            .diagnostico {
+              max-height: 4.2mm;
+            }
+
+            .lentes {
+              max-height: 4.2mm;
+            }
+
+            .observaciones {
+              min-height: 5.7mm;
+              max-height: 5.7mm;
+            }
+
+            @media screen {
+              body {
+                background: #eaf4f8;
+              }
+
+              .receta {
+                box-shadow:
+                  0 8px 24px
+                  rgba(2, 21, 45, 0.18);
+              }
+            }
+
+            @media print {
+              html,
+              body,
+              .receta {
+                width: 70mm !important;
+                height: 70mm !important;
+              }
+
+              .receta {
+                box-shadow: none;
+              }
+            }
+          </style>
+        </head>
+
+        <body>
+          <main class="receta">
+            <header class="marca">
+              ${
+                logo
+                  ? `
+                    <img
+                      class="logo"
+                      src="${logo}"
+                      alt="Óptica Alba"
+                    >
+                  `
+                  : `
+                    <div class="logo-fallback">
+                      ÓPTICA ALBA
+                    </div>
+                  `
+              }
+
+              <div class="contacto">
+                JR. DOS DE MAYO 964 · CEL. +51 926 474 267 · CAJAMARCA
+              </div>
+            </header>
+
+            <h1 class="titulo">
+              ORDEN DE TRABAJO
+            </h1>
+
+            <section class="fecha">
+              <div class="fecha-cabecera">
+                <span>DÍA</span>
+                <span>MES</span>
+                <span>AÑO</span>
+              </div>
+
+              <div class="fecha-valores">
+                <span>${this.escapeHtml(dia)}</span>
+                <span>${this.escapeHtml(mes)}</span>
+                <span>${this.escapeHtml(anio)}</span>
+              </div>
+            </section>
+
+            <section class="cliente">
+              <strong>Cliente:</strong>
+              <span>
+                ${this.escapeHtml(
+                  cliente.nombreCompleto
+                )}
+              </span>
+            </section>
+
+            <div class="cristales">
+              CRISTALES
+            </div>
+
+            <section class="graduacion">
+              <div class="lateral">
+                LEJOS
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>ESF.</th>
+                    <th>CYL.</th>
+                    <th>EJE</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr>
+                    <th>OD:</th>
+                    <td>
+                      ${graduacion(
+                        receta.lejosOdEsfera
+                      )}
+                    </td>
+                    <td>
+                      ${graduacion(
+                        receta.lejosOdCilindro
+                      )}
+                    </td>
+                    <td>
+                      ${valorTexto(
+                        receta.lejosOdEje
+                      )}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <th>OI:</th>
+                    <td>
+                      ${graduacion(
+                        receta.lejosOiEsfera
+                      )}
+                    </td>
+                    <td>
+                      ${graduacion(
+                        receta.lejosOiCilindro
+                      )}
+                    </td>
+                    <td>
+                      ${valorTexto(
+                        receta.lejosOiEje
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+
+            <div class="dip">
+              <strong>DIP:</strong>
+              <span>
+                ${valorTexto(
+                  receta.lejosDip
+                )}
+              </span>
+            </div>
+
+            <section class="extras">
+              <div class="extra">
+                <strong>Adic. OD</strong>
+                <span>
+                  ${graduacion(
+                    receta.adicionOd
+                  )}
+                </span>
+              </div>
+
+              <div class="extra">
+                <strong>Adic. OI</strong>
+                <span>
+                  ${graduacion(
+                    receta.adicionOi
+                  )}
+                </span>
+              </div>
+
+              <div class="extra">
+                <strong>AV OD</strong>
+                <span>
+                  ${valorTexto(
+                    receta.agudezaVisualOd
+                  )}
+                </span>
+              </div>
+
+              <div class="extra">
+                <strong>AV OI</strong>
+                <span>
+                  ${valorTexto(
+                    receta.agudezaVisualOi
+                  )}
+                </span>
+              </div>
+            </section>
+
+            <section class="linea diagnostico">
+              <strong>Diagnóstico:</strong>
+              ${valorTexto(
+                receta.diagnostico
+              )}
+            </section>
+
+            <section class="linea lentes">
+              <strong>Tipo de lente / lunas:</strong>
+              ${valorTexto(
+                receta.tipoLente
+              )}
+            </section>
+
+            <section class="linea observaciones">
+              <strong>Observaciones:</strong>
+              ${this.escapeHtml(
+                observaciones
+              )}
+            </section>
+          </main>
+
+          <script>
+            window.addEventListener(
+              'load',
+              () => {
+                window.setTimeout(
+                  () => {
+                    window.focus();
+                    window.print();
+                  },
+                  350
+                );
+              }
+            );
+          </script>
+        </body>
+      </html>
+    `);
+
+    ventana.document.close();
+
+    this.ok =
+      modo === 'PDF'
+        ? 'Selecciona "Guardar como PDF" en el cuadro de impresión.'
+        : 'Formato 70 × 70 mm preparado para imprimir.';
+  }
+
+  private async obtenerLogoReceta():
+    Promise<string> {
+    const url = new URL(
+      'assets/logo-optica-alba.png',
+      document.baseURI
+    ).toString();
+
+    try {
+      const respuesta =
+        await fetch(url);
+
+      if (!respuesta.ok) {
+        return '';
+      }
+
+      const archivo =
+        await respuesta.blob();
+
+      return await new Promise<string>(
+        resolve => {
+          const lector =
+            new FileReader();
+
+          lector.onload = () =>
+            resolve(
+              String(
+                lector.result || ''
+              )
+            );
+
+          lector.onerror = () =>
+            resolve('');
+
+          lector.readAsDataURL(
+            archivo
+          );
+        }
+      );
+    } catch {
+      return '';
+    }
+  }
+
   cerrarFormulario(): void {
     if (this.guardando) {
       return;
@@ -359,20 +1101,19 @@ export class ClientesRecetasComponent
   }
 
   recalcularDebe(): void {
-    const total =
-      this.numeroFormulario(
-        this.form.receta.montoTotal
-      );
-    const cancelado =
-      this.numeroFormulario(
-        this.form.receta.montoCancelado
-      );
+    const total = this.numeroFormulario(
+      this.form.receta.montoTotal
+    );
 
-    this.form.receta.montoDebe =
-      Math.max(
-        Number((total - cancelado).toFixed(2)),
-        0
-      );
+    const cancelado = this.numeroFormulario(
+      this.form.receta.montoCancelado
+    );
+
+    const debe = total - cancelado;
+
+    this.form.receta.montoDebe = Number(
+      Math.max(debe, 0).toFixed(2)
+    );
   }
 
   guardar(): void {
@@ -380,13 +1121,44 @@ export class ClientesRecetasComponent
       return;
     }
 
+    // El formulario usa un solo campo de nombres completos.
+    this.form.tipoDocumento = 'DNI';
+    this.form.apellidos = '';
+    this.form.correo = '';
+    this.form.fechaNacimiento = '';
+
+    // La fecha principal de la receta es la fecha de entrada.
+    this.form.receta.fechaReceta =
+      this.form.receta.fechaEntrada ||
+      this.fechaActual();
+
+    // Campos eliminados de la receta.
+    this.form.receta.profesional = '';
+    this.form.receta.cercaOdEsfera = null;
+    this.form.receta.cercaOdCilindro = null;
+    this.form.receta.cercaOdEje = null;
+    this.form.receta.cercaOiEsfera = null;
+    this.form.receta.cercaOiCilindro = null;
+    this.form.receta.cercaOiEje = null;
+    this.form.receta.cercaDip = null;
+
     if (
       this.modoFormulario !==
         'NUEVA_RECETA' &&
       !this.form.nombres.trim()
     ) {
       this.error =
-        'Ingresa los nombres del cliente.';
+        'Ingresa los nombres completos del cliente.';
+      return;
+    }
+
+    if (
+      this.modoFormulario !==
+        'NUEVA_RECETA' &&
+      !this.form.numeroDocumento.trim()
+    ) {
+      this.error =
+        'Ingresa el DNI del cliente.';
       return;
     }
 
@@ -432,28 +1204,31 @@ export class ClientesRecetasComponent
     ) {
       this.prepararMedida();
 
-      const cancelado =
-        this.numeroFormulario(
-          this.form.receta.montoCancelado
-        );
-      const debe =
-        this.numeroFormulario(
-          this.form.receta.montoDebe
-        );
-      const total =
-        this.numeroFormulario(
-          this.form.receta.montoTotal
-        );
+      const total = this.numeroFormulario(
+        this.form.receta.montoTotal
+      );
 
-      if (
-        Math.abs(
-          cancelado + debe - total
-        ) > 0.01
-      ) {
+      const cancelado = this.numeroFormulario(
+        this.form.receta.montoCancelado
+      );
+
+      if (total < 0 || cancelado < 0) {
         this.error =
-          'Cancelado más debe debe ser igual al total.';
+          'El total y el monto cancelado no pueden ser negativos.';
         return;
       }
+
+      if (cancelado > total) {
+        this.error =
+          'El monto cancelado no puede ser mayor que el total.';
+        return;
+      }
+
+      // El saldo se calcula siempre desde los valores actuales.
+      // No se confía en un valor anterior del campo "Debe".
+      this.form.receta.montoDebe = Number(
+        (total - cancelado).toFixed(2)
+      );
     }
 
     this.guardando = true;
@@ -530,157 +1305,226 @@ export class ClientesRecetasComponent
       });
   }
 
-  descargarRecetasExcel(): void {
-    const filas = this.clientes.flatMap(
-      cliente =>
-        cliente.recetas.map(receta => ({
-          'Orden de trabajo':
-            receta.numeroOrden,
-          'Cliente':
-            cliente.nombreCompleto,
-          'Documento':
-            cliente.numeroDocumento || '',
-          'Fecha de entrada':
-            this.fechaParaExcel(
-              receta.fechaEntrada
-            ),
-          'Cancelado':
-            receta.montoCancelado,
-          'Debe':
-            receta.montoDebe,
-          'Total':
-            receta.montoTotal,
-          'Medida':
-            receta.medida ||
-            this.construirMedida(receta),
-          'Montura':
-            receta.tipoMontura || '',
-          'Marca':
-            receta.marca || ''
-        }))
-    );
+  async descargarRecetasExcel():
+    Promise<void> {
+    const filas =
+      this.clientes.flatMap(
+        cliente =>
+          cliente.recetas.map(
+            receta => [
+              this.fechaParaExcel(
+                receta.fechaEntrada
+              ),
+              receta.numeroOrden || '',
+              cliente.nombreCompleto,
+              Number(
+                receta.montoTotal || 0
+              ),
+              Number(
+                receta.montoCancelado || 0
+              ),
+              Number(
+                receta.montoDebe || 0
+              ),
+              receta.medida ||
+                this.construirMedida(
+                  receta
+                ),
+              [
+                receta.marca,
+                receta.tipoMontura
+              ]
+                .filter(Boolean)
+                .join(' - ')
+            ]
+          )
+      );
 
     if (!filas.length) {
       this.error =
-        'Todavía no hay recetas para descargar.';
+        'Todavía no hay recetas registradas para descargar.';
       return;
     }
 
-    const hoja =
-      utils.json_to_sheet(filas);
+    this.procesandoExcel = true;
+    this.error = '';
+    this.ok = '';
 
-    hoja['!cols'] = [
-      { wch: 20 },
-      { wch: 30 },
-      { wch: 16 },
-      { wch: 18 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 70 },
-      { wch: 28 },
-      { wch: 20 }
-    ];
+    try {
+      const plantillaUrl =
+        new URL(
+          'assets/Formato%20receta.xlsx',
+          document.baseURI
+        ).toString();
 
-    const rango = utils.decode_range(
-      hoja['!ref'] || 'A1:J1'
-    );
+      const respuesta =
+        await fetch(
+          plantillaUrl
+        );
 
-    for (
-      let fila = 1;
-      fila <= rango.e.r;
-      fila += 1
-    ) {
-      for (const columna of [4, 5, 6]) {
-        const celda = hoja[
-          utils.encode_cell({
-            r: fila,
-            c: columna
-          })
-        ];
+      if (!respuesta.ok) {
+        throw new Error(
+          'No se encontró public/assets/Formato receta.xlsx.'
+        );
+      }
 
-        if (celda) {
-          celda.z = 'S/ #,##0.00';
+      const buffer =
+        await respuesta.arrayBuffer();
+
+      const libro = read(
+        buffer,
+        {
+          type: 'array',
+          cellStyles: true
+        }
+      );
+
+      const nombreHoja =
+        libro.SheetNames[0];
+
+      if (!nombreHoja) {
+        throw new Error(
+          'El formato no contiene una hoja.'
+        );
+      }
+
+      const hoja =
+        libro.Sheets[nombreHoja];
+
+      if (!hoja) {
+        throw new Error(
+          'No se pudo leer la hoja del formato.'
+        );
+      }
+
+      /*
+       * Formato exacto:
+       * A fecha
+       * B Orden de trabajo
+       * C Nombres
+       * D Total
+       * E A cta.
+       * F saldo
+       * G Medidas
+       * H Montura y medida
+       */
+
+      for (
+        let fila = 1;
+        fila < 5000;
+        fila += 1
+      ) {
+        for (
+          let columna = 0;
+          columna < 8;
+          columna += 1
+        ) {
+          const direccion =
+            utils.encode_cell({
+              r: fila,
+              c: columna
+            });
+
+          if (hoja[direccion]) {
+            delete hoja[direccion].v;
+            delete hoja[direccion].w;
+            delete hoja[direccion].f;
+          }
         }
       }
+
+      filas.forEach(
+        (
+          valores,
+          indiceFila
+        ) => {
+          valores.forEach(
+            (
+              valor,
+              indiceColumna
+            ) => {
+              const direccion =
+                utils.encode_cell({
+                  r: indiceFila + 1,
+                  c: indiceColumna
+                });
+
+              hoja[direccion] = {
+                t:
+                  typeof valor ===
+                    'number'
+                    ? 'n'
+                    : 's',
+                v: valor ?? ''
+              };
+
+              if (
+                indiceColumna >= 3 &&
+                indiceColumna <= 5
+              ) {
+                hoja[direccion].z =
+                  'S/ #,##0.00';
+              }
+            }
+          );
+        }
+      );
+
+      hoja['!cols'] = [
+        { wch: 15 },
+        { wch: 20 },
+        { wch: 34 },
+        { wch: 14 },
+        { wch: 14 },
+        { wch: 14 },
+        { wch: 60 },
+        { wch: 38 }
+      ];
+
+      hoja['!ref'] =
+        `A1:H${filas.length + 1}`;
+
+      writeFileXLSX(
+        libro,
+        `recetas-optica-alba-${this.fechaActual()}.xlsx`
+      );
+
+      this.ok =
+        `${filas.length} receta(s) descargada(s) con el formato exacto.`;
+    } catch (error: unknown) {
+      console.error(
+        'Error al descargar recetas:',
+        error
+      );
+
+      this.error =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo generar el Excel.';
+    } finally {
+      this.procesandoExcel = false;
     }
-
-    const libro = utils.book_new();
-    utils.book_append_sheet(
-      libro,
-      hoja,
-      'Recetas'
-    );
-
-    writeFileXLSX(
-      libro,
-      `recetas-optica-alba-${this.fechaActual()}.xlsx`
-    );
-
-    this.ok =
-      'Excel de recetas descargado correctamente.';
-    this.error = '';
   }
 
   descargarPlantillaExcel(): void {
-    const hoja =
-      utils.aoa_to_sheet([[
-        'Orden de trabajo',
-        'Cliente',
-        'Documento',
-        'Fecha de entrada',
-        'Cancelado',
-        'Debe',
-        'Total',
-        'Medida',
-        'Montura',
-        'Marca'
-      ]]);
+    const url = new URL(
+      'assets/Formato%20receta.xlsx',
+      document.baseURI
+    ).toString();
 
-    hoja['!cols'] = [
-      { wch: 20 },
-      { wch: 30 },
-      { wch: 16 },
-      { wch: 18 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 70 },
-      { wch: 28 },
-      { wch: 20 }
-    ];
+    const enlace =
+      document.createElement('a');
 
-    const instrucciones =
-      utils.aoa_to_sheet([
-        ['INSTRUCCIONES'],
-        ['1. No cambies los nombres ni el orden de las columnas.'],
-        ['2. Cliente es obligatorio. Documento permite evitar duplicados.'],
-        ['3. Fecha de entrada: DD/MM/AAAA o AAAA-MM-DD.'],
-        ['4. Cancelado + Debe debe ser igual a Total.'],
-        ['5. La carga crea el cliente asociado cuando todavía no existe.'],
-        ['6. Orden de trabajo vacía: el sistema genera una automáticamente.']
-      ]);
+    enlace.href = url;
+    enlace.download =
+      'Formato receta.xlsx';
 
-    instrucciones['!cols'] = [
-      { wch: 95 }
-    ];
-
-    const libro = utils.book_new();
-    utils.book_append_sheet(
-      libro,
-      hoja,
-      'Recetas'
-    );
-    utils.book_append_sheet(
-      libro,
-      instrucciones,
-      'Instrucciones'
+    document.body.appendChild(
+      enlace
     );
 
-    writeFileXLSX(
-      libro,
-      'plantilla-recetas-optica-alba.xlsx'
-    );
+    enlace.click();
+    enlace.remove();
   }
 
   async cargarRecetasExcel(
@@ -688,6 +1532,7 @@ export class ClientesRecetasComponent
   ): Promise<void> {
     const input =
       event.target as HTMLInputElement;
+
     const archivo =
       input.files?.[0];
 
@@ -702,202 +1547,335 @@ export class ClientesRecetasComponent
     try {
       const contenido =
         await archivo.arrayBuffer();
-      const libro = read(contenido, {
-        type: 'array',
-        cellDates: true
-      });
+
+      const libro = read(
+        contenido,
+        {
+          type: 'array',
+          cellDates: true
+        }
+      );
 
       const nombreHoja =
         libro.SheetNames[0];
 
       if (!nombreHoja) {
-        throw new Error(
-          'El archivo no contiene hojas.'
-        );
+        this.ok =
+          'El archivo no contiene una hoja para importar.';
+        return;
       }
 
       const hoja =
         libro.Sheets[nombreHoja];
-      const filasCrudas =
-        utils.sheet_to_json(hoja, {
-          defval: ''
-        }) as Record<string, unknown>[];
 
-      if (!filasCrudas.length) {
-        throw new Error(
-          'El Excel no contiene registros para importar.'
-        );
+      if (!hoja) {
+        this.ok =
+          'No se pudo leer la primera hoja del archivo.';
+        return;
       }
 
-      const filas: RecetaExcelImport[] = [];
-      const errores: string[] = [];
-      const ordenesArchivo = new Set<string>();
+      const matriz =
+        utils.sheet_to_json(
+          hoja,
+          {
+            header: 1,
+            defval: '',
+            raw: true,
+            blankrows: true
+          }
+        ) as unknown[][];
 
-      filasCrudas.forEach(
-        (
-          fila: Record<string, unknown>,
-          indice: number
-        ) => {
-          const numeroFila = indice + 2;
-          const numeroOrden =
-            this.textoFila(
-              fila,
-              'Orden de trabajo'
-            );
-          const cliente =
-            this.textoFila(
-              fila,
-              'Cliente'
-            );
-          const documento =
-            this.textoFila(
-              fila,
-              'Documento'
-            );
-          const fechaEntrada =
-            this.fechaFila(
-              this.valorFila(
-                fila,
-                'Fecha de entrada'
-              )
-            );
-          const cancelado =
-            this.montoFila(
-              this.valorFila(
-                fila,
-                'Cancelado'
-              )
-            );
-          const debe =
-            this.montoFila(
-              this.valorFila(
-                fila,
-                'Debe'
-              )
-            );
-          const total =
-            this.montoFila(
-              this.valorFila(
-                fila,
-                'Total'
-              )
-            );
-          const medida =
-            this.textoFila(
-              fila,
-              'Medida'
-            );
-          const montura =
-            this.textoFila(
-              fila,
-              'Montura'
-            );
-          const marca =
-            this.textoFila(
-              fila,
-              'Marca'
-            );
+      const filaEncabezado =
+        matriz.findIndex(
+          fila => {
+            const columnas =
+              (fila || [])
+                .map(
+                  valor =>
+                    this.normalizar(
+                      String(
+                        valor ?? ''
+                      )
+                    )
+                );
 
-          if (!cliente) {
-            errores.push(
-              `Fila ${numeroFila}: falta Cliente.`
+            const fecha =
+              columnas[0] ===
+                'fecha';
+
+            const orden =
+              columnas[1] ===
+                'orden de trabajo';
+
+            const nombres =
+              columnas[2] ===
+                'nombres' ||
+              columnas[2] ===
+                'cliente';
+
+            const total =
+              columnas[3] ===
+                'total';
+
+            const cuenta =
+              columnas[4] ===
+                'a cta.' ||
+              columnas[4] ===
+                'a cta' ||
+              columnas[4] ===
+                'a cuenta';
+
+            const saldo =
+              columnas[5] ===
+                'saldo' ||
+              columnas[5] ===
+                'debe';
+
+            const medidas =
+              columnas[6] ===
+                'medidas' ||
+              columnas[6] ===
+                'medida';
+
+            const montura =
+              columnas[7] ===
+                'montura y medida' ||
+              columnas[7] ===
+                'montura';
+
+            return (
+              fecha &&
+              orden &&
+              nombres &&
+              total &&
+              cuenta &&
+              saldo &&
+              medidas &&
+              montura
             );
           }
-
-          if (!fechaEntrada) {
-            errores.push(
-              `Fila ${numeroFila}: fecha de entrada inválida.`
-            );
-          }
-
-          if (
-            cancelado === null ||
-            debe === null ||
-            total === null
-          ) {
-            errores.push(
-              `Fila ${numeroFila}: importes inválidos.`
-            );
-          } else if (
-            Math.abs(
-              cancelado + debe - total
-            ) > 0.01
-          ) {
-            errores.push(
-              `Fila ${numeroFila}: Cancelado + Debe no coincide con Total.`
-            );
-          }
-
-          const ordenNormalizada =
-            this.normalizar(numeroOrden);
-
-          if (
-            ordenNormalizada &&
-            ordenesArchivo.has(
-              ordenNormalizada
-            )
-          ) {
-            errores.push(
-              `Fila ${numeroFila}: orden de trabajo repetida en el archivo.`
-            );
-          }
-
-          if (ordenNormalizada) {
-            ordenesArchivo.add(
-              ordenNormalizada
-            );
-          }
-
-          if (
-            cliente &&
-            fechaEntrada &&
-            cancelado !== null &&
-            debe !== null &&
-            total !== null &&
-            Math.abs(
-              cancelado + debe - total
-            ) <= 0.01
-          ) {
-            filas.push({
-              numeroOrden,
-              cliente,
-              documento,
-              fechaEntrada,
-              montoCancelado:
-                cancelado,
-              montoDebe:
-                debe,
-              montoTotal:
-                total,
-              medida,
-              montura,
-              marca
-            });
-          }
-        }
-      );
-
-      if (errores.length) {
-        throw new Error(
-          errores.slice(0, 8).join(' ')
         );
+
+      if (filaEncabezado < 0) {
+        this.ok =
+          'No se importó el archivo porque no corresponde al modelo de recetas.';
+        return;
       }
 
-      const importadas = await new Promise<number>(
-        (resolve, reject) => {
-          this.clienteService
-            .importarRecetas(filas)
-            .subscribe({
-              next: (cantidad: number) =>
-                resolve(cantidad),
-              error: (error: unknown) =>
-                reject(error)
-            });
+      const filas:
+        RecetaExcelImport[] = [];
+
+      const ordenesArchivo =
+        new Set<string>();
+
+      let filasOmitidas = 0;
+      let saldosRecalculados = 0;
+      let ordenesAutomaticas = 0;
+
+      for (
+        let indice =
+          filaEncabezado + 1;
+        indice < matriz.length;
+        indice += 1
+      ) {
+        const fila =
+          matriz[indice] || [];
+
+        const filaVacia =
+          fila.every(
+            valor =>
+              String(
+                valor ?? ''
+              ).trim() === ''
+          );
+
+        if (filaVacia) {
+          continue;
         }
-      );
+
+        const cliente =
+          String(
+            fila[2] ?? ''
+          ).trim();
+
+        if (!cliente) {
+          filasOmitidas += 1;
+          continue;
+        }
+
+        const fechaEntrada =
+          this.fechaFila(
+            fila[0]
+          ) ||
+          this.fechaActual();
+
+        let numeroOrden =
+          String(
+            fila[1] ?? ''
+          ).trim();
+
+        const totalLeido =
+          this.montoFila(
+            fila[3]
+          );
+
+        const cuentaLeida =
+          this.montoFila(
+            fila[4]
+          );
+
+        if (
+          totalLeido === null ||
+          cuentaLeida === null
+        ) {
+          filasOmitidas += 1;
+          continue;
+        }
+
+        const total =
+          Math.max(
+            Number(
+              totalLeido.toFixed(2)
+            ),
+            0
+          );
+
+        const cancelado =
+          Math.min(
+            Math.max(
+              Number(
+                cuentaLeida.toFixed(2)
+              ),
+              0
+            ),
+            total
+          );
+
+        const saldoCalculado =
+          Number(
+            (
+              total -
+              cancelado
+            ).toFixed(2)
+          );
+
+        const saldoExcel =
+          this.montoFila(
+            fila[5]
+          );
+
+        if (
+          saldoExcel === null ||
+          Math.abs(
+            saldoExcel -
+            saldoCalculado
+          ) > 0.01
+        ) {
+          saldosRecalculados += 1;
+        }
+
+        const ordenNormalizada =
+          this.normalizar(
+            numeroOrden
+          );
+
+        if (
+          ordenNormalizada &&
+          ordenesArchivo.has(
+            ordenNormalizada
+          )
+        ) {
+          numeroOrden = '';
+          ordenesAutomaticas += 1;
+        }
+
+        if (ordenNormalizada) {
+          ordenesArchivo.add(
+            ordenNormalizada
+          );
+        }
+
+        filas.push({
+          numeroOrden,
+          cliente,
+          documento: '',
+          fechaEntrada,
+          montoCancelado:
+            cancelado,
+          montoDebe:
+            saldoCalculado,
+          montoTotal:
+            total,
+          medida:
+            String(
+              fila[6] ?? ''
+            ).trim(),
+          montura:
+            String(
+              fila[7] ?? ''
+            ).trim(),
+          marca: ''
+        });
+      }
+
+      if (!filas.length) {
+        this.ok =
+          filasOmitidas > 0
+            ? `No se encontraron filas completas. Se omitieron ${filasOmitidas} fila(s).`
+            : 'El formato es correcto, pero todavía no contiene recetas.';
+        return;
+      }
+
+      const importadas =
+        await new Promise<number>(
+          (
+            resolve,
+            reject
+          ) => {
+            this.clienteService
+              .importarRecetas(
+                filas
+              )
+              .subscribe({
+                next:
+                  (
+                    cantidad:
+                      number
+                  ) =>
+                    resolve(
+                      cantidad
+                    ),
+
+                error:
+                  (
+                    error:
+                      unknown
+                  ) =>
+                    reject(
+                      error
+                    )
+              });
+          }
+        );
 
       this.ok =
-        `${importadas} receta(s) importada(s) correctamente.`;
+        `${importadas} receta(s) cargada(s) correctamente.` +
+        (
+          saldosRecalculados > 0
+            ? ` Se recalculó el saldo de ${saldosRecalculados} fila(s).`
+            : ''
+        ) +
+        (
+          ordenesAutomaticas > 0
+            ? ` Se generó una orden automática para ${ordenesAutomaticas} registro(s) repetido(s).`
+            : ''
+        ) +
+        (
+          filasOmitidas > 0
+            ? ` Se omitieron ${filasOmitidas} fila(s) incompleta(s).`
+            : ''
+        );
+
       this.cargar();
     } catch (error: unknown) {
       console.error(
@@ -1123,20 +2101,13 @@ export class ClientesRecetasComponent
       }
     };
 
-    agregar('LEJOS OD ESF.', receta.lejosOdEsfera);
-    agregar('CYL.', receta.lejosOdCilindro);
-    agregar('EJE.', receta.lejosOdEje);
-    agregar('LEJOS OI ESF.', receta.lejosOiEsfera);
-    agregar('CYL.', receta.lejosOiCilindro);
-    agregar('EJE.', receta.lejosOiEje);
-    agregar('DIP LEJOS.', receta.lejosDip);
-    agregar('CERCA OD ESF.', receta.cercaOdEsfera);
-    agregar('CYL.', receta.cercaOdCilindro);
-    agregar('EJE.', receta.cercaOdEje);
-    agregar('CERCA OI ESF.', receta.cercaOiEsfera);
-    agregar('CYL.', receta.cercaOiCilindro);
-    agregar('EJE.', receta.cercaOiEje);
-    agregar('DIP CERCA.', receta.cercaDip);
+    agregar('OD ESF.', receta.lejosOdEsfera);
+    agregar('OD CYL.', receta.lejosOdCilindro);
+    agregar('OD EJE.', receta.lejosOdEje);
+    agregar('OI ESF.', receta.lejosOiEsfera);
+    agregar('OI CYL.', receta.lejosOiCilindro);
+    agregar('OI EJE.', receta.lejosOiEje);
+    agregar('DIP.', receta.lejosDip);
 
     return partes.join(' | ');
   }
@@ -1306,38 +2277,130 @@ export class ClientesRecetasComponent
   private fechaFila(
     valor: unknown
   ): string {
+    const fechaSerial = (
+      serial: number
+    ): string => {
+      if (
+        !Number.isFinite(serial) ||
+        serial <= 0
+      ) {
+        return '';
+      }
+
+      const fecha =
+        new Date(
+          Date.UTC(
+            1899,
+            11,
+            30
+          ) +
+          Math.floor(serial) *
+          86400000
+        );
+
+      return [
+        fecha.getUTCFullYear(),
+        String(
+          fecha.getUTCMonth() + 1
+        ).padStart(2, '0'),
+        String(
+          fecha.getUTCDate()
+        ).padStart(2, '0')
+      ].join('-');
+    };
+
     if (valor instanceof Date) {
       return [
         valor.getFullYear(),
-        String(valor.getMonth() + 1)
-          .padStart(2, '0'),
-        String(valor.getDate())
-          .padStart(2, '0')
+        String(
+          valor.getMonth() + 1
+        ).padStart(2, '0'),
+        String(
+          valor.getDate()
+        ).padStart(2, '0')
       ].join('-');
     }
 
-    const texto =
-      String(valor ?? '').trim();
+    if (
+      typeof valor === 'number'
+    ) {
+      return fechaSerial(
+        valor
+      );
+    }
 
-    if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+    const texto =
+      String(
+        valor ?? ''
+      ).trim();
+
+    if (!texto) {
+      return '';
+    }
+
+    if (
+      /^\d{4}-\d{2}-\d{2}$/
+        .test(texto)
+    ) {
       return texto;
     }
 
-    const coincidencia = texto.match(
-      /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/
-    );
+    if (
+      /^\d+(\.\d+)?$/
+        .test(texto)
+    ) {
+      const serial =
+        Number(texto);
+
+      if (
+        serial >= 20000 &&
+        serial <= 90000
+      ) {
+        return fechaSerial(
+          serial
+        );
+      }
+    }
+
+    const coincidencia =
+      texto.match(
+        /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2}|\d{4})$/
+      );
 
     if (!coincidencia) {
       return '';
     }
 
-    const dia = coincidencia[1]
-      .padStart(2, '0');
-    const mes = coincidencia[2]
-      .padStart(2, '0');
-    const anio = coincidencia[3];
+    const dia =
+      coincidencia[1]
+        .padStart(2, '0');
+
+    const mes =
+      coincidencia[2]
+        .padStart(2, '0');
+
+    let anio =
+      coincidencia[3];
+
+    if (anio.length === 2) {
+      anio =
+        Number(anio) >= 70
+          ? `19${anio}`
+          : `20${anio}`;
+    }
 
     return `${anio}-${mes}-${dia}`;
+  }
+
+  private escapeHtml(
+    valor: string
+  ): string {
+    return String(valor || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   private normalizar(

@@ -21,13 +21,13 @@ import {
 
 interface RolDb {
   id_rol: number;
-  nombre: RolSistema;
+  nombre: string;
   descripcion?: string | null;
   activo: boolean;
 }
 
 interface UsuarioDb {
-  id_usuario: number;
+  id_usuario: string;
   auth_user_id?: string | null;
   id_rol: number;
   nombres: string;
@@ -44,7 +44,7 @@ interface UsuarioDb {
 interface RespuestaFuncion {
   ok?: boolean;
   mensaje?: string;
-  idUsuario?: number;
+  idUsuario?: string;
 }
 
 @Injectable({
@@ -67,7 +67,7 @@ export class UsuarioService {
     ultimo_acceso,
     creado_en,
     actualizado_en,
-    rol:roles (
+    rol:roles!fk_usuarios_rol (
       id_rol,
       nombre,
       descripcion,
@@ -86,35 +86,125 @@ export class UsuarioService {
             descripcion,
             activo
           `)
-          .eq('activo', true)
-          .in('nombre', [
-            'ADMINISTRADOR',
-            'VENDEDOR'
-          ])
-          .order('id_rol', {
-            ascending: true
-          });
+          .order(
+            'id_rol',
+            {
+              ascending: true
+            }
+          );
 
       if (error) {
         throw new Error(
-          this.traducirError(error.message)
+          this.traducirError(
+            error.message
+          )
         );
       }
 
-      return (data ?? []).map(
-        (fila: unknown): RolUsuario => {
-          const rol = fila as RolDb;
+      const roles =
+        (data ?? [])
+          .map(
+            (fila: unknown):
+              RolUsuario | null => {
+              const rol =
+                fila as RolDb;
 
-          return {
-            id: Number(rol.id_rol),
-            nombre: rol.nombre,
-            descripcion:
-              rol.descripcion || '',
-            activo:
-              Boolean(rol.activo)
-          };
-        }
-      );
+              const nombre =
+                this.normalizarRol(
+                  rol.nombre
+                );
+
+              if (!nombre) {
+                return null;
+              }
+
+              return {
+                id:
+                  Number(
+                    rol.id_rol
+                  ),
+                nombre,
+                descripcion:
+                  rol.descripcion ||
+                  (
+                    nombre ===
+                      'ADMINISTRADOR'
+                      ? 'Acceso completo a todos los módulos del sistema.'
+                      : 'Acceso operativo a ventas, productos, clientes y órdenes.'
+                  ),
+                activo:
+                  Boolean(
+                    rol.activo
+                  )
+              };
+            }
+          )
+          .filter(
+            (
+              rol
+            ): rol is RolUsuario =>
+              Boolean(
+                rol &&
+                rol.activo
+              )
+          )
+          .sort(
+            (
+              a,
+              b
+            ) => {
+              if (
+                a.nombre ===
+                b.nombre
+              ) {
+                return a.id - b.id;
+              }
+
+              return a.nombre ===
+                'ADMINISTRADOR'
+                ? -1
+                : 1;
+            }
+          );
+
+      const rolesUnicos =
+        roles.filter(
+          (
+            rol,
+            indice,
+            arreglo
+          ) =>
+            arreglo.findIndex(
+              item =>
+                item.nombre ===
+                rol.nombre
+            ) === indice
+        );
+
+      const tieneAdministrador =
+        rolesUnicos.some(
+          rol =>
+            rol.nombre ===
+            'ADMINISTRADOR'
+        );
+
+      const tieneVendedor =
+        rolesUnicos.some(
+          rol =>
+            rol.nombre ===
+            'VENDEDOR'
+        );
+
+      if (
+        !tieneAdministrador ||
+        !tieneVendedor
+      ) {
+        throw new Error(
+          'No están disponibles los roles Administrador y Vendedor. Ejecuta el archivo 19_corregir_catalogo_roles.sql en Supabase.'
+        );
+      }
+
+      return rolesUnicos;
     });
   }
 
@@ -166,9 +256,13 @@ export class UsuarioService {
       accion: 'CREAR',
       usuario: {
         nombres:
-          form.nombres.trim(),
-        apellidos:
-          form.apellidos.trim(),
+          form.nombreCompleto
+            .replace(
+              /\s+/g,
+              ' '
+            )
+            .trim(),
+        apellidos: '',
         email:
           form.email
             .trim()
@@ -186,7 +280,7 @@ export class UsuarioService {
   }
 
   actualizar(
-    idUsuario: number,
+    idUsuario: string,
     form: UsuarioForm
   ): Observable<void> {
     return this.invocarAdministracion({
@@ -194,9 +288,13 @@ export class UsuarioService {
       idUsuario,
       usuario: {
         nombres:
-          form.nombres.trim(),
-        apellidos:
-          form.apellidos.trim(),
+          form.nombreCompleto
+            .replace(
+              /\s+/g,
+              ' '
+            )
+            .trim(),
+        apellidos: '',
         email:
           form.email
             .trim()
@@ -215,7 +313,7 @@ export class UsuarioService {
   }
 
   cambiarEstado(
-    idUsuario: number,
+    idUsuario: string,
     activo: boolean
   ): Observable<void> {
     return this.invocarAdministracion({
@@ -314,10 +412,11 @@ export class UsuarioService {
 
     const rol:
       RolSistema =
-      rolDb?.nombre ===
-        'ADMINISTRADOR'
-        ? 'ADMINISTRADOR'
-        : 'VENDEDOR';
+      this.normalizarRol(
+        rolDb?.nombre ||
+        ''
+      ) ||
+      'VENDEDOR';
 
     const nombres =
       fila.nombres || '';
@@ -326,7 +425,7 @@ export class UsuarioService {
 
     return {
       id:
-        Number(fila.id_usuario),
+        String(fila.id_usuario),
       authUserId:
         fila.auth_user_id || '',
       nombres,
@@ -361,6 +460,48 @@ export class UsuarioService {
       permisos:
         this.permisosPorRol(rol)
     };
+  }
+
+  private normalizarRol(
+    valor: string
+  ): RolSistema | null {
+    const nombre =
+      String(
+        valor || ''
+      )
+        .normalize('NFD')
+        .replace(
+          /[\u0300-\u036f]/g,
+          ''
+        )
+        .trim()
+        .toUpperCase()
+        .replace(
+          /[^A-Z]/g,
+          ''
+        );
+
+    if (
+      [
+        'ADMIN',
+        'ADMINISTRADOR',
+        'ADMINISTRADORA'
+      ].includes(nombre)
+    ) {
+      return 'ADMINISTRADOR';
+    }
+
+    if (
+      [
+        'VENDEDOR',
+        'VENDEDORA',
+        'SELLER'
+      ].includes(nombre)
+    ) {
+      return 'VENDEDOR';
+    }
+
+    return null;
   }
 
   private permisosPorRol(
@@ -414,6 +555,36 @@ export class UsuarioService {
 
     if (
       texto.includes(
+        'id_usuario'
+      ) &&
+      (
+        texto.includes(
+          'violates not-null constraint'
+        ) ||
+        texto.includes(
+          'type uuid'
+        ) ||
+        texto.includes(
+          'type bigint'
+        )
+      )
+    ) {
+      return 'La columna usuarios.id_usuario debe generar UUID automáticamente. Ejecuta el archivo 21_corregir_id_usuario_uuid.sql en Supabase.';
+    }
+
+    if (
+      texto.includes(
+        '19_corregir_catalogo_roles.sql'
+      ) ||
+      texto.includes(
+        'no estan disponibles los roles'
+      )
+    ) {
+      return 'No están disponibles los roles Administrador y Vendedor. Ejecuta el archivo 19_corregir_catalogo_roles.sql en Supabase.';
+    }
+
+    if (
+      texto.includes(
         'administrar-usuario'
       ) ||
       texto.includes(
@@ -439,11 +610,46 @@ export class UsuarioService {
     }
 
     if (
-      texto.includes('roles') ||
-      texto.includes('auth_user_id') ||
-      texto.includes('ultimo_acceso')
+      texto.includes(
+        'could not find a relationship'
+      ) ||
+      (
+        texto.includes('usuarios') &&
+        texto.includes('roles') &&
+        texto.includes('schema cache')
+      )
     ) {
-      return 'Falta ejecutar el SQL de Usuarios y roles en Supabase.';
+      return 'Supabase no reconoce la relación entre usuarios y roles. Ejecuta el archivo 17_corregir_relacion_usuarios_roles.sql.';
+    }
+
+    if (
+      texto.includes(
+        'more than one relationship'
+      ) ||
+      texto.includes(
+        'ambiguous'
+      )
+    ) {
+      return 'Existen relaciones duplicadas entre usuarios y roles. Ejecuta el archivo 17_corregir_relacion_usuarios_roles.sql.';
+    }
+
+    if (
+      texto.includes(
+        'infinite recursion'
+      )
+    ) {
+      return 'Las políticas de usuarios tienen una recursión. Ejecuta el archivo 17_corregir_relacion_usuarios_roles.sql.';
+    }
+
+    if (
+      texto.includes(
+        'auth_user_id'
+      ) ||
+      texto.includes(
+        'ultimo_acceso'
+      )
+    ) {
+      return 'Faltan columnas necesarias en la tabla usuarios. Ejecuta el archivo 17_corregir_relacion_usuarios_roles.sql.';
     }
 
     if (

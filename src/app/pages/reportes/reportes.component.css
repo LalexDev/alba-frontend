@@ -722,3 +722,94 @@ svg {
     box-shadow: none;
   }
 }
+
+
+/* =====================================================
+   BOOTSTRAP ICONS Y RESPONSIVE FINAL
+   ===================================================== */
+
+.reports-page .bi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.header-icon .bi {
+  font-size: 26px;
+}
+
+.date-icon .bi {
+  font-size: 20px;
+}
+
+.button .bi {
+  font-size: 16px;
+}
+
+.stat-icon .bi {
+  font-size: 25px;
+}
+
+.mini-icon .bi {
+  font-size: 19px;
+}
+
+@media (max-width: 720px) {
+  .reports-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .date-card {
+    width: 100%;
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .filter-actions .button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .stats-grid,
+  .reports-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-card {
+    min-width: 0;
+  }
+
+  .table-wrapper {
+    overscroll-behavior-inline: contain;
+  }
+}
+
+@media (max-width: 480px) {
+  .reports-page {
+    padding-inline: 10px;
+  }
+
+  .filter-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .report-card-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .report-card-header button {
+    width: 100%;
+  }
+}

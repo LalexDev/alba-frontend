@@ -784,6 +784,136 @@ button:disabled {
   cursor: not-allowed;
 }
 
+
+
+/* MARCAS Y MODELOS */
+
+.brand-model-section {
+  grid-column: 1 / -1;
+  padding: 16px;
+  border: 1px solid var(--blue-border);
+  border-radius: 14px;
+  background: #f8fcfe;
+}
+
+.brand-model-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 15px;
+}
+
+.brand-model-header span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--blue);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.brand-model-header h3,
+.brand-model-header p {
+  margin: 0;
+}
+
+.brand-model-header h3 {
+  color: var(--black);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.brand-model-header p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.toggle-brand-button,
+.save-brand-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 8px 13px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.toggle-brand-button {
+  color: var(--blue-dark);
+  border: 1px solid var(--blue);
+  background: var(--white);
+}
+
+.save-brand-button {
+  align-self: end;
+  color: var(--white);
+  border: 1px solid var(--blue);
+  background: var(--blue);
+}
+
+.save-brand-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.brand-model-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.new-brand-panel {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 14px;
+  padding: 13px;
+  border: 1px dashed var(--blue);
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.selected-brand-text {
+  color: var(--success) !important;
+  font-weight: 800;
+}
+
+.no-brand-text {
+  color: var(--warning) !important;
+  font-weight: 800;
+}
+
+.brand-message {
+  margin: 12px 0 0;
+  padding: 9px 11px;
+  border-radius: 9px;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.brand-message.success {
+  color: var(--success);
+  border: 1px solid #75e0a7;
+  background: var(--success-soft);
+}
+
+.brand-message.error {
+  color: var(--danger);
+  border: 1px solid #fda29b;
+  background: var(--danger-soft);
+}
+
 /* RESPONSIVE */
 
 @media (max-width: 1200px) {
@@ -932,102 +1062,184 @@ button:disabled {
   }
 }
 
-/* =====================================================
-   RESPONSIVE COMPLETO
-   ===================================================== */
-
-/* Evita desbordamientos */
-.productos-page,
-.inventory-card,
-.inventory-controls,
-.stats-grid,
-.product-form,
-.form-grid {
-  width: 100%;
-  min-width: 0;
-}
-
-img,
-svg {
-  max-width: 100%;
-}
-
-/* =====================================================
-   LAPTOP PEQUEÑA
-   ===================================================== */
-
-@media (max-width: 1250px) {
-  .productos-page {
-    padding: 20px;
-  }
-
-  .stats-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-  .inventory-controls {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-  .search-box {
-    grid-column: 1 / -1;
-  }
-
-  .products-table {
-    min-width: 1180px;
-  }
-}
-
-/* =====================================================
-   TABLET
-   ===================================================== */
 
 @media (max-width: 900px) {
-  .productos-page {
-    padding:
-      68px
-      16px
-      20px;
+  .brand-model-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
 
+}
+
+@media (max-width: 700px) {
+  .brand-model-section {
+    padding: 13px;
+  }
+
+  .brand-model-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toggle-brand-button {
+    width: 100%;
+  }
+
+  .brand-model-grid,
+  .new-brand-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-model-grid .field:last-child {
+    grid-column: auto;
+  }
+
+  .save-brand-button {
+    width: 100%;
+  }
+}
+
+
+.field-error {
+  color: var(--danger) !important;
+  font-weight: 800;
+}
+
+.not-applicable {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.products-table td span + small {
+  display: block;
+  margin-top: 4px;
+}
+
+
+/* MENSAJE SEGÚN CATEGORÍA */
+
+.category-form-note {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 13px;
+  border: 1px solid #d0d5dd;
+  border-radius: 11px;
+  color: var(--text);
+  background: #f8fafc;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.category-form-note > span {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.category-form-note.complete {
+  color: var(--blue-dark);
+  border-color: var(--blue-border);
+  background: var(--blue-soft);
+}
+
+.category-form-note.simple {
+  color: var(--success);
+  border-color: #75e0a7;
+  background: var(--success-soft);
+}
+
+@media (max-width: 640px) {
+  .category-form-note {
+    font-size: 10px;
+  }
+}
+
+
+/* SEXO DE MONTURAS Y ESTUCHES */
+
+.sex-field select {
+  font-weight: 800;
+}
+
+.sex-field > small:not(.field-error) {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+
+/* =====================================================
+   BOOTSTRAP ICONS Y RESPONSIVE FINAL
+   ===================================================== */
+
+.productos-page .bi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.primary-button .bi,
+.filter-button .bi,
+.excel-button .bi,
+.clear-filter-button .bi,
+.whatsapp-button .bi,
+.email-button .bi,
+.cancel-button .bi,
+.save-button .bi,
+.save-brand-button .bi,
+.toggle-brand-button .bi {
+  font-size: 15px;
+}
+
+.stat-icon .bi {
+  font-size: 24px;
+}
+
+.search-box > .bi {
+  color: var(--blue);
+  font-size: 18px;
+}
+
+.empty-state-icon {
+  margin-bottom: 8px;
+  color: var(--blue);
+  font-size: 38px;
+}
+
+.spin-icon {
+  animation: bootstrap-icon-spin 0.8s linear infinite;
+}
+
+@keyframes bootstrap-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 700px) {
   .productos-header {
     align-items: stretch;
     flex-direction: column;
-    gap: 15px;
   }
 
-  .productos-header h1 {
-    font-size: 26px;
-  }
-
-  .productos-header p {
-    line-height: 1.5;
-  }
-
-  .primary-button {
+  .productos-header .primary-button {
     width: 100%;
   }
 
   .stats-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr 1fr;
   }
 
   .inventory-controls {
     grid-template-columns: 1fr;
   }
 
-  .search-box {
-    grid-column: auto;
-  }
-
-  .filter-field,
-  .filter-field select,
-  .filter-button,
-  .excel-button,
-  .clear-filter-button {
+  .inventory-controls > * {
     width: 100%;
   }
 
@@ -1040,203 +1252,44 @@ svg {
     width: 100%;
   }
 
-  .table-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .products-table {
-    min-width: 1100px;
-  }
-
-  .form-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+  .form-grid,
+  .brand-model-grid {
+    grid-template-columns: 1fr;
   }
 
   .product-modal {
-    width: min(94vw, 900px);
+    width: calc(100vw - 18px);
+    max-height: calc(100vh - 18px);
+  }
+
+  .table-wrapper {
+    overscroll-behavior-inline: contain;
   }
 }
 
-/* =====================================================
-   CELULAR
-   ===================================================== */
-
-@media (max-width: 640px) {
+@media (max-width: 480px) {
   .productos-page {
-    padding:
-      62px
-      12px
-      18px;
-  }
-
-  .productos-header h1 {
-    font-size: 23px;
-    line-height: 1.2;
-  }
-
-  .productos-header p {
-    font-size: 11px;
+    padding-inline: 10px;
   }
 
   .stats-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
   }
 
-  .stat-card {
-    min-height: 100px;
-    padding: 15px;
-  }
-
-  .stat-card .stat-icon {
-    width: 45px;
-    height: 45px;
-  }
-
-  .stat-card strong {
-    font-size: 21px;
-  }
-
-  .search-box {
-    min-height: 48px;
-  }
-
-  .filter-field select,
-  .filter-button,
-  .excel-button,
-  .clear-filter-button {
-    min-height: 48px;
-  }
-
-  .inventory-card {
-    border-radius: 14px;
-  }
-
-  .products-table {
-    min-width: 1050px;
-  }
-
+  .modal-actions,
   .pagination {
     align-items: stretch;
     flex-direction: column;
-    gap: 12px;
   }
 
-  .pagination > span {
-    text-align: center;
-  }
-
-  .pagination div {
-    justify-content: space-between;
-    width: 100%;
-  }
-
+  .modal-actions button,
+  .pagination > div,
   .pagination button {
-    flex: 1;
-  }
-
-  /* Modal */
-  .modal-backdrop {
-    align-items: flex-start;
-    padding: 8px;
-  }
-
-  .product-modal {
-    width: 100%;
-    max-height: calc(100vh - 16px);
-    border-radius: 14px;
-  }
-
-  .modal-header {
-    padding:
-      16px
-      15px
-      12px;
-  }
-
-  .modal-header h2 {
-    font-size: 20px;
-  }
-
-  .product-form {
-    padding:
-      15px
-      15px
-      18px;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 13px;
-  }
-
-  .field.full-width,
-  .other-category {
-    grid-column: auto;
-  }
-
-  .input-with-button {
-    grid-template-columns: 1fr;
-  }
-
-  .input-with-button button {
-    min-height: 42px;
-  }
-
-  .field input,
-  .field select {
-    height: 45px;
-  }
-
-  .modal-actions {
-    flex-direction: column-reverse;
-    margin:
-      18px
-      -15px
-      -18px;
-    padding:
-      14px
-      15px;
-  }
-
-  .modal-actions button {
     width: 100%;
   }
 
-  .save-button {
-    min-width: 0;
-  }
-}
-
-/* =====================================================
-   CELULARES PEQUEÑOS
-   ===================================================== */
-
-@media (max-width: 380px) {
-  .productos-page {
-    padding-inline: 9px;
-  }
-
-  .productos-header h1 {
-    font-size: 21px;
-  }
-
-  .stat-card {
-    padding: 13px;
-  }
-
-  .stock-alert {
-    padding: 12px;
-  }
-
-  .search-box {
-    padding-inline: 10px;
-  }
-
-  .modal-header h2 {
-    font-size: 18px;
+  .pagination > div {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
   }
 }

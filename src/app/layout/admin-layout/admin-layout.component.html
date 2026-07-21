@@ -9,11 +9,15 @@
   >
     <div class="brand">
       <div class="brand-icon">
-        👓
+        <i class="bi bi-eyeglasses"></i>
       </div>
 
       <div class="brand-text">
-        <h2>Óptica Alba</h2>
+        <img
+          class="brand-title-logo"
+          src="/assets/logo-optica-alba.png"
+          alt="Óptica Alba"
+        />
         <span>Sistema para ópticas</span>
       </div>
 
@@ -23,7 +27,7 @@
         aria-label="Cerrar menú"
         (click)="closeSidebar()"
       >
-        ×
+        <i class="bi bi-x-lg"></i>
       </button>
     </div>
 
@@ -39,8 +43,8 @@
         routerLinkActive="active"
         (click)="closeSidebar()"
       >
-        <span class="emoji">
-          {{ item.icon }}
+        <span class="nav-icon">
+          <i [class]="item.icon"></i>
         </span>
 
         <span class="nav-label">
@@ -79,7 +83,7 @@
       aria-label="Abrir menú"
       (click)="toggleSidebar()"
     >
-      ☰
+      <i class="bi bi-list"></i>
     </button>
 
     <!-- CONTENIDO DE CADA PÁGINA -->

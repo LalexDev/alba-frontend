@@ -1,13 +1,752 @@
-<div class="page-stack">
-  <div class="card">
-    <h2>Registrar movimiento</h2>
-    <form class="form-grid" (ngSubmit)="guardar()">
-      <div class="field"><label>Producto</label><input [(ngModel)]="nuevo.producto" name="producto" placeholder="Código o producto" required /></div>
-      <div class="field"><label>Tipo</label><select [(ngModel)]="nuevo.tipo" name="tipo"><option>ENTRADA_COMPRA</option><option>AJUSTE_ENTRADA</option><option>AJUSTE_SALIDA</option><option>SALIDA_VENTA</option></select></div>
-      <div class="field"><label>Cantidad</label><input type="number" [(ngModel)]="nuevo.cantidad" name="cantidad" min="1" /></div>
-      <div class="field wide"><label>Motivo</label><input [(ngModel)]="nuevo.motivo" name="motivo" /></div>
-      <div class="wide form-actions"><button class="btn" type="submit">Guardar movimiento</button></div>
-    </form>
+<div class="inventory-page">
+
+  <!-- CABECERA -->
+  <header class="page-header">
+    <div>
+      <span class="page-kicker">
+        CONTROL DE STOCK
+      </span>
+
+      <h1>
+        Movimientos de inventario
+      </h1>
+
+      <p>
+        Registra entradas, salidas y ajustes de stock
+        de los productos de Óptica Alba.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="refresh-button"
+      (click)="cargarTodo()"
+      [disabled]="cargando"
+    >
+      <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+
+      {{
+        cargando
+          ? 'Actualizando...'
+          : 'Actualizar'
+      }}
+    </button>
+  </header>
+
+  <!-- MENSAJES -->
+  <div
+    class="alert success-alert"
+    *ngIf="ok"
+  >
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+
+    <span>{{ ok }}</span>
+
+    <button
+      type="button"
+      (click)="ok = ''"
+      aria-label="Cerrar mensaje"
+    >
+      ×
+    </button>
   </div>
-  <div class="card"><div class="toolbar"><h2>Historial de movimientos</h2><div class="actions"><button class="btn secondary">Exportar Excel</button><button class="btn secondary">PDF historial</button></div></div><div class="table-wrap" *ngIf="movimientos.length; else empty"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Motivo</th></tr></thead><tbody><tr *ngFor="let m of movimientos"><td>{{ m.fecha | date:'short' }}</td><td>{{ m.producto }}</td><td>{{ m.tipo }}</td><td>{{ m.cantidad }}</td><td>{{ m.motivo }}</td></tr></tbody></table></div><ng-template #empty><div class="empty">Aún no hay movimientos.</div></ng-template></div>
+
+  <div
+    class="alert error-alert"
+    *ngIf="error"
+  >
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+
+    <span>{{ error }}</span>
+
+    <button
+      type="button"
+      (click)="error = ''"
+      aria-label="Cerrar mensaje"
+    >
+      ×
+    </button>
+  </div>
+
+  <!-- INDICADORES -->
+  <section class="stats-grid">
+    <article class="stat-card entrance-card">
+      <div class="stat-icon">
+        <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i>
+      </div>
+
+      <div>
+        <span>Entradas</span>
+        <strong>{{ totalEntradas }}</strong>
+        <small>Unidades registradas</small>
+      </div>
+    </article>
+
+    <article class="stat-card exit-card">
+      <div class="stat-icon">
+        <i class="bi bi-box-arrow-up" aria-hidden="true"></i>
+      </div>
+
+      <div>
+        <span>Salidas</span>
+        <strong>{{ totalSalidas }}</strong>
+        <small>Unidades registradas</small>
+      </div>
+    </article>
+
+    <article class="stat-card adjustment-card">
+      <div class="stat-icon">
+        <i class="bi bi-sliders2" aria-hidden="true"></i>
+      </div>
+
+      <div>
+        <span>Ajustes</span>
+        <strong>{{ totalAjustes }}</strong>
+        <small>Correcciones realizadas</small>
+      </div>
+    </article>
+
+    <article class="stat-card today-card">
+      <div class="stat-icon">
+        <i class="bi bi-calendar3" aria-hidden="true"></i>
+      </div>
+
+      <div>
+        <span>Movimientos hoy</span>
+        <strong>{{ movimientosHoy }}</strong>
+        <small>Actualizado ahora</small>
+      </div>
+    </article>
+  </section>
+
+  <!-- REGISTRO Y RESUMEN -->
+  <section class="main-grid">
+
+    <!-- FORMULARIO -->
+    <article class="panel movement-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span class="panel-icon">
+            <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i>
+          </span>
+
+          <div>
+            <h2>Registrar movimiento</h2>
+            <p>
+              Actualiza el stock con trazabilidad completa.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <form
+        class="movement-form"
+        (ngSubmit)="guardar()"
+      >
+        <div class="field product-field">
+          <label for="producto">
+            Producto
+          </label>
+
+          <select
+            id="producto"
+            name="producto"
+            [(ngModel)]="productoId"
+            (ngModelChange)="seleccionarProducto()"
+            [disabled]="cargando || guardando"
+            required
+          >
+            <option [ngValue]="null">
+              Selecciona un producto
+            </option>
+
+            <option
+              *ngFor="let producto of productos"
+              [ngValue]="producto.id"
+            >
+              {{
+                producto.codigoBarras ||
+                producto.codigoInterno
+              }}
+              — {{ producto.nombre }}
+              (Stock: {{ producto.stockActual }})
+            </option>
+          </select>
+        </div>
+
+        <div class="field type-field">
+          <label>Tipo</label>
+
+          <div class="movement-types">
+            <button
+              type="button"
+              class="type-button entrance"
+              [class.active]="
+                tipoSeleccionado === 'ENTRADA'
+              "
+              (click)="seleccionarTipo('ENTRADA')"
+              [disabled]="guardando"
+            >
+              <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i>
+
+              Entrada
+            </button>
+
+            <button
+              type="button"
+              class="type-button exit"
+              [class.active]="
+                tipoSeleccionado === 'SALIDA'
+              "
+              (click)="seleccionarTipo('SALIDA')"
+              [disabled]="guardando"
+            >
+              <i class="bi bi-box-arrow-up" aria-hidden="true"></i>
+
+              Salida
+            </button>
+
+            <button
+              type="button"
+              class="type-button adjustment"
+              [class.active]="
+                tipoSeleccionado === 'AJUSTE'
+              "
+              (click)="seleccionarTipo('AJUSTE')"
+              [disabled]="guardando"
+            >
+              <i class="bi bi-sliders2" aria-hidden="true"></i>
+
+              Ajuste
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="cantidad">
+            {{ etiquetaCantidad }}
+          </label>
+
+          <input
+            id="cantidad"
+            name="cantidad"
+            type="number"
+            [min]="
+              tipoSeleccionado === 'AJUSTE'
+                ? 0
+                : 1
+            "
+            step="1"
+            [(ngModel)]="cantidad"
+            [disabled]="guardando"
+            required
+          />
+
+          <small>
+            {{ ayudaCantidad }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label for="motivo">
+            Motivo
+          </label>
+
+          <select
+            id="motivo"
+            name="motivo"
+            [(ngModel)]="motivo"
+            [disabled]="guardando"
+            required
+          >
+            <option
+              *ngFor="
+                let opcion
+                of motivosDisponibles
+              "
+              [value]="opcion"
+            >
+              {{ opcion }}
+            </option>
+          </select>
+        </div>
+
+        <div class="field responsible-field">
+          <label for="usuario">
+            Usuario responsable
+          </label>
+
+          <div class="readonly-input">
+            <i class="bi bi-person-circle" aria-hidden="true"></i>
+
+            <span>
+              {{ usuarioResponsable }}
+            </span>
+          </div>
+
+          <small>
+            Se asigna automáticamente.
+          </small>
+        </div>
+
+        <div class="field observation-field">
+          <label for="observacion">
+            Observación
+            <span>(opcional)</span>
+          </label>
+
+          <textarea
+            id="observacion"
+            name="observacion"
+            rows="3"
+            [(ngModel)]="observacion"
+            [disabled]="guardando"
+            placeholder="Detalle adicional del movimiento..."
+          ></textarea>
+        </div>
+
+        <button
+          type="submit"
+          class="save-button"
+          [disabled]="
+            guardando ||
+            cargando ||
+            !productoId
+          "
+        >
+          <i class="bi bi-floppy" aria-hidden="true"></i>
+
+          {{
+            guardando
+              ? 'Guardando movimiento...'
+              : 'Guardar movimiento'
+          }}
+        </button>
+      </form>
+    </article>
+
+    <!-- RESUMEN RÁPIDO -->
+    <aside class="panel summary-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span class="panel-icon lightning">
+            <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
+          </span>
+
+          <div>
+            <h2>Resumen rápido</h2>
+            <p>Estado del producto seleccionado.</p>
+          </div>
+        </div>
+      </div>
+
+      <ng-container
+        *ngIf="
+          productoSeleccionado
+            as producto;
+          else noProduct
+        "
+      >
+        <div class="selected-product">
+          <small>Producto seleccionado</small>
+
+          <strong>
+            {{
+              producto.codigoBarras ||
+              producto.codigoInterno
+            }}
+          </strong>
+
+          <span>{{ producto.nombre }}</span>
+        </div>
+
+        <div class="summary-list">
+          <div class="summary-row">
+            <span class="summary-row-icon">
+              <i class="bi bi-boxes" aria-hidden="true"></i>
+            </span>
+
+            <div>
+              <span>Stock actual</span>
+
+              <strong
+                [class.low-stock-text]="
+                  productoBajoStock(producto)
+                "
+              >
+                {{ producto.stockActual }}
+                <small>unidades</small>
+              </strong>
+            </div>
+          </div>
+
+          <div class="summary-row">
+            <span class="summary-row-icon warning">
+              <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+            </span>
+
+            <div>
+              <span>Stock mínimo</span>
+              <strong>
+                {{ producto.stockMinimo }}
+                <small>unidades</small>
+              </strong>
+            </div>
+          </div>
+
+          <div
+            class="summary-row"
+            *ngIf="
+              ultimoMovimientoSeleccionado
+                as ultimo
+            "
+          >
+            <span class="summary-row-icon clock">
+              <i class="bi bi-clock-history" aria-hidden="true"></i>
+            </span>
+
+            <div>
+              <span>Último movimiento</span>
+
+              <strong>
+                {{
+                  ultimo.fecha
+                    | date:'dd/MM/yy, h:mm a'
+                }}
+              </strong>
+
+              <small
+                class="movement-change"
+                [ngClass]="
+                  tipoClase(ultimo.tipo)
+                "
+              >
+                {{ tipoEtiqueta(ultimo.tipo) }}
+                ·
+                {{ cambioMovimiento(ultimo) }}
+                unidades
+              </small>
+            </div>
+          </div>
+
+          <div
+            class="summary-row"
+            *ngIf="
+              ultimoMovimientoSeleccionado
+                as ultimo
+            "
+          >
+            <span class="summary-row-icon note">
+              <i class="bi bi-journal-text" aria-hidden="true"></i>
+            </span>
+
+            <div>
+              <span>Último motivo</span>
+              <p>{{ ultimo.motivo }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="stock-alert"
+          *ngIf="
+            productoBajoStock(producto)
+          "
+        >
+          <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+
+          <div>
+            <strong>Stock bajo</strong>
+            <span>
+              El producto alcanzó o está debajo
+              del mínimo configurado.
+            </span>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #noProduct>
+        <div class="empty-summary">
+          <i class="bi bi-box-seam" aria-hidden="true"></i>
+
+          <strong>
+            Selecciona un producto
+          </strong>
+
+          <p>
+            Aquí verás el stock actual, mínimo y
+            último movimiento registrado.
+          </p>
+        </div>
+      </ng-template>
+    </aside>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section class="panel history-panel">
+    <div class="history-header">
+      <div class="panel-title">
+        <span class="panel-icon history">
+          <i class="bi bi-clock-history" aria-hidden="true"></i>
+        </span>
+
+        <div>
+          <h2>Historial de movimientos</h2>
+          <p>
+            Consulta y exporta la trazabilidad del inventario.
+          </p>
+        </div>
+      </div>
+
+      <div class="export-actions">
+        <button
+          type="button"
+          class="export-button excel"
+          (click)="exportarExcel()"
+          [disabled]="
+            !movimientosFiltrados.length
+          "
+        >
+          <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+
+          Descargar Excel
+        </button>
+
+        <button
+          type="button"
+          class="export-button pdf"
+          (click)="exportarPdf()"
+          [disabled]="
+            !movimientosFiltrados.length
+          "
+        >
+          <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+
+          PDF historial
+        </button>
+      </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filters-grid">
+      <div class="search-filter">
+        <i class="bi bi-search" aria-hidden="true"></i>
+
+        <input
+          type="search"
+          [(ngModel)]="buscar"
+          (ngModelChange)="actualizarFiltros()"
+          placeholder="Buscar por producto, código, motivo o usuario..."
+        />
+      </div>
+
+      <div class="date-filter">
+        <label for="fechaDesde">
+          Desde
+        </label>
+
+        <input
+          id="fechaDesde"
+          type="date"
+          [(ngModel)]="fechaDesde"
+          (ngModelChange)="actualizarFiltros()"
+        />
+      </div>
+
+      <div class="date-filter">
+        <label for="fechaHasta">
+          Hasta
+        </label>
+
+        <input
+          id="fechaHasta"
+          type="date"
+          [(ngModel)]="fechaHasta"
+          (ngModelChange)="actualizarFiltros()"
+        />
+      </div>
+
+      <select
+        class="type-filter"
+        [(ngModel)]="filtroTipo"
+        (ngModelChange)="actualizarFiltros()"
+      >
+        <option
+          *ngFor="let tipo of tiposFiltro"
+          [value]="tipo.valor"
+        >
+          {{ tipo.etiqueta }}
+        </option>
+      </select>
+
+      <button
+        type="button"
+        class="clear-filters"
+        (click)="limpiarFiltros()"
+      >
+        <i class="bi bi-funnel" aria-hidden="true"></i>
+
+        Limpiar filtros
+      </button>
+    </div>
+
+    <!-- TABLA -->
+    <div
+      class="table-wrap"
+      *ngIf="
+        !cargando &&
+        movimientosPaginados.length;
+        else emptyHistory
+      "
+    >
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Tipo</th>
+            <th>Cantidad</th>
+            <th>Stock anterior</th>
+            <th>Stock posterior</th>
+            <th>Motivo</th>
+            <th>Usuario</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            *ngFor="
+              let movimiento
+              of movimientosPaginados;
+              trackBy: trackMovimiento
+            "
+          >
+            <td>
+              {{
+                movimiento.fecha
+                  | date:'dd/MM/yyyy, h:mm a'
+              }}
+            </td>
+
+            <td>
+              <strong>
+                {{ movimiento.codigo }}
+              </strong>
+            </td>
+
+            <td>
+              {{ movimiento.producto }}
+            </td>
+
+            <td>
+              <span
+                class="type-badge"
+                [ngClass]="
+                  tipoClase(movimiento.tipo)
+                "
+              >
+                {{
+                  tipoEtiqueta(
+                    movimiento.tipo
+                  )
+                }}
+              </span>
+            </td>
+
+            <td>
+              <strong>
+                {{ movimiento.cantidad }}
+              </strong>
+            </td>
+
+            <td>
+              {{ movimiento.stockAnterior }}
+            </td>
+
+            <td>
+              <strong>
+                {{ movimiento.stockNuevo }}
+              </strong>
+            </td>
+
+            <td class="reason-cell">
+              {{ movimiento.motivo }}
+            </td>
+
+            <td>
+              {{ movimiento.usuario }}
+            </td>
+
+            <td>
+              <span class="status-badge">
+                Completado
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ng-template #emptyHistory>
+      <div class="history-empty">
+        <i class="bi bi-clock-history" aria-hidden="true"></i>
+
+        <strong>
+          {{
+            cargando
+              ? 'Cargando movimientos...'
+              : 'No hay movimientos con los filtros seleccionados.'
+          }}
+        </strong>
+      </div>
+    </ng-template>
+
+    <!-- PAGINACIÓN -->
+    <div
+      class="pagination-footer"
+      *ngIf="
+        !cargando &&
+        movimientosFiltrados.length
+      "
+    >
+      <span>
+        Mostrando
+        {{ movimientosPaginados.length }}
+        de
+        {{ movimientosFiltrados.length }}
+        movimientos
+      </span>
+
+      <div class="pagination">
+        <button
+          type="button"
+          (click)="irPagina(paginaActual - 1)"
+          [disabled]="paginaActual === 1"
+          aria-label="Página anterior"
+        >
+          ‹
+        </button>
+
+        <button
+          type="button"
+          *ngFor="let pagina of paginasVisibles"
+          [class.active]="pagina === paginaActual"
+          (click)="irPagina(pagina)"
+        >
+          {{ pagina }}
+        </button>
+
+        <button
+          type="button"
+          (click)="irPagina(paginaActual + 1)"
+          [disabled]="paginaActual === totalPaginas"
+          aria-label="Página siguiente"
+        >
+          ›
+        </button>
+      </div>
+    </div>
+  </section>
 </div>

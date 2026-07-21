@@ -1,9 +1,10 @@
 <div class="dashboard-page">
 
-  <!-- ENCABEZADO NUEVO -->
+  <!-- ENCABEZADO -->
   <header class="dashboard-header">
     <div>
       <span class="dashboard-kicker">
+        <i class="bi bi-speedometer2"></i>
         PANEL ADMINISTRATIVO
       </span>
 
@@ -16,7 +17,10 @@
 
     <div class="dashboard-header-actions">
       <div class="date-box">
-        <span>Periodo</span>
+        <span>
+          <i class="bi bi-calendar3"></i>
+          Periodo
+        </span>
 
         <strong>
           {{ fechaActual | date:'dd MMM yyyy' }}
@@ -29,7 +33,11 @@
         (click)="cargarDashboard()"
         [disabled]="loading"
       >
-        <span>↻</span>
+        <i
+          class="bi"
+          [class.bi-arrow-clockwise]="!loading"
+          [class.bi-hourglass-split]="loading"
+        ></i>
 
         {{
           loading
@@ -45,7 +53,7 @@
     class="dashboard-alert"
     *ngIf="error"
   >
-    <span>⚠</span>
+    <i class="bi bi-exclamation-triangle-fill"></i>
     {{ error }}
   </div>
 
@@ -57,7 +65,7 @@
         <span>Ventas del día</span>
 
         <div class="stat-icon money-icon">
-          S/
+          <i class="bi bi-cash-coin"></i>
         </div>
       </div>
 
@@ -71,6 +79,7 @@
 
       <div class="stat-footer">
         <span class="trend positive">
+          <i class="bi bi-graph-up-arrow"></i>
           + {{ resumen.cantidadVentas }}
         </span>
 
@@ -83,7 +92,7 @@
         <span>Total productos</span>
 
         <div class="stat-icon product-icon">
-          👓
+          <i class="bi bi-eyeglasses"></i>
         </div>
       </div>
 
@@ -93,6 +102,7 @@
 
       <div class="stat-footer">
         <span class="trend neutral">
+          <i class="bi bi-box-seam"></i>
           Inventario
         </span>
 
@@ -105,7 +115,7 @@
         <span>Productos bajo stock</span>
 
         <div class="stat-icon warning-icon">
-          !
+          <i class="bi bi-exclamation-triangle-fill"></i>
         </div>
       </div>
 
@@ -119,6 +129,12 @@
           [class.negative]="resumen.bajoStock > 0"
           [class.positive]="resumen.bajoStock === 0"
         >
+          <i
+            class="bi"
+            [class.bi-exclamation-circle-fill]="resumen.bajoStock > 0"
+            [class.bi-check-circle-fill]="resumen.bajoStock === 0"
+          ></i>
+
           {{
             resumen.bajoStock > 0
               ? 'Revisar'
@@ -135,7 +151,7 @@
         <span>Movimientos</span>
 
         <div class="stat-icon movement-icon">
-          ↔
+          <i class="bi bi-arrow-left-right"></i>
         </div>
       </div>
 
@@ -145,6 +161,7 @@
 
       <div class="stat-footer">
         <span class="trend neutral">
+          <i class="bi bi-journal-text"></i>
           Kardex
         </span>
 
@@ -161,11 +178,17 @@
     <article class="dashboard-card sales-overview-card">
       <div class="card-heading">
         <div>
-          <h2>Resumen de ventas</h2>
+          <h2>
+            <i class="bi bi-bar-chart-line"></i>
+            Resumen de ventas
+          </h2>
+
           <p>Comportamiento de los productos vendidos.</p>
         </div>
 
-        <span class="card-menu">•••</span>
+        <span class="card-menu">
+          <i class="bi bi-three-dots"></i>
+        </span>
       </div>
 
       <div
@@ -175,7 +198,9 @@
           productosMasVendidos.length === 0
         "
       >
-        <div class="empty-chart-icon">▥</div>
+        <div class="empty-chart-icon">
+          <i class="bi bi-bar-chart"></i>
+        </div>
 
         <strong>Aún no existen ventas</strong>
 
@@ -225,6 +250,7 @@
 
         <a routerLink="/admin/reportes">
           Ver reporte completo
+          <i class="bi bi-arrow-right-short"></i>
         </a>
       </div>
     </article>
@@ -233,11 +259,17 @@
     <article class="dashboard-card stock-summary-card">
       <div class="card-heading">
         <div>
-          <h2>Estado del inventario</h2>
+          <h2>
+            <i class="bi bi-boxes"></i>
+            Estado del inventario
+          </h2>
+
           <p>Disponibilidad general.</p>
         </div>
 
-        <span class="card-menu">•••</span>
+        <span class="card-menu">
+          <i class="bi bi-three-dots"></i>
+        </span>
       </div>
 
       <div class="donut-container">
@@ -313,15 +345,20 @@
     <article class="dashboard-card">
       <div class="card-heading">
         <div>
-          <h2>Últimas ventas</h2>
+          <h2>
+            <i class="bi bi-receipt-cutoff"></i>
+            Últimas ventas
+          </h2>
+
           <p>Operaciones registradas recientemente.</p>
         </div>
 
         <a
           class="text-button"
-          routerLink="/admin/ventas"
+          routerLink="/admin/ventas-escaner"
         >
           Nueva venta
+          <i class="bi bi-plus-circle"></i>
         </a>
       </div>
 
@@ -332,6 +369,7 @@
           ultimasVentas.length === 0
         "
       >
+        <i class="bi bi-inbox"></i>
         No existen ventas registradas.
       </div>
 
@@ -377,6 +415,7 @@
                     'TRANSFERENCIA'
                   "
                 >
+                  <i class="bi bi-credit-card-2-front"></i>
                   {{
                     etiquetaMetodoPago(
                       venta.metodo_pago
@@ -404,7 +443,11 @@
     <article class="dashboard-card">
       <div class="card-heading">
         <div>
-          <h2>Productos más vendidos</h2>
+          <h2>
+            <i class="bi bi-trophy"></i>
+            Productos más vendidos
+          </h2>
+
           <p>Clasificación por cantidad de ventas.</p>
         </div>
 
@@ -413,6 +456,7 @@
           routerLink="/admin/reportes"
         >
           Ver todos
+          <i class="bi bi-arrow-right-short"></i>
         </a>
       </div>
 
@@ -423,6 +467,7 @@
           productosMasVendidos.length === 0
         "
       >
+        <i class="bi bi-clipboard-data"></i>
         No existen estadísticas de ventas.
       </div>
 

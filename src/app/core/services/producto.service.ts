@@ -44,6 +44,7 @@ interface ProductoDb {
   color?: string | null;
   medida?: string | null;
   material?: string | null;
+  sexo?: string | null;
   precio_compra: number | string;
   precio_venta: number | string;
   stock_actual: number;
@@ -71,6 +72,7 @@ export class ProductoService {
     color,
     medida,
     material,
+    sexo,
     precio_compra,
     precio_venta,
     stock_actual,
@@ -229,6 +231,39 @@ export class ProductoService {
         throw new Error(
           'El producto se guardó, pero no se obtuvo su identificador.'
         );
+      }
+
+      const sexo =
+        request.sexo === 'F' ||
+        request.sexo === 'M'
+          ? request.sexo
+          : null;
+
+      if (sexo) {
+        const {
+          error: errorSexo
+        } =
+          await this.supabaseService.client
+            .rpc(
+              'actualizar_sexo_producto',
+              {
+                p_id_producto:
+                  idProducto,
+                p_sexo:
+                  sexo
+              }
+            );
+
+        if (errorSexo) {
+          console.error(
+            'Error al guardar sexo:',
+            errorSexo
+          );
+
+          throw new Error(
+            'El producto se creó, pero no se pudo guardar el sexo. Ejecuta el SQL 11_productos_sexo.sql.'
+          );
+        }
       }
 
       return this.obtenerPorId(idProducto);
@@ -462,10 +497,34 @@ export class ProductoService {
         );
       }
 
+      const respuesta =
+        await this.supabaseService.client
+          .from('marcas')
+          .select(`
+            id_marca,
+            nombre,
+            activo
+          `)
+          .eq('id_marca', idMarca)
+          .single();
+
+      if (
+        respuesta.error ||
+        !respuesta.data
+      ) {
+        throw new Error(
+          respuesta.error?.message ||
+          'No se pudo consultar la marca.'
+        );
+      }
+
       return {
-        id: idMarca,
-        nombre: nombreLimpio,
-        estado: true
+        id:
+          Number(respuesta.data.id_marca),
+        nombre:
+          String(respuesta.data.nombre),
+        estado:
+          Boolean(respuesta.data.activo)
       };
     });
   }
@@ -563,6 +622,11 @@ export class ProductoService {
         fila.medida ?? '',
       material:
         fila.material ?? '',
+      sexo:
+        fila.sexo === 'F' ||
+        fila.sexo === 'M'
+          ? fila.sexo
+          : undefined,
       precioCompra:
         Number(fila.precio_compra ?? 0),
       precioVenta:

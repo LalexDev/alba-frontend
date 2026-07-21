@@ -15,18 +15,21 @@
       type="button"
       (click)="abrirFormulario()"
     >
-      <span>＋</span>
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
       Registrar producto
     </button>
   </header>
 
   <section class="stats-grid">
     <article class="stat-card">
-      <span class="stat-icon">▣</span>
+      <span class="stat-icon"><i class="bi bi-boxes" aria-hidden="true"></i></span>
       <div>
-        <small>Productos registrados</small>
+        <small>Marcas en inventario</small>
         <strong>{{ totalProductos }}</strong>
-        <span>Productos en catálogo</span>
+        <span>
+          {{ totalModelosRegistrados }}
+          modelo(s) registrados
+        </span>
       </div>
     </article>
 
@@ -34,7 +37,7 @@
       class="stat-card warning"
       [class.has-alert]="totalBajoStock > 0"
     >
-      <span class="stat-icon">⚠</span>
+      <span class="stat-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
       <div>
         <small>Stock bajo</small>
         <strong>{{ totalBajoStock }}</strong>
@@ -43,7 +46,7 @@
     </article>
 
     <article class="stat-card">
-      <span class="stat-icon">◇</span>
+      <span class="stat-icon"><i class="bi bi-tags" aria-hidden="true"></i></span>
       <div>
         <small>Categorías</small>
         <strong>{{ totalCategorias }}</strong>
@@ -52,7 +55,7 @@
     </article>
 
     <article class="stat-card value-card">
-      <span class="stat-icon">S/</span>
+      <span class="stat-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
       <div>
         <small>Valorización</small>
         <strong>
@@ -74,7 +77,7 @@
     <div>
       <strong>
         Hay {{ totalBajoStock }}
-        producto(s) con stock bajo.
+        marca(s) con stock bajo.
       </strong>
       <span>
         Revisa los productos resaltados y contacta
@@ -86,6 +89,8 @@
       type="button"
       (click)="cambiarFiltroStock()"
     >
+      <i class="bi bi-box-seam" aria-hidden="true"></i>
+
       {{
         mostrarSoloBajoStock
           ? 'Mostrar todos'
@@ -97,7 +102,7 @@
   <section class="inventory-controls">
 
     <div class="search-box">
-      <span aria-hidden="true">⌕</span>
+      <i class="bi bi-search" aria-hidden="true"></i>
 
       <input
         type="search"
@@ -169,7 +174,7 @@
       [class.active]="mostrarSoloBajoStock"
       (click)="cambiarFiltroStock()"
     >
-      ⚠
+      <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
       {{
         mostrarSoloBajoStock
           ? 'Mostrando stock bajo'
@@ -183,14 +188,7 @@
       (click)="exportarInventarioExcel()"
       [disabled]="cargando || productos.length === 0"
     >
-      <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path d="M12 3v12"></path>
-        <path d="m7 10 5 5 5-5"></path>
-        <path d="M5 21h14"></path>
-      </svg>
+      <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
 
       Descargar inventario
     </button>
@@ -206,6 +204,7 @@
         mostrarSoloBajoStock
       "
     >
+      <i class="bi bi-funnel-x" aria-hidden="true"></i>
       Limpiar filtros
     </button>
 
@@ -244,14 +243,13 @@
       <table class="products-table">
         <thead>
           <tr>
-            <th>Código</th>
-            <th>Producto</th>
+            <th>Marca</th>
             <th>Categoría</th>
-            <th>Marca / modelo</th>
-            <th>Medida</th>
+            <th>Modelos registrados</th>
+            <th>Características</th>
             <th>Compra</th>
             <th>Venta</th>
-            <th>Stock</th>
+            <th>Stock total</th>
             <th>Proveedor</th>
             <th>Estado</th>
             <th>Reposición</th>
@@ -265,26 +263,18 @@
             [class.out-stock-row]="sinStock(producto)"
           >
             <td>
-              <strong>
-                {{
-                  producto.codigoInterno ||
-                  producto.codigoBarras
-                }}
-              </strong>
-              <small>{{ producto.codigoBarras }}</small>
-            </td>
-
-            <td>
               <div class="product-cell">
                 <span class="product-placeholder">👓</span>
                 <div>
-                  <strong>{{ producto.nombre }}</strong>
-                  <small>
+                  <strong>
                     {{
-                      producto.color ||
-                      producto.descripcion ||
-                      'Sin descripción'
+                      producto.marca?.nombre ||
+                      producto.nombre
                     }}
+                  </strong>
+                  <small>
+                    {{ producto.cantidadModelos }}
+                    modelo(s) registrado(s)
                   </small>
                 </div>
               </div>
@@ -300,34 +290,71 @@
             <td>
               <strong>
                 {{
-                  producto.marca?.nombre ||
-                  'Sin marca'
+                  producto.modelosRegistrados.join(', ') ||
+                  'Sin modelo'
                 }}
               </strong>
+
               <small>
                 {{
-                  producto.modelo ||
-                  'Sin modelo'
+                  producto.nombresRegistrados.join(', ')
                 }}
               </small>
             </td>
 
-            <td>{{ producto.medida || '—' }}</td>
+            <td>
+              <span
+                *ngIf="
+                  producto.sexosRegistrados.length
+                "
+              >
+                Sexo:
+                {{
+                  producto.sexosRegistrados.join(', ')
+                }}
+              </span>
+
+              <small *ngIf="producto.color">
+                Color: {{ producto.color }}
+              </small>
+
+              <small *ngIf="producto.medida">
+                Medida: {{ producto.medida }}
+              </small>
+
+              <small *ngIf="producto.material">
+                Material: {{ producto.material }}
+              </small>
+
+              <span
+                class="not-applicable"
+                *ngIf="
+                  producto.sexosRegistrados.length === 0 &&
+                  !producto.color &&
+                  !producto.medida &&
+                  !producto.material
+                "
+              >
+                No aplica
+              </span>
+            </td>
 
             <td>
-              S/
               {{
-                producto.precioCompra || 0
-                  | number:'1.2-2'
+                rangoPrecio(
+                  producto.precioCompraMin,
+                  producto.precioCompraMax
+                )
               }}
             </td>
 
             <td>
               <strong>
-                S/
                 {{
-                  producto.precioVenta
-                    | number:'1.2-2'
+                  rangoPrecio(
+                    producto.precioVentaMin,
+                    producto.precioVentaMax
+                  )
                 }}
               </strong>
             </td>
@@ -349,16 +376,10 @@
             <td>
               <strong>
                 {{
-                  producto.proveedor?.razonSocial ||
+                  producto.proveedoresRegistrados.join(', ') ||
                   'Sin proveedor'
                 }}
               </strong>
-              <small>
-                {{
-                  producto.proveedor?.contacto ||
-                  ''
-                }}
-              </small>
             </td>
 
             <td>
@@ -366,11 +387,7 @@
                 class="status-badge"
                 [class.inactive]="!producto.estado"
               >
-                {{
-                  producto.estado
-                    ? 'Activo'
-                    : 'Inactivo'
-                }}
+                {{ producto.estado ? 'Activo' : 'Inactivo' }}
               </span>
             </td>
 
@@ -387,6 +404,7 @@
                   class="whatsapp-button"
                   (click)="contactarWhatsApp(producto)"
                 >
+                  <i class="bi bi-whatsapp" aria-hidden="true"></i>
                   WhatsApp
                 </button>
 
@@ -395,6 +413,7 @@
                   class="email-button"
                   (click)="contactarCorreo(producto)"
                 >
+                  <i class="bi bi-envelope" aria-hidden="true"></i>
                   Correo
                 </button>
               </div>
@@ -413,6 +432,11 @@
         class="empty-state"
         *ngIf="!cargando"
       >
+        <i
+          class="bi bi-box-seam empty-state-icon"
+          aria-hidden="true"
+        ></i>
+
         <strong>No se encontraron productos.</strong>
         <span>
           Registra un producto o modifica
@@ -430,7 +454,7 @@
         {{ productosPaginados.length }}
         de
         {{ filtrados.length }}
-        productos
+        marcas
       </span>
 
       <div>
@@ -439,6 +463,7 @@
           (click)="paginaAnterior()"
           [disabled]="paginaActual === 1"
         >
+          <i class="bi bi-chevron-left" aria-hidden="true"></i>
           Anterior
         </button>
 
@@ -452,6 +477,7 @@
           [disabled]="paginaActual === totalPaginas"
         >
           Siguiente
+          <i class="bi bi-chevron-right" aria-hidden="true"></i>
         </button>
       </div>
     </footer>
@@ -484,7 +510,7 @@
           [disabled]="guardando"
           aria-label="Cerrar formulario"
         >
-          ×
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
       </header>
 
@@ -494,7 +520,10 @@
         (ngSubmit)="guardar()"
       >
         <div class="form-grid">
-          <div class="field">
+          <div
+            class="field"
+            *ngIf="usarFormularioCompleto"
+          >
             <label for="codigoProducto">
               Código de barras
             </label>
@@ -509,6 +538,7 @@
                 type="button"
                 (click)="generarCodigo()"
               >
+                <i class="bi bi-upc-scan" aria-hidden="true"></i>
                 Generar
               </button>
             </div>
@@ -534,20 +564,20 @@
             >
               <option
                 [ngValue]="null"
-                disabled
+                [disabled]="true"
               >
                 Selecciona una categoría
               </option>
 
               <option
-                *ngFor="let categoria of categoriasVisibles"
+                *ngFor="let categoria of categoriasFormulario"
                 [ngValue]="categoria.id"
               >
                 {{ categoria.nombre }}
               </option>
 
               <option [ngValue]="categoriaOtros">
-                Agregar nueva categoría
+                Otros
               </option>
             </select>
           </div>
@@ -573,49 +603,306 @@
             </small>
           </div>
 
-          <div class="field">
-            <label for="marcaProducto">Marca</label>
-            <input
-              id="marcaProducto"
-              formControlName="marcaNombre"
-              placeholder="Ej. RayStyle"
-            />
+          <div
+            class="category-form-note"
+            [class.complete]="usarFormularioCompleto"
+            [class.simple]="usarFormularioSimplificado"
+          >
+            <span>
+              {{ mensajeCategoriaFormulario }}
+            </span>
           </div>
 
-          <div class="field">
-            <label for="modeloProducto">Modelo</label>
-            <input
-              id="modeloProducto"
-              formControlName="modelo"
-              placeholder="Ej. RS-120"
-            />
+          <section
+            class="brand-model-section"
+            *ngIf="usarFormularioCompleto"
+          >
+            <header class="brand-model-header">
+              <div>
+                <span>MARCA Y MODELO</span>
+                <h3>
+                  Selecciona una marca registrada
+                </h3>
+                <p>
+                  Cada modelo se guarda individualmente, pero el inventario suma el stock por marca.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                class="toggle-brand-button"
+                (click)="alternarNuevaMarca()"
+              >
+                <i
+                  class="bi"
+                  [ngClass]="
+                    mostrarNuevaMarca
+                      ? 'bi-x-lg'
+                      : 'bi-plus-lg'
+                  "
+                  aria-hidden="true"
+                ></i>
+
+                {{
+                  mostrarNuevaMarca
+                    ? 'Cancelar nueva marca'
+                    : 'Registrar marca'
+                }}
+              </button>
+            </header>
+
+            <div class="brand-model-grid">
+              <div class="field">
+                <label for="marcaProducto">
+                  Marca registrada
+                </label>
+
+                <select
+                  id="marcaProducto"
+                  formControlName="marcaId"
+                >
+                  <option
+                    [ngValue]="null"
+                    [disabled]="true"
+                  >
+                    Selecciona una marca
+                  </option>
+
+                  <option
+                    *ngFor="
+                      let marca of
+                      marcasFormulario
+                    "
+                    [ngValue]="marca.id"
+                  >
+                    {{ marca.nombre }}
+                  </option>
+                </select>
+
+                <small
+                  *ngIf="marcaFormularioSeleccionada"
+                  class="selected-brand-text"
+                >
+                  Seleccionada:
+                  {{
+                    marcaFormularioSeleccionada.nombre
+                  }}
+                </small>
+
+
+                <small
+                  class="field-error"
+                  *ngIf="
+                    form.get('marcaId')?.touched &&
+                    form.get('marcaId')?.invalid
+                  "
+                >
+                  Selecciona una marca.
+                </small>
+
+
+              </div>
+
+              <div class="field">
+                <label for="modeloProducto">
+                  Modelo de la marca
+                  <span *ngIf="modeloObligatorio">*</span>
+                </label>
+
+                <input
+                  id="modeloProducto"
+                  formControlName="modelo"
+                  placeholder="Ej. RS-120"
+                />
+
+                <small>
+                  Cada modelo se registra por separado y
+                  su stock se suma a la marca.
+                </small>
+
+                <small
+                  class="field-error"
+                  *ngIf="
+                    form.get('modelo')?.touched &&
+                    form.get('modelo')?.invalid
+                  "
+                >
+                  El modelo es obligatorio para esta categoría.
+                </small>
+              </div>
+            </div>
+
+            <div
+              class="new-brand-panel"
+              *ngIf="mostrarNuevaMarca"
+            >
+              <div class="field">
+                <label for="nuevaMarcaProducto">
+                  Nombre de la nueva marca
+                </label>
+
+                <input
+                  id="nuevaMarcaProducto"
+                  formControlName="nuevaMarca"
+                  placeholder="Escribe la marca una sola vez"
+                  autocomplete="off"
+                />
+              </div>
+
+              <button
+                type="button"
+                class="save-brand-button"
+                (click)="guardarNuevaMarca()"
+                [disabled]="guardandoMarca"
+              >
+                <i
+                  class="bi"
+                  [ngClass]="
+                    guardandoMarca
+                      ? 'bi-arrow-repeat spin-icon'
+                      : 'bi-floppy'
+                  "
+                  aria-hidden="true"
+                ></i>
+
+                {{
+                  guardandoMarca
+                    ? 'Guardando marca...'
+                    : 'Guardar y seleccionar'
+                }}
+              </button>
+            </div>
+
+            <p
+              class="brand-message success"
+              *ngIf="mensajeMarca"
+            >
+              {{ mensajeMarca }}
+            </p>
+
+            <p
+              class="brand-message error"
+              *ngIf="errorMarca"
+            >
+              {{ errorMarca }}
+            </p>
+          </section>
+
+          <div
+            class="field sex-field"
+            *ngIf="usarFormularioCompleto"
+          >
+            <label for="sexoProducto">
+              Sexo
+              <span>*</span>
+            </label>
+
+            <select
+              id="sexoProducto"
+              formControlName="sexo"
+            >
+              <option
+                [ngValue]="null"
+                [disabled]="true"
+              >
+                Selecciona F o M
+              </option>
+
+              <option value="F">
+                F - Femenino
+              </option>
+
+              <option value="M">
+                M - Masculino
+              </option>
+            </select>
+
+            <small>
+              Selecciona el sexo correspondiente
+              a la montura o al estuche.
+            </small>
+
+            <small
+              class="field-error"
+              *ngIf="
+                form.get('sexo')?.touched &&
+                form.get('sexo')?.invalid
+              "
+            >
+              Selecciona F o M.
+            </small>
           </div>
 
-          <div class="field">
-            <label for="colorProducto">Color</label>
+          <div
+            class="field"
+            *ngIf="mostrarCampoColor"
+          >
+            <label for="colorProducto">
+              Color
+              <span *ngIf="colorObligatorio">*</span>
+            </label>
             <input
               id="colorProducto"
               formControlName="color"
               placeholder="Ej. Negro"
             />
+            <small
+              class="field-error"
+              *ngIf="
+                form.get('color')?.touched &&
+                form.get('color')?.invalid
+              "
+            >
+              El color es obligatorio para esta categoría.
+            </small>
           </div>
 
-          <div class="field">
-            <label for="medidaProducto">Medida</label>
+          <div
+            class="field"
+            *ngIf="mostrarCampoMedida"
+          >
+            <label for="medidaProducto">
+              Medida
+              <span *ngIf="medidaObligatoria">*</span>
+            </label>
             <input
               id="medidaProducto"
               formControlName="medida"
               placeholder="Ej. 52-18-140"
             />
+            <small
+              class="field-error"
+              *ngIf="
+                form.get('medida')?.touched &&
+                form.get('medida')?.invalid
+              "
+            >
+              La medida es obligatoria para esta categoría.
+            </small>
           </div>
 
-          <div class="field">
-            <label for="materialProducto">Material</label>
+          <div
+            class="field"
+            *ngIf="mostrarCampoMaterial"
+          >
+            <label for="materialProducto">
+              Material
+              <span *ngIf="materialObligatorio">*</span>
+            </label>
             <input
               id="materialProducto"
               formControlName="material"
               placeholder="Ej. Acetato"
             />
+            <small
+              class="field-error"
+              *ngIf="
+                form.get('material')?.touched &&
+                form.get('material')?.invalid
+              "
+            >
+              El material es obligatorio para esta categoría.
+            </small>
           </div>
 
           <div class="field">
@@ -641,17 +928,27 @@
           </div>
 
           <div class="field">
-            <label for="stockActual">Stock actual</label>
+            <label for="stockActual">Cantidad que ingresa</label>
             <input
               id="stockActual"
               type="number"
-              min="0"
+              min="1"
               step="1"
               formControlName="stockActual"
             />
+            <small>
+              {{
+                usarFormularioCompleto
+                  ? 'Esta cantidad se sumará al stock total de la marca.'
+                  : 'Cantidad inicial de este producto.'
+              }}
+            </small>
           </div>
 
-          <div class="field">
+          <div
+            class="field"
+            *ngIf="usarFormularioCompleto"
+          >
             <label for="stockMinimo">Stock mínimo</label>
             <input
               id="stockMinimo"
@@ -663,7 +960,10 @@
             <small>Valor recomendado: 5 unidades.</small>
           </div>
 
-          <div class="field">
+          <div
+            class="field"
+            *ngIf="usarFormularioCompleto"
+          >
             <label for="proveedorProducto">Proveedor</label>
             <select
               id="proveedorProducto"
@@ -671,7 +971,7 @@
             >
               <option
                 [ngValue]="null"
-                disabled
+                [disabled]="true"
               >
                 Selecciona un proveedor
               </option>
@@ -688,7 +988,10 @@
             </select>
           </div>
 
-          <div class="field">
+          <div
+            class="field"
+            *ngIf="usarFormularioCompleto"
+          >
             <label for="fechaIngreso">Fecha ingreso</label>
             <input
               id="fechaIngreso"
@@ -698,18 +1001,23 @@
             />
           </div>
 
-          <div class="field">
+          <div
+            class="field"
+            *ngIf="usarFormularioCompleto"
+          >
             <label for="estadoProducto">Estado</label>
-            <select
+            <input
               id="estadoProducto"
+              type="text"
               formControlName="estado"
-              [disabled]="true"
-            >
-              <option value="ACTIVO">ACTIVO</option>
-            </select>
+              readonly
+            />
           </div>
 
-          <div class="field full-width">
+          <div
+            class="field full-width"
+            *ngIf="usarFormularioCompleto"
+          >
             <label for="descripcionProducto">
               Descripción
             </label>
@@ -736,14 +1044,28 @@
             (click)="cerrarFormulario()"
             [disabled]="guardando"
           >
+            <i class="bi bi-x-circle" aria-hidden="true"></i>
             Cancelar
           </button>
 
           <button
             type="submit"
             class="save-button"
-            [disabled]="guardando"
+            [disabled]="
+              guardando ||
+              guardandoMarca
+            "
           >
+            <i
+              class="bi"
+              [ngClass]="
+                guardando
+                  ? 'bi-arrow-repeat spin-icon'
+                  : 'bi-floppy'
+              "
+              aria-hidden="true"
+            ></i>
+
             {{
               guardando
                 ? 'Guardando...'

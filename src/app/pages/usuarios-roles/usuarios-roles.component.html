@@ -3,11 +3,7 @@
   <header class="users-header">
     <div class="header-title">
       <span class="header-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M19 8v6M16 11h6" />
-        </svg>
+        <i class="bi bi-person-plus"></i>
       </span>
 
       <div>
@@ -28,9 +24,7 @@
       class="primary-button"
       (click)="abrirNuevoUsuario()"
     >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 5v14M5 12h14" />
-      </svg>
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
       Nuevo usuario
     </button>
   </header>
@@ -38,9 +32,7 @@
   <section class="stats-grid">
     <article class="stat-card">
       <span class="stat-icon total" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
+        <i class="bi bi-people"></i>
       </span>
 
       <div>
@@ -52,10 +44,7 @@
 
     <article class="stat-card">
       <span class="stat-icon admin" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
+        <i class="bi bi-shield-check"></i>
       </span>
 
       <div>
@@ -67,9 +56,7 @@
 
     <article class="stat-card">
       <span class="stat-icon seller" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M4 5h2l2 10h9l2-7H7M10 20h.01M17 20h.01" />
-        </svg>
+        <i class="bi bi-cart3"></i>
       </span>
 
       <div>
@@ -81,10 +68,7 @@
 
     <article class="stat-card">
       <span class="stat-icon active" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <circle cx="9" cy="7" r="4" />
-          <path d="M3 21a6 6 0 0 1 12 0M16 15l2 2 4-5" />
-        </svg>
+        <i class="bi bi-person-check"></i>
       </span>
 
       <div>
@@ -97,10 +81,7 @@
 
   <section class="search-controls">
     <div class="search-box">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-4-4" />
-      </svg>
+      <i class="bi bi-search" aria-hidden="true"></i>
 
       <input
         type="search"
@@ -116,7 +97,7 @@
         (click)="buscar = ''; paginaActual = 1"
         aria-label="Limpiar búsqueda"
       >
-        ×
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
     </div>
 
@@ -146,6 +127,11 @@
         filtro !== 'TODOS'
       "
     >
+      <i
+        class="bi bi-funnel"
+        aria-hidden="true"
+      ></i>
+
       Limpiar filtros
     </button>
   </section>
@@ -292,10 +278,7 @@
                       seleccionarUsuario(usuario)
                     "
                   >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12Z" />
-                      <circle cx="12" cy="12" r="2.5" />
-                    </svg>
+                    <i class="bi bi-eye" aria-hidden="true"></i>
                   </button>
 
                   <button
@@ -306,10 +289,7 @@
                       abrirEditarUsuario(usuario)
                     "
                   >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="m4 20 4-1 11-11-3-3L5 16Z" />
-                      <path d="m14 6 3 3" />
-                    </svg>
+                    <i class="bi bi-pencil" aria-hidden="true"></i>
                   </button>
 
                   <button
@@ -338,9 +318,7 @@
                       cambiarEstado(usuario)
                     "
                   >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M12 2v10M6.3 5.3a8 8 0 1 0 11.4 0" />
-                    </svg>
+                    <i class="bi bi-power" aria-hidden="true"></i>
                   </button>
                 </div>
               </td>
@@ -352,9 +330,7 @@
       <ng-template #sinUsuarios>
         <div class="empty-state">
           <span class="empty-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8" />
-            </svg>
+            <i class="bi bi-person-x" aria-hidden="true"></i>
           </span>
 
           <strong>
@@ -388,7 +364,7 @@
             [disabled]="paginaActual === 1"
             aria-label="Página anterior"
           >
-            ‹
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
           </button>
 
           <button
@@ -412,7 +388,7 @@
             "
             aria-label="Página siguiente"
           >
-            ›
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
           </button>
         </div>
       </footer>
@@ -427,10 +403,7 @@
       >
         <header class="quick-header">
           <span class="quick-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="7" r="4" />
-              <path d="M5 21a7 7 0 0 1 14 0" />
-            </svg>
+            <i class="bi bi-person-badge" aria-hidden="true"></i>
           </span>
 
           <h2>Ficha rápida</h2>
@@ -540,9 +513,7 @@
                   .permisos
               "
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m5 12 4 4L19 6" />
-              </svg>
+              <i class="bi bi-check2-circle" aria-hidden="true"></i>
               {{ permiso }}
             </li>
           </ul>
@@ -558,6 +529,11 @@
               )
             "
           >
+            <i
+              class="bi bi-pencil-square"
+              aria-hidden="true"
+            ></i>
+
             Editar usuario
           </button>
 
@@ -576,6 +552,11 @@
               )
             "
           >
+            <i
+              class="bi bi-power"
+              aria-hidden="true"
+            ></i>
+
             {{
               usuarioSeleccionado.activo
                 ? 'Desactivar'
@@ -587,7 +568,18 @@
 
       <ng-template #sinSeleccion>
         <div class="empty-quick">
-          Selecciona un usuario para consultar sus permisos.
+          <i
+            class="bi bi-person-lines-fill"
+            aria-hidden="true"
+          ></i>
+
+          <strong>
+            Selecciona un usuario
+          </strong>
+
+          <span>
+            Consulta sus datos, permisos y estado.
+          </span>
         </div>
       </ng-template>
     </aside>
@@ -632,17 +624,21 @@
           [disabled]="guardando"
           aria-label="Cerrar formulario"
         >
-          ×
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
       </header>
 
       <form
         class="user-form"
-        (ngSubmit)="guardar()"
+        #usuarioForm="ngForm"
+        novalidate
+        (ngSubmit)="guardar(usuarioForm)"
       >
         <section class="form-section">
           <div class="section-heading">
-            <span>1</span>
+            <span aria-hidden="true">
+              <i class="bi bi-person-vcard"></i>
+            </span>
 
             <div>
               <h3>Datos personales</h3>
@@ -653,79 +649,228 @@
           </div>
 
           <div class="form-grid">
-            <div class="field">
-              <label for="nombresUsuario">
-                Nombres
+            <div class="field full-field">
+              <label for="nombreCompletoUsuario">
+                Nombres completos
+                <span class="required-mark">*</span>
               </label>
 
-              <input
-                id="nombresUsuario"
-                name="nombresUsuario"
-                type="text"
-                required
-                [(ngModel)]="
-                  form.nombres
+              <div
+                class="input-with-icon"
+                [class.invalid-control]="
+                  nombreCompletoModel.invalid &&
+                  (
+                    nombreCompletoModel.touched ||
+                    usuarioForm.submitted
+                  )
                 "
-                placeholder="Ej. Ana María"
-              />
-            </div>
+              >
+                <i
+                  class="bi bi-person"
+                  aria-hidden="true"
+                ></i>
 
-            <div class="field">
-              <label for="apellidosUsuario">
-                Apellidos
-              </label>
+                <input
+                  id="nombreCompletoUsuario"
+                  name="nombreCompletoUsuario"
+                  type="text"
+                  required
+                  minlength="3"
+                  maxlength="180"
+                  autocomplete="name"
+                  [pattern]="patronNombre"
+                  #nombreCompletoModel="ngModel"
+                  [(ngModel)]="
+                    form.nombreCompleto
+                  "
+                  placeholder="Ej. Melina Zelada"
+                />
+              </div>
 
-              <input
-                id="apellidosUsuario"
-                name="apellidosUsuario"
-                type="text"
-                [(ngModel)]="
-                  form.apellidos
+              <div
+                class="field-error"
+                *ngIf="
+                  nombreCompletoModel.invalid &&
+                  (
+                    nombreCompletoModel.touched ||
+                    usuarioForm.submitted
+                  )
                 "
-                placeholder="Ej. Torres Díaz"
-              />
+              >
+                <i class="bi bi-exclamation-circle"></i>
+
+                <span
+                  *ngIf="
+                    nombreCompletoModel.errors?.['required']
+                  "
+                >
+                  Los nombres completos son obligatorios.
+                </span>
+
+                <span
+                  *ngIf="
+                    nombreCompletoModel.errors?.['minlength']
+                  "
+                >
+                  Escribe al menos 3 caracteres.
+                </span>
+
+                <span
+                  *ngIf="
+                    nombreCompletoModel.errors?.['pattern']
+                  "
+                >
+                  Usa únicamente letras, espacios, apóstrofes o guiones.
+                </span>
+              </div>
             </div>
 
             <div class="field">
               <label for="correoUsuario">
                 Correo de acceso
+                <span class="required-mark">*</span>
               </label>
 
-              <input
-                id="correoUsuario"
-                name="correoUsuario"
-                type="email"
-                required
-                [(ngModel)]="
-                  form.email
+              <div
+                class="input-with-icon"
+                [class.invalid-control]="
+                  correoModel.invalid &&
+                  (
+                    correoModel.touched ||
+                    usuarioForm.submitted
+                  )
                 "
-                placeholder="usuario@correo.com"
-              />
+              >
+                <i
+                  class="bi bi-envelope"
+                  aria-hidden="true"
+                ></i>
+
+                <input
+                  id="correoUsuario"
+                  name="correoUsuario"
+                  type="email"
+                  required
+                  maxlength="160"
+                  autocomplete="email"
+                  #correoModel="ngModel"
+                  [(ngModel)]="
+                    form.email
+                  "
+                  placeholder="usuario@correo.com"
+                />
+              </div>
+
+              <div
+                class="field-error"
+                *ngIf="
+                  correoModel.invalid &&
+                  (
+                    correoModel.touched ||
+                    usuarioForm.submitted
+                  )
+                "
+              >
+                <i class="bi bi-exclamation-circle"></i>
+
+                <span
+                  *ngIf="
+                    correoModel.errors?.['required']
+                  "
+                >
+                  El correo es obligatorio.
+                </span>
+
+                <span
+                  *ngIf="
+                    correoModel.errors?.['email']
+                  "
+                >
+                  Ingresa un correo válido.
+                </span>
+              </div>
             </div>
 
             <div class="field">
               <label for="telefonoUsuario">
                 Teléfono
+                <span class="required-mark">*</span>
               </label>
 
-              <input
-                id="telefonoUsuario"
-                name="telefonoUsuario"
-                type="tel"
-                inputmode="numeric"
-                maxlength="15"
-                [(ngModel)]="
-                  form.telefono
+              <div
+                class="input-with-icon"
+                [class.invalid-control]="
+                  telefonoModel.invalid &&
+                  (
+                    telefonoModel.touched ||
+                    usuarioForm.submitted
+                  )
                 "
-                placeholder="Ej. 987654321"
-              />
+              >
+                <i
+                  class="bi bi-telephone"
+                  aria-hidden="true"
+                ></i>
+
+                <input
+                  id="telefonoUsuario"
+                  name="telefonoUsuario"
+                  type="tel"
+                  inputmode="numeric"
+                  required
+                  minlength="7"
+                  maxlength="15"
+                  autocomplete="tel"
+                  [pattern]="patronTelefono"
+                  #telefonoModel="ngModel"
+                  [(ngModel)]="
+                    form.telefono
+                  "
+                  (ngModelChange)="
+                    limpiarTelefono($event)
+                  "
+                  placeholder="Ej. 926474267"
+                />
+              </div>
+
+              <div
+                class="field-error"
+                *ngIf="
+                  telefonoModel.invalid &&
+                  (
+                    telefonoModel.touched ||
+                    usuarioForm.submitted
+                  )
+                "
+              >
+                <i class="bi bi-exclamation-circle"></i>
+
+                <span
+                  *ngIf="
+                    telefonoModel.errors?.['required']
+                  "
+                >
+                  El teléfono es obligatorio.
+                </span>
+
+                <span
+                  *ngIf="
+                    telefonoModel.errors?.['pattern'] ||
+                    telefonoModel.errors?.['minlength']
+                  "
+                >
+                  Ingresa entre 7 y 15 números.
+                </span>
+              </div>
             </div>
           </div>
         </section>
 
         <section class="form-section">
           <div class="section-heading">
-            <span>2</span>
+            <span aria-hidden="true">
+              <i class="bi bi-shield-lock"></i>
+            </span>
 
             <div>
               <h3>Rol y seguridad</h3>
@@ -744,6 +889,15 @@
               <select
                 id="rolUsuario"
                 name="rolUsuario"
+                required
+                #rolModel="ngModel"
+                [class.invalid-control]="
+                  rolModel.invalid &&
+                  (
+                    rolModel.touched ||
+                    usuarioForm.submitted
+                  )
+                "
                 [(ngModel)]="
                   form.rolId
                 "
@@ -766,24 +920,42 @@
                   {{ textoRol(rol.nombre) }}
                 </option>
               </select>
+
+              <div
+                class="field-error"
+                *ngIf="
+                  rolModel.invalid &&
+                  (
+                    rolModel.touched ||
+                    usuarioForm.submitted
+                  )
+                "
+              >
+                <i class="bi bi-exclamation-circle"></i>
+                Selecciona un rol para el usuario.
+              </div>
             </div>
 
             <div class="role-description full-field">
               <strong>
                 {{
-                  form.rol ===
-                    'ADMINISTRADOR'
-                    ? 'Acceso completo'
-                    : 'Acceso de vendedor'
+                  !form.rolId
+                    ? 'Selecciona un rol'
+                    : form.rol ===
+                        'ADMINISTRADOR'
+                      ? 'Acceso completo'
+                      : 'Acceso de vendedor'
                 }}
               </strong>
 
               <span>
                 {{
-                  form.rol ===
-                    'ADMINISTRADOR'
-                    ? 'Puede gestionar todos los módulos, reportes y usuarios.'
-                    : 'Puede registrar ventas, consultar productos, clientes y órdenes.'
+                  !form.rolId
+                    ? 'Elige Administrador o Vendedor para asignar sus permisos.'
+                    : form.rol ===
+                        'ADMINISTRADOR'
+                      ? 'Puede gestionar todos los módulos, reportes y usuarios.'
+                      : 'Puede registrar ventas, consultar productos, clientes y órdenes.'
                 }}
               </span>
             </div>
@@ -795,35 +967,319 @@
                     ? 'Contraseña'
                     : 'Nueva contraseña (opcional)'
                 }}
+
+                <span
+                  class="required-mark"
+                  *ngIf="
+                    modoFormulario === 'CREAR'
+                  "
+                >
+                  *
+                </span>
               </label>
 
-              <input
-                id="passwordUsuario"
-                name="passwordUsuario"
-                type="password"
-                minlength="8"
-                [(ngModel)]="
-                  form.password
+              <div
+                class="password-control"
+                [class.invalid-control]="
+                  passwordModel.invalid &&
+                  (
+                    passwordModel.touched ||
+                    usuarioForm.submitted
+                  )
                 "
-                placeholder="Mínimo 8 caracteres"
-              />
+              >
+                <i
+                  class="bi bi-lock"
+                  aria-hidden="true"
+                ></i>
+
+                <input
+                  id="passwordUsuario"
+                  name="passwordUsuario"
+                  [type]="
+                    mostrarPassword
+                      ? 'text'
+                      : 'password'
+                  "
+                  [required]="
+                    modoFormulario === 'CREAR'
+                  "
+                  minlength="8"
+                  maxlength="72"
+                  autocomplete="new-password"
+                  [pattern]="patronPassword"
+                  #passwordModel="ngModel"
+                  [(ngModel)]="
+                    form.password
+                  "
+                  placeholder="Mínimo 8 caracteres"
+                />
+
+                <button
+                  type="button"
+                  class="password-toggle"
+                  (click)="
+                    alternarVisibilidadPassword(
+                      'PASSWORD'
+                    )
+                  "
+                  [attr.aria-label]="
+                    mostrarPassword
+                      ? 'Ocultar contraseña'
+                      : 'Mostrar contraseña'
+                  "
+                  [title]="
+                    mostrarPassword
+                      ? 'Ocultar contraseña'
+                      : 'Mostrar contraseña'
+                  "
+                >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      mostrarPassword
+                        ? 'bi-eye-slash'
+                        : 'bi-eye'
+                    "
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              </div>
+
+              <div
+                class="field-error"
+                *ngIf="
+                  passwordModel.invalid &&
+                  (
+                    passwordModel.touched ||
+                    usuarioForm.submitted
+                  )
+                "
+              >
+                <i class="bi bi-exclamation-circle"></i>
+
+                <span
+                  *ngIf="
+                    passwordModel.errors?.['required']
+                  "
+                >
+                  La contraseña es obligatoria.
+                </span>
+
+                <span
+                  *ngIf="
+                    passwordModel.errors?.['minlength'] ||
+                    passwordModel.errors?.['pattern']
+                  "
+                >
+                  Usa mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.
+                </span>
+              </div>
+
+              <ul
+                class="password-rules"
+                *ngIf="form.password"
+              >
+                <li
+                  [class.valid]="
+                    form.password.length >= 8
+                  "
+                >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      form.password.length >= 8
+                        ? 'bi-check-circle'
+                        : 'bi-circle'
+                    "
+                  ></i>
+                  8 caracteres
+                </li>
+
+                <li
+                  [class.valid]="
+                    !!form.password.match('[A-Z]')
+                  "
+                >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      form.password.match('[A-Z]')
+                        ? 'bi-check-circle'
+                        : 'bi-circle'
+                    "
+                  ></i>
+                  Una mayúscula
+                </li>
+
+                <li
+                  [class.valid]="
+                    !!form.password.match('[a-z]')
+                  "
+                >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      form.password.match('[a-z]')
+                        ? 'bi-check-circle'
+                        : 'bi-circle'
+                    "
+                  ></i>
+                  Una minúscula
+                </li>
+
+                <li
+                  [class.valid]="
+                    !!form.password.match('[0-9]')
+                  "
+                >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      form.password.match('[0-9]')
+                        ? 'bi-check-circle'
+                        : 'bi-circle'
+                    "
+                  ></i>
+                  Un número
+                </li>
+
+                <li
+                  [class.valid]="
+                    !!form.password.match('[^A-Za-z0-9]')
+                  "
+                >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      form.password.match('[^A-Za-z0-9]')
+                        ? 'bi-check-circle'
+                        : 'bi-circle'
+                    "
+                  ></i>
+                  Un símbolo
+                </li>
+              </ul>
             </div>
 
             <div class="field">
               <label for="confirmarPasswordUsuario">
                 Confirmar contraseña
+
+                <span
+                  class="required-mark"
+                  *ngIf="
+                    modoFormulario === 'CREAR' ||
+                    !!form.password
+                  "
+                >
+                  *
+                </span>
               </label>
 
-              <input
-                id="confirmarPasswordUsuario"
-                name="confirmarPasswordUsuario"
-                type="password"
-                minlength="8"
-                [(ngModel)]="
-                  form.confirmarPassword
+              <div
+                class="password-control"
+                [class.invalid-control]="
+                  (
+                    confirmarPasswordModel.invalid ||
+                    contrasenasNoCoinciden
+                  ) &&
+                  (
+                    confirmarPasswordModel.touched ||
+                    usuarioForm.submitted
+                  )
                 "
-                placeholder="Repite la contraseña"
-              />
+              >
+                <i
+                  class="bi bi-shield-lock"
+                  aria-hidden="true"
+                ></i>
+
+                <input
+                  id="confirmarPasswordUsuario"
+                  name="confirmarPasswordUsuario"
+                  [type]="
+                    mostrarConfirmarPassword
+                      ? 'text'
+                      : 'password'
+                  "
+                  [required]="
+                    modoFormulario === 'CREAR' ||
+                    !!form.password
+                  "
+                  minlength="8"
+                  maxlength="72"
+                  autocomplete="new-password"
+                  #confirmarPasswordModel="ngModel"
+                  [(ngModel)]="
+                    form.confirmarPassword
+                  "
+                  placeholder="Repite la contraseña"
+                />
+
+                <button
+                  type="button"
+                  class="password-toggle"
+                  (click)="
+                    alternarVisibilidadPassword(
+                      'CONFIRMACION'
+                    )
+                  "
+                  [attr.aria-label]="
+                    mostrarConfirmarPassword
+                      ? 'Ocultar confirmación'
+                      : 'Mostrar confirmación'
+                  "
+                  [title]="
+                    mostrarConfirmarPassword
+                      ? 'Ocultar confirmación'
+                      : 'Mostrar confirmación'
+                  "
+                >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      mostrarConfirmarPassword
+                        ? 'bi-eye-slash'
+                        : 'bi-eye'
+                    "
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              </div>
+
+              <div
+                class="field-error"
+                *ngIf="
+                  (
+                    confirmarPasswordModel.invalid ||
+                    contrasenasNoCoinciden
+                  ) &&
+                  (
+                    confirmarPasswordModel.touched ||
+                    usuarioForm.submitted
+                  )
+                "
+              >
+                <i class="bi bi-exclamation-circle"></i>
+
+                <span
+                  *ngIf="
+                    confirmarPasswordModel.errors?.['required']
+                  "
+                >
+                  Confirma la contraseña.
+                </span>
+
+                <span
+                  *ngIf="
+                    !confirmarPasswordModel.errors?.['required'] &&
+                    contrasenasNoCoinciden
+                  "
+                >
+                  Las contraseñas no coinciden.
+                </span>
+              </div>
             </div>
 
             <label class="status-control full-field">
@@ -853,14 +1309,33 @@
             (click)="cerrarFormulario()"
             [disabled]="guardando"
           >
+            <i
+              class="bi bi-x-circle"
+              aria-hidden="true"
+            ></i>
+
             Cancelar
           </button>
 
           <button
             type="submit"
             class="primary-button"
-            [disabled]="guardando"
+            [disabled]="
+              guardando ||
+              usuarioForm.invalid ||
+              contrasenasNoCoinciden
+            "
           >
+            <i
+              class="bi"
+              [ngClass]="
+                guardando
+                  ? 'bi-arrow-repeat spin-icon'
+                  : 'bi-floppy'
+              "
+              aria-hidden="true"
+            ></i>
+
             {{
               guardando
                 ? 'Guardando...'

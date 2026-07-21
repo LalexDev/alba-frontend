@@ -49,7 +49,8 @@ export class VentaService {
     metodoPago: string = 'EFECTIVO',
     aCuenta: number = 0,
     observaciones: string = '',
-    clienteId: number | null = null
+    clienteId: number | null = null,
+    descuentoManual: number = 0
   ): Observable<VentaRegistrada> {
     return from(
       this.registrarVentaInterna(
@@ -57,7 +58,8 @@ export class VentaService {
         metodoPago,
         aCuenta,
         observaciones,
-        clienteId
+        clienteId,
+        descuentoManual
       )
     );
   }
@@ -86,7 +88,8 @@ export class VentaService {
     metodoPago: string,
     aCuenta: number,
     observaciones: string,
-    clienteId: number | null
+    clienteId: number | null,
+    descuentoManual: number
   ): Promise<VentaRegistrada> {
 
     if (!items.length) {
@@ -111,15 +114,123 @@ export class VentaService {
       );
     }
 
-    const totalCarrito = items.reduce(
-      (total, item) =>
-        total +
-        Number(item.producto.precioVenta) *
-        Number(item.cantidad),
-      0
+    const lineas = items.map(
+      (
+        item,
+        indice
+      ) => {
+        const cantidad =
+          Number(item.cantidad);
+
+        if (
+          !Number.isInteger(cantidad) ||
+          cantidad <= 0
+        ) {
+          throw new Error(
+            `La cantidad del producto ${item.producto.nombre} no es válida.`
+          );
+        }
+
+        const precioUnitario =
+          Number(
+            item.producto.precioVenta || 0
+          );
+
+        if (
+          !Number.isFinite(precioUnitario) ||
+          precioUnitario < 0
+        ) {
+          throw new Error(
+            `El precio del producto ${item.producto.nombre} no es válido.`
+          );
+        }
+
+        const importe = Number(
+          (
+            precioUnitario *
+            cantidad
+          ).toFixed(2)
+        );
+
+        return {
+          indice,
+          item,
+          cantidad,
+          importe,
+          esObsequio:
+            Boolean(item.esObsequio)
+        };
+      }
     );
 
-    const adelanto = Number(aCuenta || 0);
+    const totalBruto = Number(
+      lineas
+        .reduce(
+          (
+            acumulado,
+            linea
+          ) =>
+            acumulado +
+            linea.importe,
+          0
+        )
+        .toFixed(2)
+    );
+
+    const descuentoObsequios = Number(
+      lineas
+        .filter(
+          linea =>
+            linea.esObsequio
+        )
+        .reduce(
+          (
+            acumulado,
+            linea
+          ) =>
+            acumulado +
+            linea.importe,
+          0
+        )
+        .toFixed(2)
+    );
+
+    const basePagada = Number(
+      (
+        totalBruto -
+        descuentoObsequios
+      ).toFixed(2)
+    );
+
+    const descuento =
+      Number(descuentoManual || 0);
+
+    if (
+      !Number.isFinite(descuento) ||
+      descuento < 0 ||
+      descuento > basePagada
+    ) {
+      throw new Error(
+        'El descuento debe estar entre S/ 0.00 y el importe de los productos cobrados.'
+      );
+    }
+
+    const descuentoRedondeado =
+      Number(
+        descuento.toFixed(2)
+      );
+
+    const totalCarrito = Number(
+      Math.max(
+        totalBruto -
+        descuentoObsequios -
+        descuentoRedondeado,
+        0
+      ).toFixed(2)
+    );
+
+    const adelanto =
+      Number(aCuenta || 0);
 
     if (
       !Number.isFinite(adelanto) ||
@@ -131,24 +242,97 @@ export class VentaService {
       );
     }
 
-    const detalles = items.map((item) => {
-      const cantidad = Number(item.cantidad);
-
-      if (
-        !Number.isInteger(cantidad) ||
-        cantidad <= 0
-      ) {
-        throw new Error(
-          `La cantidad del producto ${item.producto.nombre} no es válida.`
+    /*
+     * La función registrar_venta de Supabase ya recibe
+     * un descuento por cada detalle.
+     *
+     * - Los obsequios reciben descuento del 100 %.
+     * - El descuento manual se reparte proporcionalmente
+     *   entre las líneas que sí se cobran.
+     */
+    const indicesPagados =
+      lineas
+        .filter(
+          linea =>
+            !linea.esObsequio &&
+            linea.importe > 0
+        )
+        .map(
+          linea =>
+            linea.indice
         );
-      }
 
-      return {
-        producto_id: Number(item.producto.id),
-        cantidad,
-        descuento: 0
-      };
-    });
+    const ultimoIndicePagado =
+      indicesPagados.length
+        ? indicesPagados[
+            indicesPagados.length - 1
+          ]
+        : -1;
+
+    let descuentoPendiente =
+      descuentoRedondeado;
+
+    const detalles = lineas.map(
+      linea => {
+        let descuentoLinea =
+          linea.esObsequio
+            ? linea.importe
+            : 0;
+
+        if (
+          !linea.esObsequio &&
+          descuentoPendiente > 0 &&
+          basePagada > 0
+        ) {
+          const parteManual =
+            linea.indice ===
+              ultimoIndicePagado
+              ? descuentoPendiente
+              : Math.min(
+                  Number(
+                    (
+                      descuentoRedondeado *
+                      linea.importe /
+                      basePagada
+                    ).toFixed(2)
+                  ),
+                  descuentoPendiente,
+                  linea.importe
+                );
+
+          descuentoLinea +=
+            parteManual;
+
+          descuentoPendiente =
+            Number(
+              Math.max(
+                descuentoPendiente -
+                parteManual,
+                0
+              ).toFixed(2)
+            );
+        }
+
+        descuentoLinea =
+          Number(
+            Math.min(
+              descuentoLinea,
+              linea.importe
+            ).toFixed(2)
+          );
+
+        return {
+          producto_id:
+            Number(
+              linea.item.producto.id
+            ),
+          cantidad:
+            linea.cantidad,
+          descuento:
+            descuentoLinea
+        };
+      }
+    );
 
     const {
       data,
@@ -158,7 +342,10 @@ export class VentaService {
       {
         p_id_cliente: clienteId,
         p_metodo_pago: metodo,
-        p_a_cuenta: adelanto,
+        p_a_cuenta:
+          Number(
+            adelanto.toFixed(2)
+          ),
         p_observaciones:
           observaciones.trim() || null,
         p_detalles: detalles
@@ -186,13 +373,18 @@ export class VentaService {
       data as RegistrarVentaDb;
 
     return {
-      idVenta: Number(resultado.id_venta),
+      idVenta:
+        Number(resultado.id_venta),
       numeroVenta:
         String(resultado.numero_venta),
-      total: Number(resultado.total),
-      aCuenta: Number(resultado.a_cuenta),
-      saldo: Number(resultado.saldo),
-      estadoPago: resultado.estado_pago
+      total:
+        Number(resultado.total),
+      aCuenta:
+        Number(resultado.a_cuenta),
+      saldo:
+        Number(resultado.saldo),
+      estadoPago:
+        resultado.estado_pago
     };
   }
 

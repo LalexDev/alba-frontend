@@ -31,6 +31,7 @@ export interface Producto {
   color?: string;
   medida?: string;
   material?: string;
+  sexo?: 'F' | 'M';
   precioCompra?: number;
   precioVenta: number;
   stockActual: number;
@@ -51,6 +52,7 @@ export interface ProductoRequest {
   color?: string;
   medida?: string;
   material?: string;
+  sexo?: 'F' | 'M' | null;
   precioCompra: number;
   precioVenta: number;
   stockActual: number;

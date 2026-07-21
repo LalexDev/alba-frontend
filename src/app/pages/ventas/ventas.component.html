@@ -24,7 +24,9 @@
 
     <div class="scanner-row">
       <div class="scanner-input-wrap">
-        <span class="scanner-icon">▥</span>
+        <span class="scanner-icon">
+          <i class="bi bi-upc-scan"></i>
+        </span>
 
         <input
           #barcodeInput
@@ -42,8 +44,42 @@
         type="button"
         (click)="buscarPorCodigo()"
       >
-        + Agregar
+        <i class="bi bi-plus-lg"></i>
+        Agregar
       </button>
+    </div>
+
+    <div class="quick-products">
+      <div>
+        <strong>Productos rápidos</strong>
+        <small>
+          Se venden de manera independiente.
+        </small>
+      </div>
+
+      <div class="quick-products-actions">
+        <button
+          type="button"
+          class="quick-product-btn"
+          (click)="agregarProductoRapido('LIQUIDO')"
+          [disabled]="agregandoRapido || procesandoVenta"
+        >
+          <i class="bi bi-droplet-half" aria-hidden="true"></i>
+          Líquido
+          <span>S/ 10.00</span>
+        </button>
+
+        <button
+          type="button"
+          class="quick-product-btn"
+          (click)="agregarProductoRapido('ESTUCHE')"
+          [disabled]="agregandoRapido || procesandoVenta"
+        >
+          <i class="bi bi-briefcase" aria-hidden="true"></i>
+          Estuche
+          <span>S/ 10.00</span>
+        </button>
+      </div>
     </div>
 
     <p
@@ -64,7 +100,7 @@
       <div class="card">
         <div class="card-header">
           <div class="title-with-icon">
-            <span class="icon-box">🛒</span>
+            <span class="icon-box"><i class="bi bi-cart3"></i></span>
             <h2>Detalle de venta</h2>
           </div>
 
@@ -77,6 +113,7 @@
               procesandoVenta
             "
           >
+            <i class="bi bi-trash3" aria-hidden="true"></i>
             Vaciar carrito
           </button>
         </div>
@@ -97,17 +134,24 @@
             </thead>
 
             <tbody>
-              <tr *ngFor="let item of carrito">
+              <tr *ngFor="let item of carrito; trackBy: trackItem">
                 <td>
                   <div class="producto-info">
                     <div class="producto-thumb">
-                      <span>👓</span>
+                      <i class="bi bi-eyeglasses"></i>
                     </div>
 
                     <div>
                       <strong>
                         {{ item.producto.nombre }}
                       </strong>
+
+                      <span
+                        class="gift-badge"
+                        *ngIf="item.esObsequio"
+                      >
+                        GRATIS CON MONTURA
+                      </span>
 
                       <small>
                         {{
@@ -120,22 +164,43 @@
                 </td>
 
                 <td>
-                  S/
-                  {{
-                    item.producto.precioVenta
-                      | number:'1.2-2'
-                  }}
+                  <ng-container
+                    *ngIf="item.esObsequio; else precioNormal"
+                  >
+                    <strong class="free-price">
+                      S/ 0.00
+                    </strong>
+
+                    <small class="original-price">
+                      S/
+                      {{
+                        item.producto.precioVenta
+                          | number:'1.2-2'
+                      }}
+                    </small>
+                  </ng-container>
+
+                  <ng-template #precioNormal>
+                    S/
+                    {{
+                      item.producto.precioVenta
+                        | number:'1.2-2'
+                    }}
+                  </ng-template>
                 </td>
 
                 <td>
-                  <div class="qty-box">
+                  <div
+                    class="qty-box"
+                    *ngIf="!item.esObsequio; else cantidadObsequio"
+                  >
                     <button
                       type="button"
                       aria-label="Disminuir cantidad"
                       (click)="disminuirCantidad(item)"
                       [disabled]="procesandoVenta"
                     >
-                      −
+                      <i class="bi bi-dash-lg" aria-hidden="true"></i>
                     </button>
 
                     <span>{{ item.cantidad }}</span>
@@ -146,13 +211,21 @@
                       (click)="aumentarCantidad(item)"
                       [disabled]="procesandoVenta"
                     >
-                      +
+                      <i class="bi bi-plus-lg" aria-hidden="true"></i>
                     </button>
                   </div>
+
+                  <ng-template #cantidadObsequio>
+                    <span class="gift-quantity">
+                      1 unidad
+                    </span>
+                  </ng-template>
                 </td>
 
                 <td>
-                  <strong>
+                  <strong
+                    [class.free-price]="item.esObsequio"
+                  >
                     S/
                     {{
                       item.subtotal
@@ -166,10 +239,10 @@
                     class="delete-btn"
                     type="button"
                     aria-label="Eliminar producto"
-                    (click)="remove(item.producto.id)"
+                    (click)="remove(item)"
                     [disabled]="procesandoVenta"
                   >
-                    🗑
+                    <i class="bi bi-trash3"></i>
                   </button>
                 </td>
               </tr>
@@ -179,11 +252,55 @@
 
         <ng-template #carritoVacio>
           <div class="empty-state">
+            <i
+              class="bi bi-cart-x"
+              aria-hidden="true"
+            ></i>
+
             <p>
               No hay productos agregados todavía.
             </p>
           </div>
         </ng-template>
+
+        <section
+          class="gift-options"
+          *ngIf="hayMonturaEnCarrito()"
+        >
+          <div>
+            <strong>
+              Incluidos con la montura
+            </strong>
+
+            <small>
+              Se descuentan del stock y se cobran a S/ 0.00.
+            </small>
+          </div>
+
+          <label>
+            <input
+              type="checkbox"
+              [checked]="obsequioSeleccionado('MICROFIBRA')"
+              (change)="cambiarObsequio('MICROFIBRA', $event)"
+              [disabled]="procesandoVenta"
+            />
+
+            <i class="bi bi-stars" aria-hidden="true"></i>
+            Microfibra gratis
+          </label>
+
+          <label>
+            <input
+              type="checkbox"
+              [checked]="obsequioSeleccionado('ESTUCHE')"
+              (change)="cambiarObsequio('ESTUCHE', $event)"
+              [disabled]="procesandoVenta"
+            />
+
+            <i class="bi bi-gift" aria-hidden="true"></i>
+            Estuche gratis
+          </label>
+        </section>
 
         <div
           class="card-footer"
@@ -200,7 +317,7 @@
       <div class="card cliente-card">
         <div class="card-header">
           <div class="title-with-icon">
-            <span class="icon-box">👤</span>
+            <span class="icon-box"><i class="bi bi-person"></i></span>
 
             <h2>
               Cliente
@@ -224,7 +341,7 @@
             (click)="buscarCliente()"
             [disabled]="buscandoCliente"
           >
-            {{ buscandoCliente ? '…' : '🔍' }}
+            <i [class]="buscandoCliente ? 'bi bi-hourglass-split' : 'bi bi-search'"></i>
           </button>
         </div>
 
@@ -233,10 +350,20 @@
           type="button"
           (click)="toggleClienteRapido()"
         >
+          <i
+            class="bi"
+            [ngClass]="
+              mostrarClienteRapido
+                ? 'bi-chevron-up'
+                : 'bi-person-plus'
+            "
+            aria-hidden="true"
+          ></i>
+
           {{
             mostrarClienteRapido
-              ? '− Ocultar formulario'
-              : '+ Nuevo cliente rápido'
+              ? 'Ocultar formulario'
+              : 'Nuevo cliente rápido'
           }}
         </button>
 
@@ -326,6 +453,7 @@
               type="button"
               (click)="limpiarClienteRapido()"
             >
+              <i class="bi bi-eraser" aria-hidden="true"></i>
               Limpiar
             </button>
 
@@ -335,6 +463,16 @@
               (click)="guardarClienteRapido()"
               [disabled]="guardandoCliente"
             >
+              <i
+                class="bi"
+                [ngClass]="
+                  guardandoCliente
+                    ? 'bi-arrow-repeat spin-icon'
+                    : 'bi-person-check'
+                "
+                aria-hidden="true"
+              ></i>
+
               {{
                 guardandoCliente
                   ? 'Guardando...'
@@ -355,31 +493,62 @@
       <div class="card resumen-card">
         <div class="card-header">
           <div class="title-with-icon">
-            <span class="icon-box">🧾</span>
+            <span class="icon-box"><i class="bi bi-receipt-cutoff"></i></span>
             <h2>Resumen de venta</h2>
           </div>
         </div>
 
         <div class="resumen-body">
           <div class="resumen-line">
-            <span>Subtotal</span>
+            <span>Subtotal productos</span>
 
             <strong>
               S/
               {{
-                subtotalVenta()
+                subtotalProductos()
                   | number:'1.2-2'
               }}
             </strong>
           </div>
 
-          <div class="resumen-line">
-            <span>Descuento</span>
-            <strong>S/ 0.00</strong>
+          <div
+            class="resumen-line"
+            *ngIf="descuentoObsequios() > 0"
+          >
+            <span>Obsequios</span>
+
+            <strong class="discount-value">
+              − S/
+              {{
+                descuentoObsequios()
+                  | number:'1.2-2'
+              }}
+            </strong>
+          </div>
+
+          <div class="summary-field">
+            <label for="descuentoManual">
+              Descuento manual
+            </label>
+
+            <div class="money-input">
+              <span>S/</span>
+
+              <input
+                id="descuentoManual"
+                type="number"
+                min="0"
+                step="0.01"
+                [max]="maximoDescuentoManual()"
+                [(ngModel)]="descuentoManual"
+                (ngModelChange)="actualizarDescuento()"
+                [disabled]="procesandoVenta"
+              />
+            </div>
           </div>
 
           <div class="resumen-line">
-            <span>IGV (18%)</span>
+            <span>IGV incluido (18 %)</span>
 
             <strong>
               S/
@@ -402,6 +571,79 @@
             </strong>
           </div>
 
+          <div class="summary-field">
+            <div class="summary-label-row">
+              <label for="aCuenta">
+                A cuenta
+              </label>
+
+              <button
+                type="button"
+                class="pay-all-btn"
+                (click)="aplicarPagoTotal()"
+                [disabled]="
+                  carrito.length === 0 ||
+                  procesandoVenta
+                "
+              >
+                <i class="bi bi-cash-stack" aria-hidden="true"></i>
+                Pagar total
+              </button>
+            </div>
+
+            <div class="money-input">
+              <span>S/</span>
+
+              <input
+                id="aCuenta"
+                type="number"
+                min="0"
+                step="0.01"
+                [max]="totalFinal()"
+                [(ngModel)]="aCuenta"
+                (ngModelChange)="actualizarACuenta()"
+                [disabled]="procesandoVenta"
+              />
+            </div>
+          </div>
+
+          <div class="resumen-line balance-line">
+            <span>Saldo</span>
+
+            <strong>
+              S/
+              {{
+                saldo()
+                  | number:'1.2-2'
+              }}
+            </strong>
+          </div>
+
+          <div class="summary-field">
+            <label for="observacionesVenta">
+              Observaciones del recibo
+              <small>(opcional)</small>
+            </label>
+
+            <textarea
+              id="observacionesVenta"
+              rows="2"
+              [(ngModel)]="observaciones"
+              [disabled]="procesandoVenta"
+              placeholder="Ej. Entrega pendiente, garantía, indicaciones..."
+            ></textarea>
+          </div>
+
+          <label class="print-option">
+            <input
+              type="checkbox"
+              [(ngModel)]="imprimirRecibo"
+              [disabled]="procesandoVenta"
+            />
+
+            Imprimir o guardar el recibo después de cobrar
+          </label>
+
           <button
             class="btn-primary cobrar-btn"
             type="button"
@@ -411,10 +653,24 @@
               procesandoVenta
             "
           >
+            <i
+              class="bi"
+              [ngClass]="
+                procesandoVenta
+                  ? 'bi-arrow-repeat spin-icon'
+                  : imprimirRecibo
+                    ? 'bi-printer'
+                    : 'bi-check-circle'
+              "
+              aria-hidden="true"
+            ></i>
+
             {{
               procesandoVenta
                 ? 'Registrando...'
-                : 'Cobrar'
+                : imprimirRecibo
+                  ? 'Cobrar e imprimir recibo'
+                  : 'Registrar venta'
             }}
           </button>
 
@@ -433,12 +689,7 @@
                 aria-label="Seleccionar pago en efectivo"
               >
                 <span class="metodo-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <rect x="3" y="6" width="18" height="12" rx="2"></rect>
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M6 9h1"></path>
-                    <path d="M17 15h1"></path>
-                  </svg>
+                  <i class="bi bi-cash-coin"></i>
                 </span>
 
                 <span class="metodo-nombre">Efectivo</span>
@@ -453,12 +704,7 @@
                 aria-label="Seleccionar pago con Yape"
               >
                 <span class="metodo-icon metodo-icon-yape" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <rect x="6" y="2" width="12" height="20" rx="3"></rect>
-                    <path d="M9 6h6"></path>
-                    <path d="m9 13 2 2 4-4"></path>
-                    <path d="M11 19h2"></path>
-                  </svg>
+                  <i class="bi bi-phone"></i>
                 </span>
 
                 <span class="metodo-nombre">Yape</span>
@@ -473,12 +719,7 @@
                 aria-label="Seleccionar pago por transferencia"
               >
                 <span class="metodo-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M4 7h14"></path>
-                    <path d="m15 4 3 3-3 3"></path>
-                    <path d="M20 17H6"></path>
-                    <path d="m9 14-3 3 3 3"></path>
-                  </svg>
+                  <i class="bi bi-bank"></i>
                 </span>
 
                 <span class="metodo-nombre">Transferencia</span>
@@ -492,7 +733,7 @@
       <!-- INFORMACIÓN -->
       <div class="card info-card">
         <div class="title-with-icon">
-          <span class="icon-box">⚡</span>
+          <span class="icon-box"><i class="bi bi-lightning-charge"></i></span>
           <h2>Venta rápida</h2>
         </div>
 

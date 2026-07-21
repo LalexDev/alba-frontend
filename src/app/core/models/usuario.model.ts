@@ -17,7 +17,7 @@ export interface RolUsuario {
 }
 
 export interface UsuarioSistema {
-  id: number;
+  id: string;
   authUserId: string;
   nombres: string;
   apellidos: string;
@@ -35,8 +35,12 @@ export interface UsuarioSistema {
 }
 
 export interface UsuarioForm {
-  nombres: string;
-  apellidos: string;
+  /**
+   * Campo único mostrado en el formulario.
+   * Se almacena en usuarios.nombres y usuarios.apellidos
+   * se conserva vacío para mantener compatibilidad.
+   */
+  nombreCompleto: string;
   email: string;
   telefono: string;
   rolId: number | null;
@@ -51,7 +55,7 @@ export interface AdministrarUsuarioRequest {
     | 'CREAR'
     | 'ACTUALIZAR'
     | 'CAMBIAR_ESTADO';
-  idUsuario?: number;
+  idUsuario?: string;
   usuario?: {
     nombres?: string;
     apellidos?: string;

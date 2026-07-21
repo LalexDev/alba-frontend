@@ -31,14 +31,8 @@ select {
   font: inherit;
 }
 
-svg {
-  width: 1em;
-  height: 1em;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+i {
+  line-height: 1;
 }
 
 .users-page {
@@ -117,6 +111,13 @@ svg {
   font-size: 11px;
   font-weight: 900;
   cursor: pointer;
+}
+
+.primary-button i,
+.secondary-button i,
+.clear-button i,
+.cancel-button i {
+  font-size: 13px;
 }
 
 .primary-button {
@@ -249,7 +250,7 @@ button:disabled {
   background: var(--white);
 }
 
-.search-box svg {
+.search-box i {
   flex: 0 0 auto;
   color: var(--blue);
   font-size: 21px;
@@ -276,6 +277,10 @@ button:disabled {
   background: transparent;
   font-size: 20px;
   cursor: pointer;
+}
+
+.search-box button i {
+  font-size: 13px;
 }
 
 .filter-select {
@@ -502,6 +507,10 @@ button:disabled {
   cursor: pointer;
 }
 
+.row-actions button i {
+  font-size: 15px;
+}
+
 .row-actions .state-button {
   color: var(--danger);
   border-color: #fda29b;
@@ -696,7 +705,7 @@ button:disabled {
   font-size: 9px;
 }
 
-.permissions-card li svg {
+.permissions-card li i {
   flex: 0 0 auto;
   color: var(--blue);
   font-size: 14px;
@@ -772,6 +781,10 @@ button:disabled {
   background: #f2f4f7;
   font-size: 22px;
   cursor: pointer;
+}
+
+.close-button i {
+  font-size: 16px;
 }
 
 .user-form {
@@ -1069,5 +1082,304 @@ button:disabled {
 
   .users-header h1 {
     font-size: 21px;
+  }
+}
+
+
+/* =====================================================
+   BOOTSTRAP ICONS
+   ===================================================== */
+
+.primary-button i,
+.secondary-button i,
+.clear-button i,
+.cancel-button i {
+  flex: 0 0 auto;
+  font-size: 14px;
+}
+
+.clear-button i {
+  color: var(--blue-dark);
+}
+
+.section-heading > span i {
+  font-size: 15px;
+}
+
+.quick-actions button i {
+  font-size: 14px;
+}
+
+.empty-quick {
+  gap: 7px;
+  padding: 28px 16px;
+}
+
+.empty-quick > i {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 4px;
+  border-radius: 15px;
+  color: var(--blue-dark);
+  background: var(--blue-soft);
+  font-size: 27px;
+}
+
+.empty-quick strong {
+  color: var(--black);
+  font-size: 12px;
+}
+
+.empty-quick span {
+  max-width: 220px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.spin-icon {
+  animation: bootstrap-icon-spin 0.8s linear infinite;
+}
+
+@keyframes bootstrap-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .primary-button i,
+  .secondary-button i,
+  .clear-button i,
+  .cancel-button i {
+    font-size: 15px;
+  }
+}
+
+
+/* =====================================================
+   VALIDACIÓN DE FORMULARIO Y CONTRASEÑAS
+   ===================================================== */
+
+.required-mark {
+  margin-left: 2px;
+  color: var(--danger);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.input-with-icon,
+.password-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #cfe3ec;
+  border-radius: 10px;
+  background: var(--white);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.input-with-icon:focus-within,
+.password-control:focus-within {
+  border-color: var(--blue);
+  box-shadow:
+    0 0 0 3px
+    rgba(21, 147, 199, 0.12);
+}
+
+.input-with-icon > i,
+.password-control > i {
+  flex: 0 0 auto;
+  margin-left: 12px;
+  color: var(--blue-dark);
+  font-size: 14px;
+}
+
+.input-with-icon input,
+.password-control input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 43px;
+  padding: 0 11px;
+  border: 0 !important;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none !important;
+}
+
+.password-control input {
+  padding-right: 4px;
+}
+
+.password-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 43px;
+  border: 0;
+  border-left: 1px solid #e2edf2;
+  color: var(--blue-dark);
+  background: #f8fcfe;
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  background: var(--blue-soft);
+}
+
+.password-toggle i {
+  font-size: 16px;
+}
+
+.invalid-control {
+  border-color: var(--danger) !important;
+  box-shadow:
+    0 0 0 3px
+    rgba(217, 45, 32, 0.1) !important;
+}
+
+.field > select.invalid-control {
+  border-color: var(--danger);
+  box-shadow:
+    0 0 0 3px
+    rgba(217, 45, 32, 0.1);
+}
+
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  color: var(--danger);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.field-error i {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  font-size: 11px;
+}
+
+.password-rules {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 5px 9px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.password-rules li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.25;
+}
+
+.password-rules li i {
+  color: #98a2b3;
+  font-size: 10px;
+}
+
+.password-rules li.valid {
+  color: var(--success);
+  font-weight: 800;
+}
+
+.password-rules li.valid i {
+  color: var(--success);
+}
+
+@media (max-width: 640px) {
+  .password-rules {
+    grid-template-columns: 1fr;
+  }
+
+  .password-toggle {
+    width: 46px;
+  }
+}
+
+
+/* =====================================================
+   RESPONSIVE FINAL PARA BOOTSTRAP ICONS
+   ===================================================== */
+
+.users-page .bi {
+  line-height: 1;
+}
+
+@media (max-width: 700px) {
+  .users-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .users-header > .primary-button {
+    width: 100%;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .search-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .users-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user-modal {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-wrapper {
+    overscroll-behavior-inline: contain;
+  }
+}
+
+@media (max-width: 480px) {
+  .users-page {
+    padding-inline: 10px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-actions,
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .quick-actions button,
+  .modal-actions button {
+    width: 100%;
+  }
+
+  .password-rules {
+    grid-template-columns: 1fr;
   }
 }

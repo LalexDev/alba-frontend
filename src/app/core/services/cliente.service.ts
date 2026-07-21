@@ -219,6 +219,9 @@ export class ClienteService {
         form.incluirReceta &&
         this.tieneDatosReceta(receta);
 
+      const montos =
+        this.calcularMontosReceta(receta);
+
       if (!nombres) {
         throw new Error(
           'Los nombres del cliente son obligatorios.'
@@ -256,17 +259,11 @@ export class ClienteService {
             p_fecha_entrada:
               receta.fechaEntrada || receta.fechaReceta,
             p_monto_cancelado:
-              this.numeroNullable(
-                receta.montoCancelado
-              ) ?? 0,
+              montos.cancelado,
             p_monto_debe:
-              this.numeroNullable(
-                receta.montoDebe
-              ) ?? 0,
+              montos.debe,
             p_monto_total:
-              this.numeroNullable(
-                receta.montoTotal
-              ) ?? 0,
+              montos.total,
             p_medida:
               receta.medida.trim() || null,
             p_marca:
@@ -422,37 +419,87 @@ export class ClienteService {
       let importadas = 0;
 
       for (const fila of filas) {
-        const { error } =
-          await this.supabaseService.client.rpc(
-            'importar_receta_excel',
-            {
-              p_numero_orden:
-                fila.numeroOrden || null,
-              p_cliente:
-                fila.cliente,
-              p_documento:
-                fila.documento || null,
-              p_fecha_entrada:
-                fila.fechaEntrada,
-              p_monto_cancelado:
-                fila.montoCancelado,
-              p_monto_debe:
-                fila.montoDebe,
-              p_monto_total:
-                fila.montoTotal,
-              p_medida:
-                fila.medida || null,
-              p_montura:
-                fila.montura || null,
-              p_marca:
-                fila.marca || null
-            }
+        const ejecutar =
+          async (
+            numeroOrden:
+              string | null
+          ) => {
+            return await this.supabaseService.client.rpc(
+              'importar_receta_excel',
+              {
+                p_numero_orden:
+                  numeroOrden,
+                p_cliente:
+                  fila.cliente,
+                p_documento:
+                  fila.documento || null,
+                p_fecha_entrada:
+                  fila.fechaEntrada,
+                p_monto_cancelado:
+                  this.normalizarMonto(
+                    fila.montoCancelado
+                  ),
+                p_monto_debe:
+                  Math.max(
+                    this.normalizarMonto(
+                      fila.montoTotal
+                    ) -
+                    this.normalizarMonto(
+                      fila.montoCancelado
+                    ),
+                    0
+                  ),
+                p_monto_total:
+                  this.normalizarMonto(
+                    fila.montoTotal
+                  ),
+                p_medida:
+                  fila.medida || null,
+                p_montura:
+                  fila.montura || null,
+                p_marca:
+                  fila.marca || null
+              }
+            );
+          };
+
+        let respuesta =
+          await ejecutar(
+            fila.numeroOrden || null
           );
 
-        if (error) {
+        const mensaje =
+          String(
+            respuesta.error?.message ||
+            ''
+          ).toLowerCase();
+
+        if (
+          respuesta.error &&
+          fila.numeroOrden &&
+          (
+            respuesta.error.code ===
+              '23505' ||
+            mensaje.includes(
+              'numero_orden'
+            ) ||
+            mensaje.includes(
+              'duplicate'
+            )
+          )
+        ) {
+          respuesta =
+            await ejecutar(
+              null
+            );
+        }
+
+        if (respuesta.error) {
           throw new Error(
             `Orden ${fila.numeroOrden || '(automática)'}: ` +
-            this.traducirError(error.message)
+            this.traducirError(
+              respuesta.error.message
+            )
           );
         }
 
@@ -603,22 +650,19 @@ export class ClienteService {
     idCliente: number,
     receta: RecetaForm
   ): Record<string, unknown> {
+    const montos =
+      this.calcularMontosReceta(receta);
+
     const payload: Record<string, unknown> = {
       id_cliente: idCliente,
       fecha_entrada:
         receta.fechaEntrada || receta.fechaReceta,
       monto_cancelado:
-        this.numeroNullable(
-          receta.montoCancelado
-        ) ?? 0,
+        montos.cancelado,
       monto_debe:
-        this.numeroNullable(
-          receta.montoDebe
-        ) ?? 0,
+        montos.debe,
       monto_total:
-        this.numeroNullable(
-          receta.montoTotal
-        ) ?? 0,
+        montos.total,
       medida:
         receta.medida.trim() || null,
       marca:
@@ -854,6 +898,65 @@ export class ClienteService {
     );
   }
 
+  private normalizarMonto(
+    valor: string | number | null | undefined
+  ): number {
+    if (
+      valor === null ||
+      valor === undefined ||
+      String(valor).trim() === ''
+    ) {
+      return 0;
+    }
+
+    const numero = Number(
+      String(valor).replace(',', '.')
+    );
+
+    return Number.isFinite(numero)
+      ? Number(numero.toFixed(2))
+      : 0;
+  }
+
+  private calcularMontosReceta(
+    receta: RecetaForm
+  ): {
+    total: number;
+    cancelado: number;
+    debe: number;
+  } {
+    const total = Math.max(
+      this.normalizarMonto(
+        receta.montoTotal
+      ),
+      0
+    );
+
+    const cancelado = Math.min(
+      Math.max(
+        this.normalizarMonto(
+          receta.montoCancelado
+        ),
+        0
+      ),
+      total
+    );
+
+    const debe = Number(
+      (total - cancelado).toFixed(2)
+    );
+
+    receta.montoTotal = total;
+    receta.montoCancelado = cancelado;
+    receta.montoDebe = debe;
+
+    return {
+      total,
+      cancelado,
+      debe
+    };
+  }
+
   private numeroNullable(
     valor: string | number | null
   ): number | null {
@@ -913,16 +1016,29 @@ export class ClienteService {
     }
 
     if (
-      texto.includes('monto_cancelado') ||
+      texto.includes('ck_recetas_total') ||
       texto.includes('cancelado + debe')
     ) {
-      return 'El monto cancelado más el monto pendiente debe ser igual al total.';
+      return 'No se pudo calcular el saldo de la receta.';
+    }
+
+    if (
+      texto.includes('importar_receta_excel')
+    ) {
+      return 'La función para importar recetas no existe o está desactualizada. Ejecuta el archivo 13_corregir_importacion_excel.sql en Supabase.';
     }
 
     if (
       texto.includes('registrar_cliente_receta')
     ) {
-      return 'Falta ejecutar el SQL completo de clientes y recetas en Supabase.';
+      return 'La función para registrar clientes y recetas está desactualizada. Ejecuta el archivo 12_corregir_guardado_recetas.sql en Supabase.';
+    }
+
+    if (
+      texto.includes('could not find the function') ||
+      texto.includes('schema cache')
+    ) {
+      return 'Supabase todavía no actualizó sus funciones. Ejecuta el SQL correspondiente y vuelve a cargar la página.';
     }
 
     return mensaje;

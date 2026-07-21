@@ -1111,3 +1111,110 @@ button:disabled {
     box-shadow: none;
   }
 }
+
+
+/* =====================================================
+   BOOTSTRAP ICONS Y RESPONSIVE FINAL
+   ===================================================== */
+
+.orders-page .bi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.header-icon .bi {
+  font-size: 25px;
+}
+
+.new-order-button .bi,
+.filter-button .bi,
+.clear-button .bi,
+.excel-button .bi,
+.primary-action .bi {
+  font-size: 16px;
+}
+
+.search-box > .bi {
+  color: var(--blue);
+  font-size: 18px;
+}
+
+.stat-icon .bi {
+  font-size: 24px;
+}
+
+.row-actions button .bi {
+  font-size: 15px;
+}
+
+.empty-icon .bi {
+  font-size: 34px;
+}
+
+@media (max-width: 760px) {
+  .orders-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .new-order-button {
+    width: 100%;
+  }
+
+  .filters-grid,
+  .advanced-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .filter-actions button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .table-wrapper {
+    overscroll-behavior-inline: contain;
+  }
+
+  .detail-modal,
+  .actions-modal {
+    width: calc(100vw - 18px);
+    max-height: calc(100vh - 18px);
+  }
+}
+
+@media (max-width: 520px) {
+  .orders-page {
+    padding-inline: 10px;
+  }
+
+  .filter-actions,
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .row-actions {
+    min-width: 132px;
+  }
+
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+}

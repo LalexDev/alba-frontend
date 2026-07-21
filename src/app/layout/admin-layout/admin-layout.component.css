@@ -85,8 +85,22 @@
   font-size: 21px;
 }
 
+.brand-icon i {
+  font-size: 20px;
+  line-height: 1;
+}
+
 .brand-text {
   min-width: 0;
+}
+
+.brand-title-logo {
+  display: block;
+  width: 122px;
+  max-width: 100%;
+  height: 24px;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .brand h2 {
@@ -133,6 +147,11 @@
 .sidebar-close:hover {
   color: var(--blanco);
   background: var(--azul-principal);
+}
+
+.sidebar-close i {
+  font-size: 15px;
+  line-height: 1;
 }
 
 .user-card {
@@ -212,19 +231,25 @@
   box-shadow: 0 7px 16px rgba(21, 147, 199, 0.25);
 }
 
-.nav a.active .emoji,
+.nav a.active .nav-icon,
+.nav a.active .nav-icon i,
 .nav a.active .nav-label {
   color: var(--blanco);
 }
 
-.emoji {
+.nav-icon {
   flex: 0 0 auto;
 
   display: grid;
   place-items: center;
 
   width: 21px;
+  height: 21px;
+}
+
+.nav-icon i {
   font-size: 15px;
+  line-height: 1;
 }
 
 .nav-label {
@@ -363,6 +388,11 @@
 .mobile-menu:hover {
   color: var(--blanco);
   background: var(--azul-principal);
+}
+
+.mobile-menu i {
+  font-size: 19px;
+  line-height: 1;
 }
 
 .dashboard-menu-button {
@@ -559,8 +589,9 @@
     font-size: 16px;
   }
 
-  .brand h2 {
-    font-size: 15px;
+  .brand-title-logo {
+    width: 108px;
+    height: 22px;
   }
 }
 

@@ -8,7 +8,6 @@ import { ClientesRecetasComponent } from './pages/clientes-recetas/clientes-rece
 import { ProveedoresComponent } from './pages/proveedores/proveedores.component';
 import { ReportesComponent } from './pages/reportes/reportes.component';
 import { MovimientosInventarioComponent } from './pages/movimientos-inventario/movimientos-inventario.component';
-import { CodigosBarrasComponent } from './pages/codigos-barras/codigos-barras.component';
 import { OrdenesRecibosComponent } from './pages/ordenes-recibos/ordenes-recibos.component';
 import { UsuariosRolesComponent } from './pages/usuarios-roles/usuarios-roles.component';
 import { AdminLayoutComponent } from './layout/admin-layout/admin-layout.component';

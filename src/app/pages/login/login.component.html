@@ -9,7 +9,12 @@
     <div class="login-information">
 
       <div class="brand-badge">
-        <div class="brand-icon">👓</div>
+        <div class="brand-icon brand-logo">
+          <img
+            src="/assets/logo-optica-alba.png"
+            alt="Logo Óptica Alba"
+          />
+        </div>
 
         <div>
           <strong>Óptica alba</strong>
@@ -18,7 +23,7 @@
       </div>
 
       <div class="information-badge">
-        <span>✓</span>
+        <i class="bi bi-check-circle-fill"></i>
         Gestión rápida, segura y organizada
       </div>
 
@@ -36,7 +41,9 @@
       <div class="information-features">
 
         <div class="feature-card">
-          <div class="feature-icon">📦</div>
+          <div class="feature-icon">
+            <i class="bi bi-box-seam"></i>
+          </div>
 
           <strong>Inventario actualizado</strong>
 
@@ -46,7 +53,9 @@
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon">▥</div>
+          <div class="feature-icon">
+            <i class="bi bi-upc-scan"></i>
+          </div>
 
           <strong>Ventas por escáner</strong>
 
@@ -56,7 +65,9 @@
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon">👥</div>
+          <div class="feature-icon">
+            <i class="bi bi-person-vcard"></i>
+          </div>
 
           <strong>Clientes y recetas</strong>
 
@@ -77,9 +88,14 @@
         (ngSubmit)="submit()"
       >
 
-        <div class="login-card__icon">👓</div>
+        <div class="login-card__icon login-card__logo">
+          <img
+            src="/assets/logo-optica-alba.png"
+            alt="Logo Óptica Alba"
+          />
+        </div>
 
-        <h2>Óptica alba</h2>
+        <h2>alba</h2>
 
         <p class="login-subtitle">
           Ingresa con un usuario autorizado
@@ -87,6 +103,7 @@
 
         <div class="field">
           <label for="usernameOrCorreo">
+            <i class="bi bi-envelope"></i>
             Correo electrónico
           </label>
 
@@ -97,6 +114,7 @@
             placeholder="correo@ejemplo.com"
             autocomplete="username"
           />
+
           <small
             class="field-error"
             *ngIf="
@@ -116,11 +134,11 @@
           >
             Ingresa un correo electrónico válido.
           </small>
-          
         </div>
 
         <div class="field">
           <label for="password">
+            <i class="bi bi-lock"></i>
             Contraseña
           </label>
 
@@ -131,6 +149,7 @@
             placeholder="Ingresa tu contraseña"
             autocomplete="current-password"
           />
+
           <small
             class="field-error"
             *ngIf="
@@ -147,19 +166,22 @@
           type="submit"
           [disabled]="loading || form.invalid"
         >
-          <span class="button-icon">↪</span>
+          <span class="button-icon">
+            <i class="bi bi-box-arrow-in-right"></i>
+          </span>
 
           <span>
             {{ loading ? 'Validando...' : 'Ingresar al sistema' }}
           </span>
 
-          <span>›</span>
+          <i class="bi bi-chevron-right"></i>
         </button>
 
         <p
           class="alert-text"
           *ngIf="error"
         >
+          <i class="bi bi-exclamation-triangle-fill"></i>
           {{ error }}
         </p>
 
@@ -170,19 +192,25 @@
         <div class="login-options">
 
           <div class="login-option">
-            <span>▥</span>
+            <span>
+              <i class="bi bi-upc-scan"></i>
+            </span>
             <strong>Realizar venta</strong>
             <small>Escanear productos</small>
           </div>
 
           <div class="login-option">
-            <span>📦</span>
+            <span>
+              <i class="bi bi-box-seam"></i>
+            </span>
             <strong>Ver inventario</strong>
             <small>Consultar existencias</small>
           </div>
 
           <div class="login-option">
-            <span>👤</span>
+            <span>
+              <i class="bi bi-person-search"></i>
+            </span>
             <strong>Buscar cliente</strong>
             <small>Historial y recetas</small>
           </div>
@@ -190,8 +218,15 @@
         </div>
 
         <div class="login-security">
-          <span>◷ Atención rápida</span>
-          <span>🔒 Acceso seguro</span>
+          <span>
+            <i class="bi bi-stopwatch"></i>
+            Atención rápida
+          </span>
+
+          <span>
+            <i class="bi bi-shield-lock"></i>
+            Acceso seguro
+          </span>
         </div>
 
       </form>
