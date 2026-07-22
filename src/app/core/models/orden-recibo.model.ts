@@ -32,9 +32,10 @@ export interface OrdenRecibo {
 
 export interface DetalleOrdenItem {
   idDetalle: number;
-  idProducto: number;
+  idProducto: number | null;
   codigo: string;
   producto: string;
+  esManual?: boolean;
   modelo: string;
   color: string;
   medida: string;

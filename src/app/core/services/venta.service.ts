@@ -131,17 +131,43 @@ export class VentaService {
           );
         }
 
+        const esManual =
+          Boolean(item.esManual);
+
+        const descripcionManual =
+          String(
+            item.descripcionManual ||
+            item.producto.nombre ||
+            ''
+          )
+            .replace(/\s+/g, ' ')
+            .trim();
+
         const precioUnitario =
           Number(
-            item.producto.precioVenta || 0
+            esManual
+              ? item.precioManual ??
+                item.producto.precioVenta ??
+                0
+              : item.producto.precioVenta ||
+                0
           );
+
+        if (
+          esManual &&
+          descripcionManual.length < 3
+        ) {
+          throw new Error(
+            'El concepto personalizado no tiene una descripción válida.'
+          );
+        }
 
         if (
           !Number.isFinite(precioUnitario) ||
           precioUnitario < 0
         ) {
           throw new Error(
-            `El precio del producto ${item.producto.nombre} no es válido.`
+            `El precio de ${item.producto.nombre} no es válido.`
           );
         }
 
@@ -158,7 +184,10 @@ export class VentaService {
           cantidad,
           importe,
           esObsequio:
-            Boolean(item.esObsequio)
+            Boolean(item.esObsequio),
+          esManual,
+          descripcionManual,
+          precioUnitario
         };
       }
     );
@@ -321,7 +350,25 @@ export class VentaService {
             ).toFixed(2)
           );
 
+        if (linea.esManual) {
+          return {
+            es_manual: true,
+            descripcion:
+              linea.descripcionManual,
+            precio_unitario:
+              Number(
+                linea.precioUnitario
+                  .toFixed(2)
+              ),
+            cantidad:
+              linea.cantidad,
+            descuento:
+              descuentoLinea
+          };
+        }
+
         return {
+          es_manual: false,
           producto_id:
             Number(
               linea.item.producto.id
@@ -589,6 +636,23 @@ export class VentaService {
       )
     ) {
       return 'El método de pago seleccionado no es válido.';
+    }
+
+    if (
+      mensajeNormalizado.includes(
+        'descripcion_manual'
+      ) ||
+      mensajeNormalizado.includes(
+        'es_item_manual'
+      ) ||
+      mensajeNormalizado.includes(
+        'detalle_venta_origen'
+      )
+    ) {
+      return (
+        'Falta ejecutar el archivo ' +
+        '25_ventas_conceptos_personalizados.sql en Supabase.'
+      );
     }
 
     if (

@@ -1,928 +1,570 @@
-<div class="providers-page">
-
-  <header class="providers-header">
-    <div class="header-title">
-      <span class="header-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M4 7h16M6 7V4h12v3M5 7v13h14V7M9 11h6M9 15h6" />
-        </svg>
-      </span>
-
-      <div>
-        <span class="page-kicker">
-          ABASTECIMIENTO
+<div class="providers-page container-fluid py-4">
+  <header class="card shadow-sm border-0 mb-4 overflow-hidden hero-card">
+    <div class="card-body d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+      <div class="d-flex align-items-start gap-3">
+        <span class="header-icon d-inline-flex align-items-center justify-content-center rounded-4" aria-hidden="true">
+          <i class="bi bi-box-seam-fill fs-3"></i>
         </span>
 
-        <h1>Proveedores</h1>
-
-        <p>
-          Gestiona proveedores, contactos y productos asociados a cada abastecedor.
-        </p>
-      </div>
-    </div>
-
-    <button
-      type="button"
-      class="primary-button"
-      (click)="abrirNuevoProveedor()"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 5v14M5 12h14" />
-      </svg>
-      Registrar proveedor
-    </button>
-  </header>
-
-  <section class="stats-grid">
-    <article class="stat-card">
-      <span class="stat-icon total" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      </span>
-
-      <div>
-        <small>Proveedores registrados</small>
-        <strong>{{ totalProveedores }}</strong>
-        <span>Total de proveedores</span>
-      </div>
-    </article>
-
-    <article class="stat-card">
-      <span class="stat-icon active" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
-      </span>
-
-      <div>
-        <small>Activos</small>
-        <strong>{{ totalActivos }}</strong>
-        <span>Proveedores disponibles</span>
-      </div>
-    </article>
-
-    <article class="stat-card">
-      <span class="stat-icon warning" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M3 6h13v11H3ZM16 10h3l2 3v4h-5M7 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
-        </svg>
-      </span>
-
-      <div>
-        <small>Con productos bajo stock</small>
-        <strong>{{ conProductosBajoStock }}</strong>
-        <span>Requieren coordinación</span>
-      </div>
-    </article>
-
-    <article class="stat-card">
-      <span class="stat-icon new" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <circle cx="9" cy="7" r="4" />
-          <path d="M3 21a6 6 0 0 1 12 0M19 8v6M16 11h6" />
-        </svg>
-      </span>
-
-      <div>
-        <small>Nuevos este mes</small>
-        <strong>{{ nuevosEsteMes }}</strong>
-        <span>Nuevos registros</span>
-      </div>
-    </article>
-  </section>
-
-  <section class="search-controls">
-    <div class="search-box">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-4-4" />
-      </svg>
-
-      <input
-        type="search"
-        [(ngModel)]="buscar"
-        (ngModelChange)="paginaActual = 1"
-        placeholder="Buscar proveedor, RUC, contacto, teléfono o correo..."
-        autocomplete="off"
-      />
-
-      <button
-        type="button"
-        *ngIf="buscar"
-        (click)="buscar = ''; paginaActual = 1"
-        aria-label="Limpiar búsqueda"
-      >
-        ×
-      </button>
-    </div>
-
-    <select
-      class="filter-select"
-      [(ngModel)]="filtro"
-      (ngModelChange)="paginaActual = 1"
-      aria-label="Filtrar proveedores"
-    >
-      <option value="TODOS">Todos</option>
-      <option value="ACTIVOS">Activos</option>
-      <option value="INACTIVOS">Inactivos</option>
-      <option value="BAJO_STOCK">
-        Con productos bajo stock
-      </option>
-      <option value="SIN_PRODUCTOS">
-        Sin productos asociados
-      </option>
-    </select>
-
-    <button
-      type="button"
-      class="clear-button"
-      (click)="limpiarFiltros()"
-      *ngIf="
-        buscar ||
-        filtro !== 'TODOS'
-      "
-    >
-      Limpiar filtros
-    </button>
-  </section>
-
-  <p class="message success" *ngIf="mensaje">
-    {{ mensaje }}
-  </p>
-
-  <p
-    class="message error"
-    *ngIf="
-      error &&
-      !mostrarFormulario
-    "
-  >
-    {{ error }}
-  </p>
-
-  <div class="loading-panel" *ngIf="cargando">
-    <span class="spinner"></span>
-    Cargando proveedores...
-  </div>
-
-  <section
-    class="providers-content-grid"
-    *ngIf="!cargando"
-  >
-    <article class="table-card">
-      <div
-        class="table-wrapper"
-        *ngIf="
-          proveedoresPaginados.length;
-          else sinProveedores
-        "
-      >
-        <table class="providers-table">
-          <thead>
-            <tr>
-              <th>Proveedor</th>
-              <th>Documento</th>
-              <th>Teléfono</th>
-              <th>Correo</th>
-              <th>Productos / abastece</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr
-              *ngFor="
-                let proveedor of proveedoresPaginados
-              "
-              [class.selected]="
-                proveedorSeleccionado?.id ===
-                proveedor.id
-              "
-              (click)="
-                seleccionarProveedor(proveedor)
-              "
-            >
-              <td>
-                <div class="provider-cell">
-                  <span class="avatar">
-                    {{ iniciales(proveedor) }}
-                  </span>
-
-                  <div>
-                    <strong>
-                      {{ proveedor.razonSocial }}
-                    </strong>
-                    <small>
-                      {{
-                        proveedor.direccion ||
-                        'Sin dirección'
-                      }}
-                    </small>
-                  </div>
-                </div>
-              </td>
-
-              <td>
-                <strong>
-                  {{
-                    proveedor.numeroDocumento ||
-                    '—'
-                  }}
-                </strong>
-                <small>
-                  {{ proveedor.tipoDocumento }}
-                </small>
-              </td>
-
-              <td>
-                {{ proveedor.telefono || '—' }}
-              </td>
-
-              <td>
-                {{ proveedor.correo || '—' }}
-              </td>
-
-              <td>
-                <div class="supply-cell">
-                  <strong>
-                    {{
-                      categoriasProveedor(
-                        proveedor
-                      )
-                    }}
-                  </strong>
-                  <small>
-                    {{
-                      productosProveedor(
-                        proveedor
-                      )
-                    }}
-                  </small>
-                </div>
-              </td>
-
-              <td>
-                <span
-                  class="status-badge"
-                  [class.inactive]="
-                    !proveedor.activo
-                  "
-                >
-                  {{
-                    proveedor.activo
-                      ? 'Activo'
-                      : 'Inactivo'
-                  }}
-                </span>
-              </td>
-
-              <td>
-                <div
-                  class="row-actions"
-                  (click)="
-                    $event.stopPropagation()
-                  "
-                >
-                  <button
-                    type="button"
-                    title="Ver ficha"
-                    aria-label="Ver ficha"
-                    (click)="
-                      seleccionarProveedor(
-                        proveedor
-                      )
-                    "
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12Z" />
-                      <circle cx="12" cy="12" r="2.5" />
-                    </svg>
-                  </button>
-
-                  <button
-                    type="button"
-                    title="Editar"
-                    aria-label="Editar"
-                    (click)="
-                      abrirEditarProveedor(
-                        proveedor
-                      )
-                    "
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="m4 20 4-1 11-11-3-3L5 16Z" />
-                      <path d="m14 6 3 3" />
-                    </svg>
-                  </button>
-
-                  <button
-                    type="button"
-                    class="state-button"
-                    [class.activate]="
-                      !proveedor.activo
-                    "
-                    [title]="
-                      proveedor.activo
-                        ? 'Desactivar'
-                        : 'Activar'
-                    "
-                    [attr.aria-label]="
-                      proveedor.activo
-                        ? 'Desactivar proveedor'
-                        : 'Activar proveedor'
-                    "
-                    (click)="
-                      cambiarEstado(
-                        proveedor
-                      )
-                    "
-                    [disabled]="guardando"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M12 2v10M6.3 5.3a8 8 0 1 0 11.4 0" />
-                    </svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <ng-template #sinProveedores>
-        <div class="empty-state">
-          <span class="empty-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 7h16M6 7V4h12v3M5 7v13h14V7" />
-            </svg>
-          </span>
-
-          <strong>
-            No se encontraron proveedores.
-          </strong>
-
-          <p>
-            Registra un proveedor o modifica los filtros.
+        <div>
+          <span class="text-uppercase fw-semibold text-primary small d-block mb-1">Abastecimiento</span>
+          <h1 class="h3 fw-bold mb-1">Proveedores</h1>
+          <p class="text-secondary mb-0">
+            Gestiona proveedores, contactos y productos asociados a cada abastecedor.
           </p>
         </div>
-      </ng-template>
+      </div>
 
-      <footer
-        class="pagination"
-        *ngIf="
-          proveedoresFiltrados.length > 0
-        "
-      >
-        <span>
-          Mostrando
-          {{ proveedoresPaginados.length }}
-          de
-          {{ proveedoresFiltrados.length }}
-          proveedores
-        </span>
+      <button type="button" class="btn btn-primary btn-lg d-inline-flex align-items-center gap-2 px-4" (click)="abrirNuevoProveedor()">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        <span>Registrar proveedor</span>
+      </button>
+    </div>
+  </header>
 
-        <div class="page-controls">
-          <button
-            type="button"
-            (click)="paginaAnterior()"
-            [disabled]="paginaActual === 1"
-            aria-label="Página anterior"
-          >
-            ‹
-          </button>
-
-          <button
-            type="button"
-            *ngFor="
-              let pagina of paginasVisibles
-            "
-            (click)="irPagina(pagina)"
-            [class.active]="
-              pagina === paginaActual
-            "
-          >
-            {{ pagina }}
-          </button>
-
-          <button
-            type="button"
-            (click)="paginaSiguiente()"
-            [disabled]="
-              paginaActual === totalPaginas
-            "
-            aria-label="Página siguiente"
-          >
-            ›
-          </button>
-        </div>
-      </footer>
-    </article>
-
-    <aside class="quick-card">
-      <ng-container
-        *ngIf="
-          proveedorSeleccionado;
-          else sinSeleccion
-        "
-      >
-        <header class="quick-header">
-          <span class="quick-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 3h9l3 3v15H6Z" />
-              <path d="M9 11h6M9 15h6" />
-            </svg>
+  <section class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+      <article class="stat-card card border-0 shadow-sm h-100 lift-card">
+        <div class="card-body d-flex align-items-center gap-3">
+          <span class="stat-icon total" aria-hidden="true">
+            <i class="bi bi-people-fill"></i>
           </span>
+          <div>
+            <small class="text-secondary d-block">Proveedores registrados</small>
+            <strong class="d-block fs-3 lh-1">{{ totalProveedores }}</strong>
+            <span class="text-secondary small">Total de proveedores</span>
+          </div>
+        </div>
+      </article>
+    </div>
 
-          <h2>Ficha rápida</h2>
-        </header>
-
-        <div class="quick-person">
-          <span class="avatar large">
-            {{
-              iniciales(
-                proveedorSeleccionado
-              )
-            }}
+    <div class="col-12 col-md-6 col-xl-3">
+      <article class="stat-card card border-0 shadow-sm h-100 lift-card">
+        <div class="card-body d-flex align-items-center gap-3">
+          <span class="stat-icon active" aria-hidden="true">
+            <i class="bi bi-shield-check"></i>
           </span>
-
           <div>
-            <strong>
-              {{
-                proveedorSeleccionado
-                  .razonSocial
-              }}
-            </strong>
-
-            <small>
-              Proveedor desde
-              {{
-                (
-                  proveedorSeleccionado
-                    .creadoEn
-                  | date:'dd/MM/yyyy'
-                ) || '—'
-              }}
-            </small>
+            <small class="text-secondary d-block">Activos</small>
+            <strong class="d-block fs-3 lh-1">{{ totalActivos }}</strong>
+            <span class="text-secondary small">Proveedores disponibles</span>
           </div>
         </div>
+      </article>
+    </div>
 
-        <div class="quick-details">
+    <div class="col-12 col-md-6 col-xl-3">
+      <article class="stat-card card border-0 shadow-sm h-100 lift-card">
+        <div class="card-body d-flex align-items-center gap-3">
+          <span class="stat-icon warning" aria-hidden="true">
+            <i class="bi bi-truck"></i>
+          </span>
           <div>
-            <span>Contacto</span>
-            <strong>
-              {{
-                proveedorSeleccionado
-                  .nombreContacto ||
-                'No registrado'
-              }}
-            </strong>
-          </div>
-
-          <div>
-            <span>Teléfono</span>
-            <strong>
-              {{
-                proveedorSeleccionado
-                  .telefono ||
-                'No registrado'
-              }}
-            </strong>
-          </div>
-
-          <div>
-            <span>Correo</span>
-            <strong>
-              {{
-                proveedorSeleccionado
-                  .correo ||
-                'No registrado'
-              }}
-            </strong>
-          </div>
-
-          <div>
-            <span>Ciudad</span>
-            <strong>
-              {{
-                proveedorSeleccionado
-                  .ciudad ||
-                'No registrada'
-              }}
-            </strong>
-          </div>
-
-          <div>
-            <span>Última compra</span>
-            <strong>
-              {{
-                (
-                  proveedorSeleccionado
-                    .ultimaCompra
-                  | date:'dd/MM/yyyy'
-                ) || 'Sin compras'
-              }}
-            </strong>
-          </div>
-
-          <div>
-            <span>Total comprado</span>
-            <strong>
-              S/
-              {{
-                proveedorSeleccionado
-                  .totalComprado
-                | number:'1.2-2'
-              }}
-            </strong>
-          </div>
-
-          <div>
-            <span>Productos asociados</span>
-            <strong>
-              {{
-                proveedorSeleccionado
-                  .cantidadProductos
-              }}
-            </strong>
-          </div>
-
-          <div>
-            <span>Productos bajo stock</span>
-            <strong
-              [class.alert-value]="
-                proveedorSeleccionado
-                  .productosBajoStock > 0
-              "
-            >
-              {{
-                proveedorSeleccionado
-                  .productosBajoStock
-              }}
-            </strong>
-          </div>
-
-          <div class="wide-detail">
-            <span>Categorías</span>
-            <strong>
-              {{
-                categoriasProveedor(
-                  proveedorSeleccionado
-                )
-              }}
-            </strong>
-          </div>
-
-          <div class="wide-detail">
-            <span>Medio de pago</span>
-            <strong>
-              {{
-                proveedorSeleccionado
-                  .medioPago ||
-                'No registrado'
-              }}
-            </strong>
-          </div>
-
-          <div class="wide-detail">
-            <span>Observaciones</span>
-            <strong>
-              {{
-                proveedorSeleccionado
-                  .observaciones ||
-                'Sin observaciones'
-              }}
-            </strong>
+            <small class="text-secondary d-block">Con productos bajo stock</small>
+            <strong class="d-block fs-3 lh-1">{{ conProductosBajoStock }}</strong>
+            <span class="text-secondary small">Requieren coordinación</span>
           </div>
         </div>
+      </article>
+    </div>
 
-        <div class="quick-actions">
-          <button
-            type="button"
-            class="secondary-button"
-            (click)="
-              abrirEditarProveedor(
-                proveedorSeleccionado
-              )
-            "
-          >
-            Editar proveedor
-          </button>
-
-          <button
-            type="button"
-            class="primary-button"
-            (click)="
-              cambiarEstado(
-                proveedorSeleccionado
-              )
-            "
-            [disabled]="guardando"
-          >
-            {{
-              proveedorSeleccionado.activo
-                ? 'Desactivar'
-                : 'Activar'
-            }}
-          </button>
+    <div class="col-12 col-md-6 col-xl-3">
+      <article class="stat-card card border-0 shadow-sm h-100 lift-card">
+        <div class="card-body d-flex align-items-center gap-3">
+          <span class="stat-icon new" aria-hidden="true">
+            <i class="bi bi-person-plus-fill"></i>
+          </span>
+          <div>
+            <small class="text-secondary d-block">Nuevos este mes</small>
+            <strong class="d-block fs-3 lh-1">{{ nuevosEsteMes }}</strong>
+            <span class="text-secondary small">Nuevos registros</span>
+          </div>
         </div>
-      </ng-container>
-
-      <ng-template #sinSeleccion>
-        <div class="empty-quick">
-          Selecciona un proveedor para consultar su ficha.
-        </div>
-      </ng-template>
-    </aside>
+      </article>
+    </div>
   </section>
 
-  <!-- MODAL REGISTRO / EDICIÓN -->
-  <div
-    class="modal-backdrop"
-    *ngIf="mostrarFormulario"
-    (click)="cerrarFormulario()"
-  >
+  <section class="card border-0 shadow-sm mb-3 filter-card">
+    <div class="card-body">
+      <div class="row g-2 align-items-center">
+        <div class="col-12 col-lg-7">
+          <div class="input-group input-group-lg">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="bi bi-search text-primary" aria-hidden="true"></i>
+            </span>
+
+            <input
+              type="search"
+              class="form-control border-start-0"
+              [(ngModel)]="buscar"
+              (ngModelChange)="paginaActual = 1"
+              placeholder="Buscar proveedor, RUC, contacto, teléfono o correo..."
+              autocomplete="off"
+            />
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              *ngIf="buscar"
+              (click)="buscar = ''; paginaActual = 1"
+              aria-label="Limpiar búsqueda"
+            >
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-3">
+          <select
+            class="form-select form-select-lg"
+            [(ngModel)]="filtro"
+            (ngModelChange)="paginaActual = 1"
+            aria-label="Filtrar proveedores"
+          >
+            <option value="TODOS">Todos</option>
+            <option value="ACTIVOS">Activos</option>
+            <option value="INACTIVOS">Inactivos</option>
+            <option value="BAJO_STOCK">Con productos bajo stock</option>
+            <option value="SIN_PRODUCTOS">Sin productos asociados</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-lg-2 d-grid">
+          <button
+            type="button"
+            class="btn btn-outline-dark btn-lg"
+            (click)="limpiarFiltros()"
+            *ngIf="buscar || filtro !== 'TODOS'"
+          >
+            <i class="bi bi-funnel me-2" aria-hidden="true"></i>
+            Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="status" *ngIf="mensaje">
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>{{ mensaje }}</span>
+  </div>
+
+  <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert" *ngIf="error && !mostrarFormulario">
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+    <span>{{ error }}</span>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4" *ngIf="cargando">
+    <div class="card-body py-5 d-flex align-items-center justify-content-center gap-3 text-secondary">
+      <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+      <span>Cargando proveedores...</span>
+    </div>
+  </div>
+
+  <section class="row g-3" *ngIf="!cargando">
+    <div class="col-12 col-xxl-8">
+      <article class="card border-0 shadow-sm h-100 table-card-modern">
+        <div class="table-responsive" *ngIf="proveedoresPaginados.length; else sinProveedores">
+          <table class="table table-hover align-middle mb-0 providers-table">
+            <thead class="table-light">
+              <tr>
+                <th>Proveedor</th>
+                <th class="d-none d-lg-table-cell">Documento</th>
+                <th class="d-none d-xl-table-cell">Teléfono</th>
+                <th class="d-none d-xxl-table-cell">Correo</th>
+                <th>Productos / abastece</th>
+                <th>Estado</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr
+                *ngFor="let proveedor of proveedoresPaginados"
+                [class.table-active]="proveedorSeleccionado?.id === proveedor.id"
+                (click)="seleccionarProveedor(proveedor)"
+              >
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="avatar">{{ iniciales(proveedor) }}</span>
+                    <div class="text-truncate">
+                      <strong class="d-block text-truncate">{{ proveedor.razonSocial }}</strong>
+                      <small class="text-secondary d-block text-truncate">{{ proveedor.direccion || 'Sin dirección' }}</small>
+                      <small class="text-secondary d-lg-none d-block text-truncate">
+                        {{ proveedor.tipoDocumento }}: {{ proveedor.numeroDocumento || '—' }}
+                      </small>
+                    </div>
+                  </div>
+                </td>
+
+                <td class="d-none d-lg-table-cell">
+                  <strong class="d-block">{{ proveedor.numeroDocumento || '—' }}</strong>
+                  <small class="text-secondary">{{ proveedor.tipoDocumento }}</small>
+                </td>
+
+                <td class="d-none d-xl-table-cell">{{ proveedor.telefono || '—' }}</td>
+
+                <td class="d-none d-xxl-table-cell">{{ proveedor.correo || '—' }}</td>
+
+                <td>
+                  <strong class="d-block">{{ categoriasProveedor(proveedor) }}</strong>
+                  <small class="text-secondary d-block">{{ productosProveedor(proveedor) }}</small>
+                </td>
+
+                <td>
+                  <span class="badge text-bg-success" [class.text-bg-secondary]="!proveedor.activo">
+                    {{ proveedor.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+
+                <td>
+                  <div class="d-flex justify-content-center gap-1 flex-wrap" (click)="$event.stopPropagation()">
+                    <button
+                      type="button"
+                      class="btn btn-outline-primary btn-sm action-btn"
+                      title="Ver ficha"
+                      aria-label="Ver ficha"
+                      (click)="seleccionarProveedor(proveedor)"
+                    >
+                      <i class="bi bi-eye" aria-hidden="true"></i>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm action-btn"
+                      title="Editar"
+                      aria-label="Editar"
+                      (click)="abrirEditarProveedor(proveedor)"
+                    >
+                      <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn btn-sm action-btn"
+                      [class.btn-outline-danger]="proveedor.activo"
+                      [class.btn-outline-success]="!proveedor.activo"
+                      [title]="proveedor.activo ? 'Desactivar' : 'Activar'"
+                      [attr.aria-label]="proveedor.activo ? 'Desactivar proveedor' : 'Activar proveedor'"
+                      (click)="cambiarEstado(proveedor)"
+                      [disabled]="guardando"
+                    >
+                      <i class="bi bi-power" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #sinProveedores>
+          <div class="empty-state p-5 text-center text-secondary">
+            <div class="display-6 mb-2 text-primary"><i class="bi bi-inbox" aria-hidden="true"></i></div>
+            <strong class="text-dark d-block mb-1">No se encontraron proveedores.</strong>
+            <p class="mb-0">Registra un proveedor o modifica los filtros.</p>
+          </div>
+        </ng-template>
+
+        <footer class="card-footer bg-white" *ngIf="proveedoresFiltrados.length > 0">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+            <span class="text-secondary small">
+              Mostrando {{ proveedoresPaginados.length }} de {{ proveedoresFiltrados.length }} proveedores
+            </span>
+
+            <div class="btn-group" role="group" aria-label="Paginación">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="paginaAnterior()"
+                [disabled]="paginaActual === 1"
+                aria-label="Página anterior"
+              >
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+              </button>
+
+              <button
+                type="button"
+                class="btn"
+                *ngFor="let pagina of paginasVisibles"
+                (click)="irPagina(pagina)"
+                [class.btn-primary]="pagina === paginaActual"
+                [class.btn-outline-secondary]="pagina !== paginaActual"
+              >
+                {{ pagina }}
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="paginaSiguiente()"
+                [disabled]="paginaActual === totalPaginas"
+                aria-label="Página siguiente"
+              >
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+        </footer>
+      </article>
+    </div>
+
+    <div class="col-12 col-xxl-4">
+      <aside class="card border-0 shadow-sm sticky-xxl-top quick-panel detail-card-modern">
+        <ng-container *ngIf="proveedorSeleccionado; else sinSeleccion">
+          <header class="card-header bg-white d-flex align-items-center gap-2">
+            <span class="quick-icon" aria-hidden="true"><i class="bi bi-journal-text"></i></span>
+            <h2 class="h5 mb-0">Ficha rápida</h2>
+          </header>
+
+          <div class="card-body">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="avatar large">{{ iniciales(proveedorSeleccionado) }}</span>
+
+              <div>
+                <strong class="d-block">{{ proveedorSeleccionado.razonSocial }}</strong>
+                <small class="text-secondary">
+                  Proveedor desde {{ (proveedorSeleccionado.creadoEn | date:'dd/MM/yyyy') || '—' }}
+                </small>
+              </div>
+            </div>
+
+            <div class="details-grid">
+              <div><span>Contacto</span><strong>{{ proveedorSeleccionado.nombreContacto || 'No registrado' }}</strong></div>
+              <div><span>Teléfono</span><strong>{{ proveedorSeleccionado.telefono || 'No registrado' }}</strong></div>
+              <div><span>Correo</span><strong>{{ proveedorSeleccionado.correo || 'No registrado' }}</strong></div>
+              <div><span>Ciudad</span><strong>{{ proveedorSeleccionado.ciudad || 'No registrada' }}</strong></div>
+              <div><span>Última compra</span><strong>{{ (proveedorSeleccionado.ultimaCompra | date:'dd/MM/yyyy') || 'Sin compras' }}</strong></div>
+              <div><span>Total comprado</span><strong>S/ {{ proveedorSeleccionado.totalComprado | number:'1.2-2' }}</strong></div>
+              <div><span>Productos asociados</span><strong>{{ proveedorSeleccionado.cantidadProductos }}</strong></div>
+              <div>
+                <span>Productos bajo stock</span>
+                <strong [class.text-danger]="proveedorSeleccionado.productosBajoStock > 0">{{ proveedorSeleccionado.productosBajoStock }}</strong>
+              </div>
+              <div class="wide-detail"><span>Categorías</span><strong>{{ categoriasProveedor(proveedorSeleccionado) }}</strong></div>
+              <div class="wide-detail"><span>Medio de pago</span><strong>{{ proveedorSeleccionado.medioPago || 'No registrado' }}</strong></div>
+              <div class="wide-detail"><span>Observaciones</span><strong>{{ proveedorSeleccionado.observaciones || 'Sin observaciones' }}</strong></div>
+            </div>
+          </div>
+
+          <div class="card-footer bg-white d-grid gap-2">
+            <button type="button" class="btn btn-outline-primary" (click)="abrirEditarProveedor(proveedorSeleccionado)">
+              <i class="bi bi-pencil-square me-2" aria-hidden="true"></i>
+              Editar proveedor
+            </button>
+
+            <button type="button" class="btn btn-primary" (click)="cambiarEstado(proveedorSeleccionado)" [disabled]="guardando">
+              <i class="bi bi-power me-2" aria-hidden="true"></i>
+              {{ proveedorSeleccionado.activo ? 'Desactivar' : 'Activar' }}
+            </button>
+          </div>
+        </ng-container>
+
+        <ng-template #sinSeleccion>
+          <div class="card-body py-5 text-center text-secondary">
+            <i class="bi bi-hand-index-thumb fs-2 d-block mb-2" aria-hidden="true"></i>
+            Selecciona un proveedor para consultar su ficha.
+          </div>
+        </ng-template>
+      </aside>
+    </div>
+  </section>
+
+  <div class="modal-backdrop" *ngIf="mostrarFormulario" (click)="cerrarFormulario()">
     <section
-      class="provider-modal"
+      class="provider-modal card border-0 shadow"
       role="dialog"
       aria-modal="true"
       aria-labelledby="providerModalTitle"
       (click)="$event.stopPropagation()"
     >
-      <header class="modal-header">
+      <header class="modal-header card-header bg-white d-flex justify-content-between align-items-start">
         <div>
-          <span class="page-kicker">
-            {{
-              modoFormulario === 'CREAR'
-                ? 'NUEVO PROVEEDOR'
-                : 'EDITAR PROVEEDOR'
-            }}
+          <span class="text-uppercase fw-semibold text-primary small d-block mb-1">
+            {{ modoFormulario === 'CREAR' ? 'Nuevo proveedor' : 'Editar proveedor' }}
           </span>
 
-          <h2 id="providerModalTitle">
-            {{
-              modoFormulario === 'CREAR'
-                ? 'Registrar proveedor'
-                : 'Actualizar proveedor'
-            }}
+          <h2 id="providerModalTitle" class="h4 mb-0">
+            {{ modoFormulario === 'CREAR' ? 'Registrar proveedor' : 'Actualizar proveedor' }}
           </h2>
         </div>
 
         <button
           type="button"
-          class="close-button"
+          class="btn btn-outline-secondary btn-sm"
           (click)="cerrarFormulario()"
           [disabled]="guardando"
           aria-label="Cerrar formulario"
         >
-          ×
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
       </header>
 
-      <form
-        class="provider-form"
-        (ngSubmit)="guardar()"
-      >
-        <section class="form-section">
-          <div class="section-heading">
-            <span>1</span>
-
+      <form class="provider-form card-body" (ngSubmit)="guardar()">
+        <section class="form-section border rounded-3 p-3 mb-3">
+          <div class="d-flex align-items-start gap-2 mb-3">
+            <span class="badge text-bg-primary">1</span>
             <div>
-              <h3>Información principal</h3>
-              <p>
-                Documento, razón social y datos de contacto.
-              </p>
+              <h3 class="h6 mb-1">Información principal</h3>
+              <p class="text-secondary small mb-0">Documento, razón social y datos de contacto.</p>
             </div>
           </div>
 
-          <div class="form-grid">
-            <div class="field">
-              <label for="tipoDocumentoProveedor">
-                Tipo de documento
-              </label>
-
-              <select
-                id="tipoDocumentoProveedor"
-                name="tipoDocumentoProveedor"
-                [(ngModel)]="
-                  form.tipoDocumento
-                "
-              >
-                <option
-                  *ngFor="
-                    let tipo of tiposDocumento
-                  "
-                  [value]="tipo"
-                >
-                  {{ tipo }}
-                </option>
+          <div class="row g-3">
+            <div class="col-12 col-md-4">
+              <label for="tipoDocumentoProveedor" class="form-label fw-semibold">Tipo de documento</label>
+              <select id="tipoDocumentoProveedor" name="tipoDocumentoProveedor" class="form-select" [(ngModel)]="form.tipoDocumento">
+                <option *ngFor="let tipo of tiposDocumento" [value]="tipo">{{ tipo }}</option>
               </select>
             </div>
 
-            <div class="field">
-              <label for="numeroDocumentoProveedor">
-                Número de documento
-              </label>
-
+            <div class="col-12 col-md-4">
+              <label for="numeroDocumentoProveedor" class="form-label fw-semibold">Número de documento</label>
               <input
                 id="numeroDocumentoProveedor"
                 name="numeroDocumentoProveedor"
                 type="text"
+                class="form-control"
                 inputmode="numeric"
                 maxlength="20"
-                [(ngModel)]="
-                  form.numeroDocumento
-                "
+                [(ngModel)]="form.numeroDocumento"
                 placeholder="Ej. 20601587411"
               />
             </div>
 
-            <div class="field wide-field">
-              <label for="razonSocialProveedor">
-                Razón social
-              </label>
-
+            <div class="col-12 col-md-8">
+              <label for="razonSocialProveedor" class="form-label fw-semibold">Razón social</label>
               <input
                 id="razonSocialProveedor"
                 name="razonSocialProveedor"
                 type="text"
+                class="form-control"
                 required
-                [(ngModel)]="
-                  form.razonSocial
-                "
+                [(ngModel)]="form.razonSocial"
                 placeholder="Nombre comercial o razón social"
               />
             </div>
 
-            <div class="field">
-              <label for="contactoProveedor">
-                Persona de contacto
-              </label>
-
+            <div class="col-12 col-md-4">
+              <label for="contactoProveedor" class="form-label fw-semibold">Persona de contacto</label>
               <input
                 id="contactoProveedor"
                 name="contactoProveedor"
                 type="text"
-                [(ngModel)]="
-                  form.nombreContacto
-                "
+                class="form-control"
+                [(ngModel)]="form.nombreContacto"
                 placeholder="Nombre del contacto"
               />
             </div>
 
-            <div class="field">
-              <label for="telefonoProveedor">
-                Teléfono
-              </label>
-
+            <div class="col-12 col-md-4">
+              <label for="telefonoProveedor" class="form-label fw-semibold">Teléfono</label>
               <input
                 id="telefonoProveedor"
                 name="telefonoProveedor"
                 type="tel"
+                class="form-control"
                 inputmode="numeric"
                 maxlength="15"
-                [(ngModel)]="
-                  form.telefono
-                "
+                [(ngModel)]="form.telefono"
                 placeholder="Ej. 976543210"
               />
             </div>
 
-            <div class="field">
-              <label for="correoProveedor">
-                Correo
-              </label>
-
+            <div class="col-12 col-md-4">
+              <label for="correoProveedor" class="form-label fw-semibold">Correo</label>
               <input
                 id="correoProveedor"
                 name="correoProveedor"
                 type="email"
-                [(ngModel)]="
-                  form.correo
-                "
+                class="form-control"
+                [(ngModel)]="form.correo"
                 placeholder="ventas@proveedor.pe"
               />
             </div>
 
-            <div class="field">
-              <label for="ciudadProveedor">
-                Ciudad
-              </label>
-
+            <div class="col-12 col-md-4">
+              <label for="ciudadProveedor" class="form-label fw-semibold">Ciudad</label>
               <input
                 id="ciudadProveedor"
                 name="ciudadProveedor"
                 type="text"
-                [(ngModel)]="
-                  form.ciudad
-                "
+                class="form-control"
+                [(ngModel)]="form.ciudad"
                 placeholder="Ej. Cajamarca"
               />
             </div>
 
-            <div class="field full-field">
-              <label for="direccionProveedor">
-                Dirección
-              </label>
-
+            <div class="col-12">
+              <label for="direccionProveedor" class="form-label fw-semibold">Dirección</label>
               <input
                 id="direccionProveedor"
                 name="direccionProveedor"
                 type="text"
-                [(ngModel)]="
-                  form.direccion
-                "
+                class="form-control"
+                [(ngModel)]="form.direccion"
                 placeholder="Dirección completa"
               />
             </div>
           </div>
         </section>
 
-        <section class="form-section">
-          <div class="section-heading">
-            <span>2</span>
-
+        <section class="form-section border rounded-3 p-3">
+          <div class="d-flex align-items-start gap-2 mb-3">
+            <span class="badge text-bg-primary">2</span>
             <div>
-              <h3>Condiciones y observaciones</h3>
-              <p>
-                Información útil para compras y abastecimiento.
-              </p>
+              <h3 class="h6 mb-1">Condiciones y observaciones</h3>
+              <p class="text-secondary small mb-0">Información útil para compras y abastecimiento.</p>
             </div>
           </div>
 
-          <div class="form-grid">
-            <div class="field full-field">
-              <label for="medioPagoProveedor">
-                Cuenta bancaria o medio de pago
-              </label>
-
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="medioPagoProveedor" class="form-label fw-semibold">Cuenta bancaria o medio de pago</label>
               <input
                 id="medioPagoProveedor"
                 name="medioPagoProveedor"
                 type="text"
-                [(ngModel)]="
-                  form.medioPago
-                "
+                class="form-control"
+                [(ngModel)]="form.medioPago"
                 placeholder="Banco, cuenta, CCI, Yape u otra referencia"
               />
             </div>
 
-            <div class="field full-field">
-              <label for="observacionesProveedor">
-                Observaciones
-              </label>
-
+            <div class="col-12">
+              <label for="observacionesProveedor" class="form-label fw-semibold">Observaciones</label>
               <textarea
                 id="observacionesProveedor"
                 name="observacionesProveedor"
                 rows="4"
-                [(ngModel)]="
-                  form.observaciones
-                "
+                class="form-control"
+                [(ngModel)]="form.observaciones"
                 placeholder="Condiciones, horarios, entregas u otra información"
               ></textarea>
             </div>
 
-            <label class="status-control">
-              <input
-                type="checkbox"
-                name="activoProveedor"
-                [(ngModel)]="form.activo"
-              />
-
-              <span>
-                Proveedor activo y disponible para productos
-              </span>
-            </label>
+            <div class="col-12">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="activoProveedor" name="activoProveedor" [(ngModel)]="form.activo" />
+                <label class="form-check-label" for="activoProveedor">Proveedor activo y disponible para productos</label>
+              </div>
+            </div>
           </div>
         </section>
 
-        <p class="modal-error" *ngIf="error">
-          {{ error }}
-        </p>
+        <div class="alert alert-danger d-flex align-items-center gap-2 mt-3" role="alert" *ngIf="error">
+          <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+          <span>{{ error }}</span>
+        </div>
 
-        <footer class="modal-actions">
-          <button
-            type="button"
-            class="cancel-button"
-            (click)="cerrarFormulario()"
-            [disabled]="guardando"
-          >
+        <footer class="modal-actions card-footer bg-white d-flex flex-column flex-md-row justify-content-end gap-2 mt-3">
+          <button type="button" class="btn btn-outline-secondary" (click)="cerrarFormulario()" [disabled]="guardando">
             Cancelar
           </button>
 
-          <button
-            type="submit"
-            class="primary-button"
-            [disabled]="guardando"
-          >
-            {{
-              guardando
-                ? 'Guardando...'
-                : 'Guardar proveedor'
-            }}
+          <button type="submit" class="btn btn-primary" [disabled]="guardando">
+            <i class="bi bi-check2-circle me-2" aria-hidden="true"></i>
+            {{ guardando ? 'Guardando...' : 'Guardar proveedor' }}
           </button>
         </footer>
       </form>

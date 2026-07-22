@@ -53,7 +53,9 @@ interface ProductoDb {
 
 interface DetalleVentaDb {
   id_detalle_venta: number;
-  id_producto: number;
+  id_producto: number | null;
+  descripcion_manual?: string | null;
+  es_item_manual?: boolean | null;
   cantidad?: number | string | null;
   precio_unitario?: number | string | null;
   descuento?: number | string | null;
@@ -156,6 +158,8 @@ export class OrdenesRecibosService {
             .select(`
               id_detalle_venta,
               id_producto,
+              descripcion_manual,
+              es_item_manual,
               cantidad,
               precio_unitario,
               descuento,
@@ -341,11 +345,26 @@ export class OrdenesRecibosService {
       idDetalle:
         Number(fila.id_detalle_venta),
       idProducto:
-        Number(fila.id_producto),
+        fila.id_producto === null
+          ? null
+          : Number(
+              fila.id_producto
+            ),
       codigo:
-        producto?.codigo_interno || '',
+        fila.es_item_manual
+          ? 'MANUAL'
+          : producto?.codigo_interno ||
+            '',
       producto:
-        producto?.nombre || 'Producto',
+        fila.es_item_manual
+          ? fila.descripcion_manual ||
+            'Concepto personalizado'
+          : producto?.nombre ||
+            'Producto',
+      esManual:
+        Boolean(
+          fila.es_item_manual
+        ),
       modelo:
         producto?.modelo || '',
       color:

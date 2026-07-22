@@ -23,6 +23,15 @@ export interface ItemVenta {
   esObsequio?: boolean;
 
   tipoObsequio?: TipoObsequioVenta;
+
+  /**
+   * Línea digitada durante la venta, por ejemplo:
+   * lunas, reparación, plaquetas o mano de obra.
+   * No modifica inventario.
+   */
+  esManual?: boolean;
+  descripcionManual?: string;
+  precioManual?: number;
 }
 
 export interface VentaRegistrada {

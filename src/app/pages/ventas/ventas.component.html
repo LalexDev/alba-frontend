@@ -82,6 +82,94 @@
       </div>
     </div>
 
+    <section class="manual-sale-item">
+      <div class="manual-sale-heading">
+        <span class="manual-sale-icon">
+          <i
+            class="bi bi-stars"
+            aria-hidden="true"
+          ></i>
+        </span>
+
+        <div>
+          <strong>
+            Lunas u otro producto
+          </strong>
+
+          <small>
+            Agrega un concepto con precio libre. Se incluirá
+            en la compra y en el recibo, pero no descontará stock.
+          </small>
+        </div>
+      </div>
+
+      <div class="manual-sale-grid">
+        <div class="manual-sale-field manual-description">
+          <label for="conceptoManual">
+            Descripción
+          </label>
+
+          <div class="manual-input">
+            <i
+              class="bi bi-card-text"
+              aria-hidden="true"
+            ></i>
+
+            <input
+              id="conceptoManual"
+              type="text"
+              maxlength="180"
+              [(ngModel)]="conceptoManual"
+              (keyup.enter)="agregarConceptoManual()"
+              [disabled]="procesandoVenta"
+              placeholder="Ej. Lunas antirreflejo azul, reparación..."
+            />
+          </div>
+        </div>
+
+        <div class="manual-sale-field">
+          <label for="costoManual">
+            Costo
+          </label>
+
+          <div class="manual-money-input">
+            <span>S/</span>
+
+            <input
+              id="costoManual"
+              type="number"
+              min="0.01"
+              max="999999.99"
+              step="0.01"
+              [(ngModel)]="costoManual"
+              (keyup.enter)="agregarConceptoManual()"
+              [disabled]="procesandoVenta"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="manual-add-button"
+          (click)="agregarConceptoManual()"
+          [disabled]="
+            procesandoVenta ||
+            !conceptoManual.trim() ||
+            !costoManual ||
+            costoManual <= 0
+          "
+        >
+          <i
+            class="bi bi-cart-plus"
+            aria-hidden="true"
+          ></i>
+
+          Agregar a la compra
+        </button>
+      </div>
+    </section>
+
     <p
       class="scanner-message"
       *ngIf="mensaje"
@@ -137,8 +225,21 @@
               <tr *ngFor="let item of carrito; trackBy: trackItem">
                 <td>
                   <div class="producto-info">
-                    <div class="producto-thumb">
-                      <i class="bi bi-eyeglasses"></i>
+                    <div
+                      class="producto-thumb"
+                      [class.manual-thumb]="
+                        item.esManual
+                      "
+                    >
+                      <i
+                        class="bi"
+                        [ngClass]="
+                          item.esManual
+                            ? 'bi-stars'
+                            : 'bi-eyeglasses'
+                        "
+                        aria-hidden="true"
+                      ></i>
                     </div>
 
                     <div>
@@ -153,10 +254,21 @@
                         GRATIS CON MONTURA
                       </span>
 
+                      <span
+                        class="manual-badge"
+                        *ngIf="item.esManual"
+                      >
+                        PRECIO PERSONALIZADO
+                      </span>
+
                       <small>
                         {{
-                          item.producto.codigoBarras ||
-                          item.producto.codigoInterno
+                          item.esManual
+                            ? 'Concepto sin control de stock'
+                            : (
+                                item.producto.codigoBarras ||
+                                item.producto.codigoInterno
+                              )
                         }}
                       </small>
                     </div>
@@ -345,6 +457,68 @@
           </button>
         </div>
 
+        <section
+          class="selected-client"
+          *ngIf="clienteId && clienteSeleccionadoNombre"
+        >
+          <div class="selected-client-info">
+            <span class="selected-client-icon">
+              <i class="bi bi-person-check-fill" aria-hidden="true"></i>
+            </span>
+
+            <div>
+              <small>Cliente seleccionado</small>
+              <strong>{{ clienteSeleccionadoNombre }}</strong>
+
+              <span
+                class="recipe-status"
+                [class.available]="clienteTieneReceta"
+              >
+                <i
+                  class="bi"
+                  [ngClass]="
+                    cargandoRecetaCliente
+                      ? 'bi-arrow-repeat spin-icon'
+                      : clienteTieneReceta
+                        ? 'bi-file-medical-fill'
+                        : 'bi-file-earmark-plus'
+                  "
+                  aria-hidden="true"
+                ></i>
+
+                {{
+                  cargandoRecetaCliente
+                    ? 'Consultando receta...'
+                    : clienteTieneReceta
+                      ? 'Receta registrada'
+                      : 'Sin receta registrada'
+                }}
+              </span>
+            </div>
+          </div>
+
+          <div class="selected-client-actions">
+            <button
+              type="button"
+              class="recipe-button"
+              (click)="imprimirRecetaCliente()"
+              [disabled]="cargandoRecetaCliente"
+            >
+              <i class="bi bi-printer" aria-hidden="true"></i>
+              {{ clienteTieneReceta ? 'Imprimir receta' : 'Imprimir receta en blanco' }}
+            </button>
+
+            <button
+              type="button"
+              class="remove-client-button"
+              (click)="quitarCliente()"
+            >
+              <i class="bi bi-x-circle" aria-hidden="true"></i>
+              Quitar
+            </button>
+          </div>
+        </section>
+
         <button
           class="link-btn"
           type="button"
@@ -499,101 +673,76 @@
         </div>
 
         <div class="resumen-body">
-          <div class="resumen-line">
-            <span>Subtotal productos</span>
-
-            <strong>
-              S/
-              {{
-                subtotalProductos()
-                  | number:'1.2-2'
-              }}
-            </strong>
-          </div>
-
-          <div
-            class="resumen-line"
-            *ngIf="descuentoObsequios() > 0"
-          >
-            <span>Obsequios</span>
-
-            <strong class="discount-value">
-              − S/
-              {{
-                descuentoObsequios()
-                  | number:'1.2-2'
-              }}
-            </strong>
-          </div>
-
-          <div class="summary-field">
-            <label for="descuentoManual">
-              Descuento manual
-            </label>
-
-            <div class="money-input">
-              <span>S/</span>
-
-              <input
-                id="descuentoManual"
-                type="number"
-                min="0"
-                step="0.01"
-                [max]="maximoDescuentoManual()"
-                [(ngModel)]="descuentoManual"
-                (ngModelChange)="actualizarDescuento()"
-                [disabled]="procesandoVenta"
-              />
+          <section class="total-hero">
+            <div>
+              <span>Total a pagar</span>
+              <small>Importe final de la compra</small>
             </div>
-          </div>
-
-          <div class="resumen-line">
-            <span>IGV incluido (18 %)</span>
 
             <strong>
-              S/
-              {{
-                igv()
-                  | number:'1.2-2'
-              }}
+              <span>S/</span>
+              {{ totalFinal() | number:'1.2-2' }}
             </strong>
-          </div>
+          </section>
 
-          <div class="resumen-line total-line">
-            <span>Total</span>
+          <section class="summary-breakdown">
+            <div class="resumen-line">
+              <span>Subtotal de productos</span>
+              <strong>S/ {{ subtotalProductos() | number:'1.2-2' }}</strong>
+            </div>
 
-            <strong>
-              S/
-              {{
-                totalFinal()
-                  | number:'1.2-2'
-              }}
-            </strong>
-          </div>
+            <div class="resumen-line" *ngIf="descuentoObsequios() > 0">
+              <span>Obsequios incluidos</span>
+              <strong class="discount-value">− S/ {{ descuentoObsequios() | number:'1.2-2' }}</strong>
+            </div>
 
-          <div class="summary-field">
+            <div class="summary-field">
+              <div class="summary-label-row">
+                <label for="descuentoManual">Descuento manual</label>
+                <small>Máximo S/ {{ maximoDescuentoManual() | number:'1.2-2' }}</small>
+              </div>
+
+              <div class="money-input">
+                <span>S/</span>
+                <input
+                  id="descuentoManual"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [max]="maximoDescuentoManual()"
+                  [(ngModel)]="descuentoManual"
+                  (ngModelChange)="actualizarDescuento()"
+                  [disabled]="procesandoVenta"
+                />
+              </div>
+            </div>
+
+            <div class="resumen-line">
+              <span>IGV incluido (18 %)</span>
+              <strong>S/ {{ igv() | number:'1.2-2' }}</strong>
+            </div>
+          </section>
+
+          <section class="payment-panel">
             <div class="summary-label-row">
-              <label for="aCuenta">
-                A cuenta
-              </label>
+              <div>
+                <label for="aCuenta">Pago recibido</label>
+                <small>Monto que entrega el cliente hoy</small>
+              </div>
 
               <button
                 type="button"
                 class="pay-all-btn"
                 (click)="aplicarPagoTotal()"
-                [disabled]="
-                  carrito.length === 0 ||
-                  procesandoVenta
-                "
+                [disabled]="carrito.length === 0 || procesandoVenta"
               >
                 <i class="bi bi-cash-stack" aria-hidden="true"></i>
-                Pagar total
+                Pagar todo
               </button>
             </div>
 
-            <div class="money-input">
+            <div class="money-input payment-input">
               <span>S/</span>
-
               <input
                 id="aCuenta"
                 type="number"
@@ -605,128 +754,80 @@
                 [disabled]="procesandoVenta"
               />
             </div>
-          </div>
 
-          <div class="resumen-line balance-line">
-            <span>Saldo</span>
+            <div class="payment-result" [ngClass]="estadoPagoVista.toLowerCase()">
+              <div>
+                <span>Estado del pago</span>
+                <strong>{{ estadoPagoVista }}</strong>
+              </div>
 
-            <strong>
-              S/
-              {{
-                saldo()
-                  | number:'1.2-2'
-              }}
-            </strong>
-          </div>
+              <div>
+                <span>Saldo pendiente</span>
+                <strong>S/ {{ saldo() | number:'1.2-2' }}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="metodo-section">
+            <h3>Método de pago</h3>
+
+            <div class="metodos-grid">
+              <button type="button" class="metodo-btn" [class.active]="metodoPago === 'EFECTIVO'" (click)="seleccionarMetodo('EFECTIVO')">
+                <span class="metodo-icon"><i class="bi bi-cash" aria-hidden="true"></i></span>
+                <span class="metodo-nombre">Efectivo</span>
+              </button>
+
+              <button type="button" class="metodo-btn" [class.active]="metodoPago === 'YAPE'" (click)="seleccionarMetodo('YAPE')">
+                <span class="metodo-icon"><i class="bi bi-phone" aria-hidden="true"></i></span>
+                <span class="metodo-nombre">Yape</span>
+              </button>
+
+              <button type="button" class="metodo-btn" [class.active]="metodoPago === 'TRANSFERENCIA'" (click)="seleccionarMetodo('TRANSFERENCIA')">
+                <span class="metodo-icon"><i class="bi bi-bank" aria-hidden="true"></i></span>
+                <span class="metodo-nombre">Transferencia</span>
+              </button>
+            </div>
+          </section>
 
           <div class="summary-field">
-            <label for="observacionesVenta">
-              Observaciones del recibo
-              <small>(opcional)</small>
-            </label>
-
+            <label for="observacionesVenta">Observaciones del recibo <small>(opcional)</small></label>
             <textarea
               id="observacionesVenta"
-              rows="2"
+              rows="3"
               [(ngModel)]="observaciones"
               [disabled]="procesandoVenta"
-              placeholder="Ej. Entrega pendiente, garantía, indicaciones..."
+              placeholder="Ej. Entrega pendiente, garantía o indicaciones..."
             ></textarea>
           </div>
 
           <label class="print-option">
-            <input
-              type="checkbox"
-              [(ngModel)]="imprimirRecibo"
-              [disabled]="procesandoVenta"
-            />
-
-            Imprimir o guardar el recibo después de cobrar
+            <input type="checkbox" [(ngModel)]="imprimirRecibo" [disabled]="procesandoVenta" />
+            <span>
+              <strong>Imprimir resumen de compra</strong>
+              <small>También podrás guardarlo como PDF</small>
+            </span>
           </label>
 
           <button
             class="btn-primary cobrar-btn"
             type="button"
             (click)="confirmarVenta()"
-            [disabled]="
-              carrito.length === 0 ||
-              procesandoVenta
-            "
+            [disabled]="carrito.length === 0 || procesandoVenta"
           >
             <i
               class="bi"
-              [ngClass]="
-                procesandoVenta
-                  ? 'bi-arrow-repeat spin-icon'
-                  : imprimirRecibo
-                    ? 'bi-printer'
-                    : 'bi-check-circle'
-              "
+              [ngClass]="procesandoVenta ? 'bi-arrow-repeat spin-icon' : imprimirRecibo ? 'bi-printer' : 'bi-check-circle'"
               aria-hidden="true"
             ></i>
 
             {{
               procesandoVenta
-                ? 'Registrando...'
+                ? 'Registrando venta...'
                 : imprimirRecibo
-                  ? 'Cobrar e imprimir recibo'
+                  ? 'Cobrar e imprimir resumen'
                   : 'Registrar venta'
             }}
           </button>
-
-          <!-- MÉTODOS DE PAGO -->
-          <div class="metodo-section">
-            <h3>Método de pago</h3>
-
-            <div class="metodos-grid">
-
-              <!-- EFECTIVO -->
-              <button
-                type="button"
-                class="metodo-btn"
-                [class.active]="metodoPago === 'EFECTIVO'"
-                (click)="seleccionarMetodo('EFECTIVO')"
-                aria-label="Seleccionar pago en efectivo"
-              >
-                <span class="metodo-icon" aria-hidden="true">
-                  <i class="bi bi-cash-coin"></i>
-                </span>
-
-                <span class="metodo-nombre">Efectivo</span>
-              </button>
-
-              <!-- YAPE -->
-              <button
-                type="button"
-                class="metodo-btn"
-                [class.active]="metodoPago === 'YAPE'"
-                (click)="seleccionarMetodo('YAPE')"
-                aria-label="Seleccionar pago con Yape"
-              >
-                <span class="metodo-icon metodo-icon-yape" aria-hidden="true">
-                  <i class="bi bi-phone"></i>
-                </span>
-
-                <span class="metodo-nombre">Yape</span>
-              </button>
-
-              <!-- TRANSFERENCIA -->
-              <button
-                type="button"
-                class="metodo-btn"
-                [class.active]="metodoPago === 'TRANSFERENCIA'"
-                (click)="seleccionarMetodo('TRANSFERENCIA')"
-                aria-label="Seleccionar pago por transferencia"
-              >
-                <span class="metodo-icon" aria-hidden="true">
-                  <i class="bi bi-bank"></i>
-                </span>
-
-                <span class="metodo-nombre">Transferencia</span>
-              </button>
-
-            </div>
-          </div>
         </div>
       </div>
 

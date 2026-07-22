@@ -343,7 +343,7 @@ export class MovimientoInventarioService {
 
     return {
       id:
-        Number(
+        String(
           data.id_usuario
         ),
       nombre:
@@ -477,6 +477,17 @@ export class MovimientoInventarioService {
           ''
         )
         .toLowerCase();
+
+    if (
+      texto.includes(
+        'invalid input syntax for type bigint'
+      )
+    ) {
+      return (
+        'La función de movimientos está tratando el UUID del usuario como BIGINT. ' +
+        'Ejecuta el archivo 24_corregir_movimientos_usuario_uuid.sql en Supabase.'
+      );
+    }
 
     if (
       texto.includes(

@@ -41,6 +41,27 @@ interface ResumenRecibo {
   saldo: number;
 }
 
+interface RecetaClienteVenta {
+  id_receta: number;
+  numero_orden?: string | null;
+  fecha_entrada?: string | null;
+  fecha_receta?: string | null;
+  lejos_od_esfera?: number | null;
+  lejos_od_cilindro?: number | null;
+  lejos_od_eje?: number | null;
+  lejos_oi_esfera?: number | null;
+  lejos_oi_cilindro?: number | null;
+  lejos_oi_eje?: number | null;
+  lejos_dip?: number | null;
+  adicion_od?: number | null;
+  adicion_oi?: number | null;
+  agudeza_visual_od?: string | null;
+  agudeza_visual_oi?: string | null;
+  diagnostico?: string | null;
+  tipo_lente?: string | null;
+  observaciones?: string | null;
+}
+
 @Component({
   selector: 'app-ventas',
   templateUrl: './ventas.component.html',
@@ -62,6 +83,9 @@ export class VentasComponent implements AfterViewInit {
 
   procesandoVenta = false;
   agregandoRapido = false;
+
+  conceptoManual = '';
+  costoManual: number | null = null;
 
   private secuenciaLinea = 0;
   private productosCache:
@@ -86,6 +110,11 @@ export class VentasComponent implements AfterViewInit {
 
   busquedaCliente = '';
   clienteSeleccionadoNombre = '';
+
+  recetaCliente:
+    RecetaClienteVenta | null = null;
+
+  cargandoRecetaCliente = false;
 
   mostrarClienteRapido = false;
   buscandoCliente = false;
@@ -171,6 +200,19 @@ export class VentasComponent implements AfterViewInit {
 
     const nuevaCantidad =
       item.cantidad + 1;
+
+    if (item.esManual) {
+      item.cantidad =
+        nuevaCantidad;
+
+      this.actualizarSubtotal(item);
+      this.ajustarMontosAlTotal();
+
+      this.mensaje =
+        'Cantidad del concepto actualizada.';
+
+      return;
+    }
 
     const otrasUnidades =
       this.cantidadTotalProducto(
@@ -259,6 +301,19 @@ export class VentasComponent implements AfterViewInit {
       return;
     }
 
+    if (item.esManual) {
+      item.cantidad =
+        cantidadNueva;
+
+      this.actualizarSubtotal(item);
+      this.ajustarMontosAlTotal();
+
+      this.mensaje =
+        'Cantidad del concepto actualizada.';
+
+      return;
+    }
+
     const otrasUnidades =
       this.cantidadTotalProducto(
         item.producto.id,
@@ -300,6 +355,9 @@ export class VentasComponent implements AfterViewInit {
 
     this.carrito = [];
 
+    this.conceptoManual = '';
+    this.costoManual = null;
+
     this.descuentoManual = 0;
     this.aCuenta = 0;
     this.observaciones = '';
@@ -333,7 +391,9 @@ export class VentasComponent implements AfterViewInit {
     this.mensaje =
       item.esObsequio
         ? 'Obsequio retirado.'
-        : 'Producto retirado de la venta.';
+        : item.esManual
+          ? 'Concepto personalizado retirado.'
+          : 'Producto retirado de la venta.';
 
     this.focusInput();
   }
@@ -520,6 +580,28 @@ export class VentasComponent implements AfterViewInit {
     }
   }
 
+  get estadoPagoVista():
+    'PENDIENTE' |
+    'PARCIAL' |
+    'PAGADO' {
+    const total = this.totalFinal();
+    const pago = Number(this.aCuenta || 0);
+
+    if (total > 0 && pago >= total) {
+      return 'PAGADO';
+    }
+
+    if (pago > 0) {
+      return 'PARCIAL';
+    }
+
+    return 'PENDIENTE';
+  }
+
+  get clienteTieneReceta(): boolean {
+    return Boolean(this.recetaCliente);
+  }
+
   /* =====================================================
      MÉTODO DE PAGO
      ===================================================== */
@@ -601,10 +683,100 @@ export class VentasComponent implements AfterViewInit {
     }
   }
 
+  agregarConceptoManual(): void {
+    if (this.procesandoVenta) {
+      return;
+    }
+
+    const descripcion =
+      String(
+        this.conceptoManual || ''
+      )
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const costo =
+      Number(this.costoManual);
+
+    if (descripcion.length < 3) {
+      this.mensaje =
+        'Escribe el nombre de las lunas, producto o servicio.';
+      return;
+    }
+
+    if (
+      !Number.isFinite(costo) ||
+      costo <= 0
+    ) {
+      this.mensaje =
+        'Ingresa un costo mayor que S/ 0.00.';
+      return;
+    }
+
+    if (costo > 999999.99) {
+      this.mensaje =
+        'El costo ingresado es demasiado alto.';
+      return;
+    }
+
+    const precio =
+      Number(costo.toFixed(2));
+
+    const idManual =
+      -(
+        Date.now() +
+        this.secuenciaLinea +
+        1
+      );
+
+    const productoManual:
+      Producto = {
+      id: idManual,
+      codigoInterno:
+        'CONCEPTO-MANUAL',
+      codigoBarras: '',
+      nombre: descripcion,
+      descripcion:
+        'Concepto agregado manualmente durante la venta.',
+      precioVenta: precio,
+      stockActual:
+        Number.MAX_SAFE_INTEGER,
+      stockMinimo: 0,
+      estado: true
+    };
+
+    const item:
+      ItemVenta = {
+      idLinea:
+        this.crearIdLinea(),
+      producto:
+        productoManual,
+      cantidad: 1,
+      subtotal: precio,
+      esManual: true,
+      descripcionManual:
+        descripcion,
+      precioManual: precio
+    };
+
+    this.carrito.push(item);
+
+    this.conceptoManual = '';
+    this.costoManual = null;
+
+    this.ajustarMontosAlTotal();
+
+    this.mensaje =
+      `${descripcion} agregado a la compra por S/ ${precio.toFixed(2)}.`;
+
+    this.focusInput();
+  }
+
   hayMonturaEnCarrito(): boolean {
     return this.carrito.some(
       item =>
         !item.esObsequio &&
+        !item.esManual &&
         this.esMontura(
           item.producto
         )
@@ -910,6 +1082,10 @@ export class VentasComponent implements AfterViewInit {
       this.mensaje =
         `Cliente seleccionado: ${nombreCompleto}.`;
 
+      await this.cargarRecetaCliente(
+        this.clienteId
+      );
+
       this.focusInput();
 
     } catch (error) {
@@ -1070,6 +1246,10 @@ export class VentasComponent implements AfterViewInit {
           this.mensaje =
             `El cliente ya estaba registrado y fue seleccionado: ${nombreExistente}.`;
 
+          await this.cargarRecetaCliente(
+            this.clienteId
+          );
+
           this.focusInput();
 
           return;
@@ -1163,6 +1343,8 @@ export class VentasComponent implements AfterViewInit {
       this.clienteRapido =
         this.crearClienteRapidoVacio();
 
+      this.recetaCliente = null;
+
       this.mensaje =
         `Cliente ${clienteGuardado} registrado y seleccionado correctamente.`;
 
@@ -1189,12 +1371,287 @@ export class VentasComponent implements AfterViewInit {
 
     this.clienteSeleccionadoNombre = '';
 
+    this.recetaCliente = null;
+
     this.busquedaCliente = '';
 
     this.mensaje =
       'La venta continuará sin cliente.';
 
     this.focusInput();
+  }
+
+  /* =====================================================
+     RECETA DEL CLIENTE
+     ===================================================== */
+
+  async cargarRecetaCliente(
+    clienteId: number | null
+  ): Promise<void> {
+    this.recetaCliente = null;
+
+    if (!clienteId) {
+      return;
+    }
+
+    this.cargandoRecetaCliente = true;
+
+    try {
+      const { data, error } =
+        await this.supabaseService.client
+          .from('recetas_opticas')
+          .select(`
+            id_receta,
+            numero_orden,
+            fecha_entrada,
+            fecha_receta,
+            lejos_od_esfera,
+            lejos_od_cilindro,
+            lejos_od_eje,
+            lejos_oi_esfera,
+            lejos_oi_cilindro,
+            lejos_oi_eje,
+            lejos_dip,
+            adicion_od,
+            adicion_oi,
+            agudeza_visual_od,
+            agudeza_visual_oi,
+            diagnostico,
+            tipo_lente,
+            observaciones
+          `)
+          .eq('id_cliente', clienteId)
+          .eq('vigente', true)
+          .order('fecha_entrada', {
+            ascending: false
+          })
+          .limit(1)
+          .maybeSingle();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      this.recetaCliente =
+        (data || null) as
+          RecetaClienteVenta | null;
+    } catch (error) {
+      console.error(
+        'Error al consultar receta:',
+        error
+      );
+
+      this.mensaje =
+        'El cliente fue seleccionado, pero no se pudo consultar su receta.';
+    } finally {
+      this.cargandoRecetaCliente = false;
+    }
+  }
+
+  imprimirRecetaCliente(): void {
+    if (
+      !this.clienteId ||
+      !this.clienteSeleccionadoNombre
+    ) {
+      this.mensaje =
+        'Selecciona primero un cliente.';
+      return;
+    }
+
+    const ventana = window.open(
+      '',
+      '_blank',
+      'width=620,height=720'
+    );
+
+    if (!ventana) {
+      this.mensaje =
+        'El navegador bloqueó la ventana de impresión.';
+      return;
+    }
+
+    void this.generarRecetaCliente(ventana);
+  }
+
+  private async generarRecetaCliente(
+    ventana: Window
+  ): Promise<void> {
+    const logo = await this.obtenerLogoRecibo();
+    const receta = this.recetaCliente;
+
+    const fechaBase = String(
+      receta?.fecha_entrada ||
+      receta?.fecha_receta ||
+      this.fechaIsoActual()
+    );
+
+    const partes = fechaBase.split('-');
+    const anio = partes[0] || '—';
+    const mes = partes[1] || '—';
+    const dia = partes[2] || '—';
+
+    const grad = (
+      valor: number | null | undefined
+    ): string => {
+      if (
+        valor === null ||
+        valor === undefined ||
+        Number.isNaN(Number(valor))
+      ) {
+        return '';
+      }
+
+      const numero = Number(valor);
+      return numero > 0
+        ? `+${numero}`
+        : String(numero);
+    };
+
+    const text = (
+      valor: string | number | null | undefined
+    ): string =>
+      valor === null || valor === undefined
+        ? ''
+        : this.escapeHtml(String(valor));
+
+    const observaciones =
+      receta?.observaciones ||
+      (receta ? '' : 'Receta pendiente de completar.');
+
+    ventana.document.open();
+    ventana.document.write(`
+      <!doctype html>
+      <html lang="es">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Receta ${this.escapeHtml(this.clienteSeleccionadoNombre)}</title>
+
+          <style>
+            @page { size: 70mm 70mm; margin: 0; }
+            * { box-sizing: border-box; }
+            html, body { margin: 0; min-height: 100%; }
+            body {
+              display: flex;
+              justify-content: center;
+              padding: 22px;
+              color: #11344e;
+              background: #edf7fb;
+              font-family: Arial, sans-serif;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .receta {
+              width: 70mm;
+              height: 70mm;
+              padding: 1.8mm;
+              overflow: hidden;
+              border: .45mm solid #1593c7;
+              border-radius: 4mm;
+              background: #fff;
+              box-shadow: 0 12px 34px rgba(15,74,96,.18);
+            }
+            .marca { text-align: center; }
+            .logo { max-width: 38mm; height: 7mm; object-fit: contain; }
+            .logo-fallback { color: #1593c7; font-size: 9pt; font-weight: 900; }
+            .contacto { margin-top: .2mm; color: #147ca8; font-size: 4pt; font-weight: 800; white-space: nowrap; }
+            h1 { margin: .65mm 0 .45mm; color: #126f98; font-size: 5.9pt; letter-spacing: .24em; text-align: center; }
+            .fecha { width: 29mm; margin: 0 auto .65mm; overflow: hidden; border: .2mm solid #1593c7; border-radius: 1.5mm; }
+            .fecha-row { display: grid; grid-template-columns: repeat(3,1fr); text-align: center; }
+            .fecha-head { color:#fff; background:#1593c7; font-size:4.3pt; font-weight:900; }
+            .fecha-values { font-size:4.7pt; font-weight:900; }
+            .fecha span { padding:.35mm .15mm; border-right:.16mm solid #1593c7; }
+            .fecha span:last-child { border-right:0; }
+            .cliente { display:flex; gap:1mm; margin-bottom:.6mm; font-size:4.9pt; }
+            .cliente strong { color:#126f98; }
+            .cliente span { flex:1; overflow:hidden; border-bottom:.18mm solid #1593c7; text-overflow:ellipsis; white-space:nowrap; }
+            .cristales { margin-bottom:.3mm; padding:.28mm; color:#fff; background:#1593c7; font-size:4.3pt; font-weight:900; letter-spacing:.3em; text-align:center; }
+            .grad { display:grid; grid-template-columns:5.2mm 1fr; gap:.45mm; }
+            .lateral { display:grid; place-items:center; border-radius:1.2mm; color:#fff; background:#1593c7; font-size:4.1pt; font-weight:900; writing-mode:vertical-rl; transform:rotate(180deg); }
+            table { width:100%; border-collapse:separate; border-spacing:.45mm .35mm; table-layout:fixed; }
+            th,td { height:3.5mm; padding:.2mm; overflow:hidden; border:.16mm solid #78c6e5; border-radius:.7mm; font-size:4.5pt; line-height:1; text-align:center; white-space:nowrap; }
+            thead th, tbody th { border:0; color:#126f98; background:transparent; font-weight:900; }
+            .dip { display:flex; gap:1mm; margin:.25mm 0 .5mm 5.8mm; font-size:4.6pt; }
+            .dip strong { color:#126f98; }
+            .dip span { flex:1; max-width:25mm; border-bottom:.16mm solid #1593c7; }
+            .extras { display:grid; grid-template-columns:repeat(2,1fr); gap:.35mm .55mm; }
+            .extra,.linea { overflow:hidden; border:.15mm solid #9fd7ec; border-radius:.7mm; font-size:3.95pt; line-height:1.05; }
+            .extra { min-height:2.8mm; padding:.28mm .45mm; }
+            .extra strong,.linea strong { color:#126f98; font-size:3.6pt; text-transform:uppercase; }
+            .linea { min-height:3.35mm; margin-top:.35mm; padding:.32mm .45mm; }
+            .observaciones { min-height:5.2mm; max-height:5.2mm; }
+            @media print {
+              html,body { width:70mm!important; height:70mm!important; }
+              body { display:block; padding:0; background:#fff; }
+              .receta { margin:0; box-shadow:none; }
+            }
+          </style>
+        </head>
+
+        <body>
+          <main class="receta">
+            <header class="marca">
+              ${logo ? `<img class="logo" src="${logo}" alt="Óptica Alba">` : '<div class="logo-fallback">ÓPTICA ALBA</div>'}
+              <div class="contacto">JR. DOS DE MAYO 964 · CEL. +51 926 474 267 · CAJAMARCA</div>
+            </header>
+
+            <h1>ORDEN DE TRABAJO</h1>
+
+            <section class="fecha">
+              <div class="fecha-row fecha-head"><span>DÍA</span><span>MES</span><span>AÑO</span></div>
+              <div class="fecha-row fecha-values"><span>${this.escapeHtml(dia)}</span><span>${this.escapeHtml(mes)}</span><span>${this.escapeHtml(anio)}</span></div>
+            </section>
+
+            <section class="cliente"><strong>Cliente:</strong><span>${this.escapeHtml(this.clienteSeleccionadoNombre)}</span></section>
+            <div class="cristales">CRISTALES</div>
+
+            <section class="grad">
+              <div class="lateral">LEJOS</div>
+              <table>
+                <thead><tr><th></th><th>ESF.</th><th>CYL.</th><th>EJE</th></tr></thead>
+                <tbody>
+                  <tr><th>OD:</th><td>${grad(receta?.lejos_od_esfera)}</td><td>${grad(receta?.lejos_od_cilindro)}</td><td>${text(receta?.lejos_od_eje)}</td></tr>
+                  <tr><th>OI:</th><td>${grad(receta?.lejos_oi_esfera)}</td><td>${grad(receta?.lejos_oi_cilindro)}</td><td>${text(receta?.lejos_oi_eje)}</td></tr>
+                </tbody>
+              </table>
+            </section>
+
+            <div class="dip"><strong>DIP:</strong><span>${text(receta?.lejos_dip)}</span></div>
+
+            <section class="extras">
+              <div class="extra"><strong>Adic. OD</strong> ${grad(receta?.adicion_od)}</div>
+              <div class="extra"><strong>Adic. OI</strong> ${grad(receta?.adicion_oi)}</div>
+              <div class="extra"><strong>AV OD</strong> ${text(receta?.agudeza_visual_od)}</div>
+              <div class="extra"><strong>AV OI</strong> ${text(receta?.agudeza_visual_oi)}</div>
+            </section>
+
+            <section class="linea"><strong>Diagnóstico:</strong> ${text(receta?.diagnostico)}</section>
+            <section class="linea"><strong>Tipo de lente / lunas:</strong> ${text(receta?.tipo_lente)}</section>
+            <section class="linea observaciones"><strong>Observaciones:</strong> ${this.escapeHtml(observaciones)}</section>
+          </main>
+
+          <script>
+            window.addEventListener('load', () => {
+              setTimeout(() => { window.focus(); window.print(); }, 350);
+            });
+          </script>
+        </body>
+      </html>
+    `);
+    ventana.document.close();
+
+    this.mensaje = receta
+      ? 'Receta preparada para imprimir.'
+      : 'Se preparó una receta en blanco para el cliente.';
+  }
+
+  private fechaIsoActual(): string {
+    const fecha = new Date();
+    return [
+      fecha.getFullYear(),
+      String(fecha.getMonth() + 1).padStart(2, '0'),
+      String(fecha.getDate()).padStart(2, '0')
+    ].join('-');
   }
 
   /* =====================================================
@@ -1345,6 +1802,8 @@ export class VentasComponent implements AfterViewInit {
             }
 
             this.carrito = [];
+            this.conceptoManual = '';
+            this.costoManual = null;
             this.descuentoManual = 0;
             this.aCuenta = 0;
             this.observaciones = '';
@@ -1733,7 +2192,9 @@ export class VentasComponent implements AfterViewInit {
                   ${
                     item.esObsequio
                       ? '<small>OBSEQUIO</small>'
-                      : ''
+                      : item.esManual
+                        ? '<small>CONCEPTO PERSONALIZADO</small>'
+                        : ''
                   }
                 </td>
 
@@ -1782,11 +2243,18 @@ export class VentasComponent implements AfterViewInit {
               box-sizing: border-box;
             }
 
+            html,
             body {
-              width: 74mm;
+              min-height: 100%;
               margin: 0;
+            }
+
+            body {
+              display: flex;
+              justify-content: center;
+              padding: 24px;
               color: #111827;
-              background: #ffffff;
+              background: #edf5f8;
               font-family:
                 Arial,
                 Helvetica,
@@ -1799,7 +2267,15 @@ export class VentasComponent implements AfterViewInit {
             }
 
             .recibo {
-              width: 100%;
+              width: 74mm;
+              margin: 0 auto;
+              padding: 3mm;
+              border: 1px solid #d0d5dd;
+              border-radius: 3mm;
+              background: #ffffff;
+              box-shadow:
+                0 12px 34px
+                rgba(15, 23, 42, 0.16);
             }
 
             .cabecera {
@@ -1911,8 +2387,25 @@ export class VentasComponent implements AfterViewInit {
             }
 
             @media print {
+              html,
               body {
+                width: auto;
+                min-height: auto;
+              }
+
+              body {
+                display: block;
+                padding: 0;
+                background: #ffffff;
+              }
+
+              .recibo {
                 width: 74mm;
+                margin: 0 auto;
+                padding: 2.5mm;
+                border: 0;
+                border-radius: 0;
+                box-shadow: none;
               }
             }
           </style>
@@ -2045,7 +2538,7 @@ export class VentasComponent implements AfterViewInit {
               </div>
 
               <div class="linea">
-                <span>A cuenta</span>
+                <span>Pago recibido</span>
                 <strong>
                   ${dinero(
                     venta.aCuenta
@@ -2194,6 +2687,9 @@ export class VentasComponent implements AfterViewInit {
     this.busquedaCliente = '';
 
     this.clienteSeleccionadoNombre = '';
+
+    this.recetaCliente = null;
+    this.cargandoRecetaCliente = false;
 
     this.mostrarClienteRapido = false;
 

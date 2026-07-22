@@ -53,7 +53,7 @@ export interface RegistrarMovimientoRespuesta {
 }
 
 export interface UsuarioResponsableMovimiento {
-  id: number;
+  id: string;
   nombre: string;
   email?: string;
 }
@@ -95,7 +95,7 @@ export interface MovimientoProductoDb {
 }
 
 export interface MovimientoUsuarioDb {
-  id_usuario?: number;
+  id_usuario?: string;
   nombres?: string | null;
   apellidos?: string | null;
   email?: string | null;
