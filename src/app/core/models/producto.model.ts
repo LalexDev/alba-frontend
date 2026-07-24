@@ -61,3 +61,49 @@ export interface ProductoRequest {
   marcaId?: number | null;
   proveedorId?: number | null;
 }
+
+
+export type AccionRegistroProducto =
+  'CREADO' |
+  'STOCK_INCREMENTADO' |
+  'ACTUALIZADO';
+
+export interface ResultadoRegistroProducto {
+  producto: Producto;
+  accion: AccionRegistroProducto;
+  cantidadAgregada: number;
+  stockAnterior: number;
+  stockNuevo: number;
+}
+
+
+export type AccionEliminacionProducto =
+  'ELIMINADO' |
+  'DESACTIVADO';
+
+export interface ResultadoEliminacionProducto {
+  idProducto: number;
+  accion: AccionEliminacionProducto;
+  mensaje: string;
+}
+
+
+/**
+ * Resultado de una lectura realizada desde Ventas.
+ *
+ * CODIGO_UNICO:
+ * el lector encontró un código OPT exacto.
+ *
+ * MEDIDA:
+ * el lector encontró una medida repetible y el vendedor
+ * debe elegir la montura correcta.
+ */
+export type TipoBusquedaEscanerProducto =
+  'CODIGO_UNICO' |
+  'MEDIDA';
+
+export interface ResultadoBusquedaEscanerProducto {
+  tipo: TipoBusquedaEscanerProducto;
+  valorEscaneado: string;
+  productos: Producto[];
+}

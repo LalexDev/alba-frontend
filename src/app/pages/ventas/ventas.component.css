@@ -1476,3 +1476,248 @@
     align-items: center;
   }
 }
+
+
+/* =====================================================
+   SELECTOR DE MONTURA POR MEDIDA
+   ===================================================== */
+
+.scanner-results-backdrop {
+  position: fixed;
+  z-index: 1500;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    rgba(
+      15,
+      23,
+      42,
+      0.55
+    );
+  backdrop-filter:
+    blur(3px);
+}
+
+.scanner-results-modal {
+  width:
+    min(
+      720px,
+      calc(100vw - 32px)
+    );
+  max-height:
+    calc(100vh - 40px);
+  overflow: hidden;
+  border:
+    1px solid #8fd1ec;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow:
+    0 24px 70px
+    rgba(
+      15,
+      23,
+      42,
+      0.28
+    );
+}
+
+.scanner-results-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px;
+  border-bottom:
+    1px solid #dbeef7;
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #f3fbfe
+    );
+}
+
+.scanner-results-kicker {
+  display: block;
+  color: #0e78a5;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.scanner-results-header h2 {
+  margin: 5px 0 0;
+  color: #101828;
+  font-size: 23px;
+}
+
+.scanner-results-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 39px;
+  height: 39px;
+  border:
+    1px solid #cfeaf5;
+  border-radius: 11px;
+  color: #0e78a5;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.scanner-results-list {
+  display: grid;
+  gap: 11px;
+  max-height:
+    calc(100vh - 170px);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.scanner-result-card {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border:
+    1px solid #dbeaf1;
+  border-radius: 14px;
+  background: #ffffff;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.scanner-result-card:hover {
+  transform:
+    translateY(-1px);
+  border-color: #8fd1ec;
+  box-shadow:
+    0 8px 20px
+    rgba(
+      21,
+      147,
+      199,
+      0.1
+    );
+}
+
+.scanner-result-data {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+  gap: 10px;
+  min-width: 0;
+}
+
+.scanner-result-data > div {
+  min-width: 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: #f7fbfd;
+}
+
+.scanner-result-data span,
+.scanner-result-data strong {
+  display: block;
+}
+
+.scanner-result-data span {
+  color: #667085;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.scanner-result-data strong {
+  margin-top: 4px;
+  overflow: hidden;
+  color: #101828;
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scanner-result-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 11px;
+  color: #ffffff;
+  background: #1593c7;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.scanner-result-select:hover:not(:disabled) {
+  background: #0e78a5;
+}
+
+.scanner-result-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.scanner-results-empty {
+  margin: 0;
+  padding: 28px 18px;
+  color: #667085;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 680px) {
+  .scanner-results-backdrop {
+    padding: 8px;
+  }
+
+  .scanner-results-modal {
+    width:
+      calc(100vw - 16px);
+    max-height:
+      calc(100vh - 16px);
+    border-radius: 16px;
+  }
+
+  .scanner-results-header {
+    padding: 15px;
+  }
+
+  .scanner-results-header h2 {
+    font-size: 20px;
+  }
+
+  .scanner-results-list {
+    max-height:
+      calc(100vh - 120px);
+    padding: 11px;
+  }
+
+  .scanner-result-card {
+    grid-template-columns: 1fr;
+  }
+
+  .scanner-result-data {
+    grid-template-columns: 1fr;
+  }
+
+  .scanner-result-select {
+    width: 100%;
+  }
+}

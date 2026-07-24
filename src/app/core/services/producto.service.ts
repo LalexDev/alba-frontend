@@ -6,7 +6,10 @@ import {
   Marca,
   Producto,
   ProductoRequest,
-  Proveedor
+  Proveedor,
+  ResultadoBusquedaEscanerProducto,
+  ResultadoEliminacionProducto,
+  ResultadoRegistroProducto
 } from '../models/producto.model';
 
 import { SupabaseService } from './supabase.service';
@@ -129,8 +132,11 @@ export class ProductoService {
     });
   }
 
-  crear(request: ProductoRequest): Observable<Producto> {
-    return defer(async () => {
+  crear(
+    request: ProductoRequest
+  ): Observable<ResultadoRegistroProducto> {
+    return defer(
+      async (): Promise<ResultadoRegistroProducto> => {
       const codigoBarras =
         String(request.codigoBarras || '').trim();
 
@@ -143,12 +149,6 @@ export class ProductoService {
 
       const nombre =
         String(request.nombre || '').trim();
-
-      if (!codigoBarras) {
-        throw new Error(
-          'El código de barras es obligatorio.'
-        );
-      }
 
       if (!nombre) {
         throw new Error(
@@ -170,9 +170,12 @@ export class ProductoService {
           'crear_producto',
           {
             p_codigo_interno:
-              codigoInterno || codigoBarras,
+              codigoInterno ||
+              codigoBarras ||
+              null,
             p_codigo_barras:
-              codigoBarras,
+              codigoBarras ||
+              null,
             p_nombre:
               nombre,
             p_descripcion:
@@ -221,6 +224,12 @@ export class ProductoService {
 
       const respuesta = data as {
         id_producto?: number;
+        accion?:
+          'CREADO' |
+          'STOCK_INCREMENTADO';
+        cantidad_agregada?: number;
+        stock_anterior?: number;
+        stock_nuevo?: number;
       } | null;
 
       const idProducto = Number(
@@ -232,6 +241,32 @@ export class ProductoService {
           'El producto se guardó, pero no se obtuvo su identificador.'
         );
       }
+
+      const accion:
+        ResultadoRegistroProducto['accion'] =
+          respuesta?.accion ===
+            'STOCK_INCREMENTADO'
+            ? 'STOCK_INCREMENTADO'
+            : 'CREADO';
+
+      const cantidadAgregada =
+        Number(
+          respuesta?.cantidad_agregada ??
+          request.stockActual ??
+          0
+        );
+
+      const stockAnterior =
+        Number(
+          respuesta?.stock_anterior ??
+          0
+        );
+
+      const stockNuevo =
+        Number(
+          respuesta?.stock_nuevo ??
+          cantidadAgregada
+        );
 
       const sexo =
         request.sexo === 'F' ||
@@ -266,8 +301,431 @@ export class ProductoService {
         }
       }
 
-      return this.obtenerPorId(idProducto);
-    });
+      const producto =
+        await this.obtenerPorId(
+          idProducto
+        );
+
+      return {
+        producto,
+        accion,
+        cantidadAgregada,
+        stockAnterior,
+        stockNuevo
+      };
+      }
+    );
+  }
+
+  actualizar(
+    idProducto: number,
+    request: ProductoRequest
+  ): Observable<ResultadoRegistroProducto> {
+    return defer(
+      async (): Promise<ResultadoRegistroProducto> => {
+      if (
+        !Number.isInteger(idProducto) ||
+        idProducto <= 0
+      ) {
+        throw new Error(
+          'El producto seleccionado no es válido.'
+        );
+      }
+
+      const { data, error } =
+        await this.supabaseService.client.rpc(
+          'actualizar_producto_detalle',
+          {
+            p_id_producto:
+              idProducto,
+            p_codigo_interno:
+              String(
+                request.codigoInterno ||
+                request.codigoBarras ||
+                ''
+              ).trim(),
+            p_codigo_barras:
+              String(
+                request.codigoBarras || ''
+              ).trim(),
+            p_nombre:
+              String(
+                request.nombre || ''
+              ).trim(),
+            p_descripcion:
+              request.descripcion?.trim() ||
+              null,
+            p_modelo:
+              request.modelo?.trim() ||
+              null,
+            p_color:
+              request.color?.trim() ||
+              null,
+            p_medida:
+              request.medida?.trim() ||
+              null,
+            p_material:
+              request.material?.trim() ||
+              null,
+            p_sexo:
+              request.sexo === 'F' ||
+              request.sexo === 'M'
+                ? request.sexo
+                : null,
+            p_precio_compra:
+              Number(
+                request.precioCompra || 0
+              ),
+            p_precio_venta:
+              Number(
+                request.precioVenta || 0
+              ),
+            p_stock_minimo:
+              Number(
+                request.stockMinimo ?? 5
+              ),
+            p_id_categoria:
+              Number(
+                request.categoriaId
+              ),
+            p_id_marca:
+              request.marcaId
+                ? Number(request.marcaId)
+                : null,
+            p_id_proveedor:
+              request.proveedorId
+                ? Number(request.proveedorId)
+                : null,
+            p_activo:
+              true
+          }
+        );
+
+      if (error) {
+        throw new Error(
+          this.traducirError(
+            error.message
+          )
+        );
+      }
+
+      const idConfirmado =
+        Number(
+          (
+            data as {
+              id_producto?: number;
+            } | null
+          )?.id_producto ||
+          idProducto
+        );
+
+      const producto =
+        await this.obtenerPorId(
+          idConfirmado
+        );
+
+      return {
+        producto,
+        accion:
+          'ACTUALIZADO' as const,
+        cantidadAgregada:
+          0,
+        stockAnterior:
+          producto.stockActual,
+        stockNuevo:
+          producto.stockActual
+      };
+      }
+    );
+  }
+
+  eliminar(
+    idProducto: number
+  ): Observable<ResultadoEliminacionProducto> {
+    return defer(
+      async (): Promise<ResultadoEliminacionProducto> => {
+      if (
+        !Number.isInteger(idProducto) ||
+        idProducto <= 0
+      ) {
+        throw new Error(
+          'El producto seleccionado no es válido.'
+        );
+      }
+
+      const { data, error } =
+        await this.supabaseService.client.rpc(
+          'eliminar_producto_seguro',
+          {
+            p_id_producto:
+              idProducto
+          }
+        );
+
+      if (error) {
+        throw new Error(
+          this.traducirError(
+            error.message
+          )
+        );
+      }
+
+      const respuesta =
+        data as {
+          id_producto?: number;
+          accion?: string;
+          mensaje?: string;
+        } | null;
+
+      const accion:
+        ResultadoEliminacionProducto['accion'] =
+          respuesta?.accion ===
+            'DESACTIVADO'
+            ? 'DESACTIVADO'
+            : 'ELIMINADO';
+
+      return {
+        idProducto:
+          Number(
+            respuesta?.id_producto ||
+            idProducto
+          ),
+        accion,
+        mensaje:
+          respuesta?.mensaje ||
+          (
+            accion === 'ELIMINADO'
+              ? 'Producto eliminado.'
+              : 'Producto desactivado para conservar su historial.'
+          )
+      };
+      }
+    );
+  }
+
+  buscarParaVentaPorEscaneo(
+    valorEscaneado: string
+  ): Observable<ResultadoBusquedaEscanerProducto> {
+    return defer(
+      async (): Promise<ResultadoBusquedaEscanerProducto> => {
+        const valor =
+          String(
+            valorEscaneado || ''
+          ).trim();
+
+        if (!valor) {
+          throw new Error(
+            'Ingresa o escanea un código.'
+          );
+        }
+
+        /*
+         * Cuando la lectura tiene formato de medida, siempre
+         * buscamos TODAS las monturas que comparten esa medida.
+         *
+         * Ejemplo:
+         * 52-18-140
+         */
+        const medida =
+          this.normalizarMedidaEscaneada(
+            valor
+          );
+
+        if (medida) {
+          const {
+            data,
+            error
+          } =
+            await this.supabaseService.client
+              .from('productos')
+              .select(
+                this.columnasProducto
+              )
+              .eq(
+                'activo',
+                true
+              )
+              .eq(
+                'medida',
+                medida
+              )
+              .gt(
+                'stock_actual',
+                0
+              );
+
+          if (error) {
+            throw new Error(
+              error.message
+            );
+          }
+
+          const productos =
+            (data ?? [])
+              .map(
+                fila =>
+                  this.mapearProducto(
+                    fila as unknown as ProductoDb
+                  )
+              )
+              .sort(
+                (a, b) => {
+                  const marca =
+                    String(
+                      a.marca?.nombre || ''
+                    ).localeCompare(
+                      String(
+                        b.marca?.nombre || ''
+                      ),
+                      'es',
+                      {
+                        sensitivity:
+                          'base'
+                      }
+                    );
+
+                  if (marca !== 0) {
+                    return marca;
+                  }
+
+                  const color =
+                    String(
+                      a.color || ''
+                    ).localeCompare(
+                      String(
+                        b.color || ''
+                      ),
+                      'es',
+                      {
+                        sensitivity:
+                          'base'
+                      }
+                    );
+
+                  if (color !== 0) {
+                    return color;
+                  }
+
+                  return String(
+                    a.modelo || ''
+                  ).localeCompare(
+                    String(
+                      b.modelo || ''
+                    ),
+                    'es',
+                    {
+                      sensitivity:
+                        'base',
+                      numeric:
+                        true
+                    }
+                  );
+                }
+              );
+
+          if (productos.length === 0) {
+            throw new Error(
+              `No hay monturas con stock para la medida ${medida}.`
+            );
+          }
+
+          return {
+            tipo:
+              'MEDIDA',
+            valorEscaneado:
+              medida,
+            productos
+          };
+        }
+
+        /*
+         * Un código interno OPT sí identifica exactamente
+         * a un solo producto.
+         */
+        const porBarras =
+          await this.supabaseService.client
+            .from('productos')
+            .select(
+              this.columnasProducto
+            )
+            .eq(
+              'activo',
+              true
+            )
+            .eq(
+              'codigo_barras',
+              valor
+            )
+            .maybeSingle();
+
+        if (porBarras.error) {
+          throw new Error(
+            porBarras.error.message
+          );
+        }
+
+        let filaExacta =
+          porBarras.data;
+
+        if (!filaExacta) {
+          const porCodigoInterno =
+            await this.supabaseService.client
+              .from('productos')
+              .select(
+                this.columnasProducto
+              )
+              .eq(
+                'activo',
+                true
+              )
+              .eq(
+                'codigo_interno',
+                valor
+              )
+              .maybeSingle();
+
+          if (porCodigoInterno.error) {
+            throw new Error(
+              porCodigoInterno.error.message
+            );
+          }
+
+          filaExacta =
+            porCodigoInterno.data;
+        }
+
+        if (!filaExacta) {
+          throw new Error(
+            'Producto no encontrado.'
+          );
+        }
+
+        const producto =
+          this.mapearProducto(
+            filaExacta as unknown as ProductoDb
+          );
+
+        if (
+          Number(
+            producto.stockActual || 0
+          ) <= 0
+        ) {
+          throw new Error(
+            'El producto está agotado.'
+          );
+        }
+
+        return {
+          tipo:
+            'CODIGO_UNICO',
+          valorEscaneado:
+            valor,
+          productos: [
+            producto
+          ]
+        };
+      }
+    );
   }
 
   buscarPorCodigo(
@@ -592,6 +1050,66 @@ export class ProductoService {
     );
   }
 
+  private normalizarMedidaEscaneada(
+    valor: string
+  ): string | null {
+    const texto =
+      String(
+        valor || ''
+      )
+        .trim()
+        .toUpperCase()
+        .replace(
+          /[×X]/g,
+          '-'
+        )
+        .replace(
+          /[\/\\|_]/g,
+          '-'
+        )
+        .replace(
+          /\s+/g,
+          '-'
+        )
+        .replace(
+          /-+/g,
+          '-'
+        );
+
+    const coincidencia =
+      texto.match(
+        /(?:^|[^0-9])(\d{2,3})-(\d{2,3})-(\d{3})(?:$|[^0-9])/
+      );
+
+    if (coincidencia) {
+      return [
+        coincidencia[1],
+        coincidencia[2],
+        coincidencia[3]
+      ].join('-');
+    }
+
+    const soloDigitos =
+      String(
+        valor || ''
+      ).replace(
+        /\D/g,
+        ''
+      );
+
+    if (
+      soloDigitos.length === 7
+    ) {
+      return [
+        soloDigitos.slice(0, 2),
+        soloDigitos.slice(2, 4),
+        soloDigitos.slice(4, 7)
+      ].join('-');
+    }
+
+    return null;
+  }
+
   private mapearProducto(
     fila: ProductoDb
   ): Producto {
@@ -723,10 +1241,98 @@ export class ProductoService {
       String(mensaje || '').toLowerCase();
 
     if (
+      texto.includes(
+        'actualizar_producto_detalle'
+      ) ||
+      texto.includes(
+        'eliminar_producto_seguro'
+      )
+    ) {
+      return (
+        'Falta ejecutar el archivo ' +
+        '29_productos_visualizar_editar_eliminar.sql en Supabase.'
+      );
+    }
+
+    if (
+      texto.includes(
+        'producto con ventas'
+      )
+    ) {
+      return (
+        'El producto tiene historial de ventas y solo puede desactivarse.'
+      );
+    }
+
+    if (
+      texto.includes(
+        'productos_siempre_sumar_stock'
+      )
+    ) {
+      return (
+        'Falta ejecutar el archivo ' +
+        '31_productos_siempre_sumar_stock.sql en Supabase.'
+      );
+    }
+
+    if (
+      texto.includes(
+        'registrar_producto_o_incrementar_stock'
+      )
+    ) {
+      return (
+        'Falta ejecutar el archivo ' +
+        '28_productos_modelos_stock_automatico.sql en Supabase.'
+      );
+    }
+
+    if (
+      texto.includes(
+        'mismo producto, modelo, color y medida'
+      )
+    ) {
+      return (
+        'No se pudo sumar la cantidad al stock existente. ' +
+        'Ejecuta el archivo 31_productos_siempre_sumar_stock.sql en Supabase.'
+      );
+    }
+
+    if (
+      texto.includes(
+        'codigo_barras'
+      ) ||
+      texto.includes(
+        'código de barras'
+      )
+    ) {
+      return (
+        'El código único ya pertenece a otro producto. ' +
+        'Presiona Generar para obtener un nuevo código OPT.'
+      );
+    }
+
+    if (
+      texto.includes(
+        'codigo_interno'
+      ) ||
+      texto.includes(
+        'código interno'
+      )
+    ) {
+      return (
+        'El código interno ya está registrado. ' +
+        'Vuelve a generar el código del producto.'
+      );
+    }
+
+    if (
       texto.includes('duplicate') ||
       texto.includes('unique')
     ) {
-      return 'Ya existe un registro con esos datos.';
+      return (
+        'Existe un dato único repetido. Revisa el código del producto; ' +
+        'la marca puede reutilizarse con modelos diferentes.'
+      );
     }
 
     if (

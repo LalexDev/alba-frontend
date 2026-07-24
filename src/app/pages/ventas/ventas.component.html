@@ -19,7 +19,7 @@
       class="scanner-label"
       for="codigoBarras"
     >
-      Código de barras
+      Código interno o código de medida
     </label>
 
     <div class="scanner-row">
@@ -34,7 +34,7 @@
           type="text"
           [(ngModel)]="codigo"
           (keyup.enter)="buscarPorCodigo()"
-          placeholder="Ej. OPT-000001"
+          placeholder="Ej. OPT-000001 o 52-18-140"
           autocomplete="off"
         />
       </div>
@@ -848,4 +848,121 @@
     <!-- FIN COLUMNA DERECHA -->
 
   </section>
+
+  <!-- =====================================================
+       SELECTOR DE MONTURA POR CÓDIGO DE MEDIDA
+       ===================================================== -->
+  <div
+    class="scanner-results-backdrop"
+    *ngIf="mostrarSelectorMontura"
+    (click)="cerrarSelectorMontura()"
+  >
+    <section
+      class="scanner-results-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tituloSelectorMontura"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="scanner-results-header">
+        <div>
+          <span class="scanner-results-kicker">
+            PRODUCTOS ENCONTRADOS
+          </span>
+
+          <h2 id="tituloSelectorMontura">
+            Selecciona la montura
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="scanner-results-close"
+          (click)="cerrarSelectorMontura()"
+          aria-label="Cerrar selector"
+        >
+          <i
+            class="bi bi-x-lg"
+            aria-hidden="true"
+          ></i>
+        </button>
+      </header>
+
+      <div class="scanner-results-list">
+        <article
+          class="scanner-result-card"
+          *ngFor="
+            let producto of coincidenciasMontura
+          "
+        >
+          <div class="scanner-result-data">
+            <div>
+              <span>Marca</span>
+
+              <strong>
+                {{
+                  producto.marca?.nombre ||
+                  'Sin marca'
+                }}
+              </strong>
+            </div>
+
+            <div>
+              <span>Color</span>
+
+              <strong>
+                {{
+                  producto.color ||
+                  'Sin color'
+                }}
+              </strong>
+            </div>
+
+            <div>
+              <span>Modelo</span>
+
+              <strong>
+                {{
+                  producto.modelo ||
+                  producto.nombre ||
+                  'Sin modelo'
+                }}
+              </strong>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="scanner-result-select"
+            (click)="
+              seleccionarMonturaEscaneada(
+                producto
+              )
+            "
+            [disabled]="
+              seleccionandoMontura ||
+              procesandoVenta
+            "
+          >
+            <i
+              class="bi bi-check2-circle"
+              aria-hidden="true"
+            ></i>
+
+            Seleccionar
+          </button>
+        </article>
+      </div>
+
+      <p
+        class="scanner-results-empty"
+        *ngIf="
+          coincidenciasMontura.length === 0
+        "
+      >
+        No se encontraron monturas disponibles.
+      </p>
+    </section>
+  </div>
+
 </div>

@@ -17,7 +17,10 @@ import {
   TipoObsequioVenta,
   VentaRegistrada
 } from '../../core/models/venta.model';
-import { Producto } from '../../core/models/producto.model';
+import {
+  Producto,
+  ResultadoBusquedaEscanerProducto
+} from '../../core/models/producto.model';
 
 interface ClienteRapidoForm {
   nombreCompleto: string;
@@ -91,6 +94,15 @@ export class VentasComponent implements AfterViewInit {
   private productosCache:
     Producto[] | null = null;
 
+  mostrarSelectorMontura = false;
+
+  coincidenciasMontura:
+    Producto[] = [];
+
+  lecturaMonturaPendiente = '';
+
+  seleccionandoMontura = false;
+
   /* =====================================================
      DATOS DE LA VENTA
      ===================================================== */
@@ -146,22 +158,66 @@ export class VentasComponent implements AfterViewInit {
       return;
     }
 
+    if (
+      this.procesandoVenta ||
+      this.seleccionandoMontura
+    ) {
+      return;
+    }
+
     this.mensaje =
       'Buscando producto...';
 
     this.productoService
-      .buscarPorCodigo(valor)
+      .buscarParaVentaPorEscaneo(
+        valor
+      )
       .subscribe({
         next:
           (
-            producto:
-              Producto
+            resultado:
+              ResultadoBusquedaEscanerProducto
           ) => {
-            this.agregarProductoAlCarrito(
-              producto
-            );
+            if (
+              resultado.tipo ===
+                'CODIGO_UNICO'
+            ) {
+              const producto =
+                resultado.productos[0];
 
-            this.limpiarCodigoYEnfocar();
+              if (!producto) {
+                this.mensaje =
+                  'Producto no encontrado.';
+
+                this.limpiarCodigoYEnfocar();
+                return;
+              }
+
+              this.agregarProductoAlCarrito(
+                producto
+              );
+
+              this.limpiarCodigoYEnfocar();
+              return;
+            }
+
+            /*
+             * Una medida puede pertenecer a distintas marcas.
+             * Por eso siempre se abre el selector.
+             */
+            this.lecturaMonturaPendiente =
+              resultado.valorEscaneado;
+
+            this.coincidenciasMontura =
+              resultado.productos;
+
+            this.mostrarSelectorMontura =
+              true;
+
+            this.codigo = '';
+
+            this.mensaje =
+              'Selecciona la montura que tienes físicamente.';
           },
 
         error:
@@ -182,6 +238,60 @@ export class VentasComponent implements AfterViewInit {
             this.limpiarCodigoYEnfocar();
           }
       });
+  }
+
+  seleccionarMonturaEscaneada(
+    producto: Producto
+  ): void {
+    if (
+      this.seleccionandoMontura ||
+      this.procesandoVenta
+    ) {
+      return;
+    }
+
+    this.seleccionandoMontura =
+      true;
+
+    try {
+      this.agregarProductoAlCarrito(
+        producto
+      );
+
+      this.mensaje =
+        'Montura seleccionada y agregada a la compra.';
+
+      this.cerrarSelectorMontura(
+        false
+      );
+    } finally {
+      this.seleccionandoMontura =
+        false;
+
+      this.focusInput();
+    }
+  }
+
+  cerrarSelectorMontura(
+    enfocar:
+      boolean = true
+  ): void {
+    if (this.seleccionandoMontura) {
+      return;
+    }
+
+    this.mostrarSelectorMontura =
+      false;
+
+    this.coincidenciasMontura =
+      [];
+
+    this.lecturaMonturaPendiente =
+      '';
+
+    if (enfocar) {
+      this.focusInput();
+    }
   }
 
   /* =====================================================

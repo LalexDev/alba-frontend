@@ -24,7 +24,8 @@ import {
   Marca,
   Producto,
   ProductoRequest,
-  Proveedor
+  Proveedor,
+  ResultadoRegistroProducto
 } from '../../core/models/producto.model';
 
 import {
@@ -73,6 +74,19 @@ export class ProductosComponent
   guardando = false;
   cargando = false;
   mostrarSoloBajoStock = false;
+
+  modoEdicion = false;
+  productoEditando:
+    Producto | null = null;
+
+  mostrarDetalle = false;
+  productoSeleccionado:
+    Producto | null = null;
+
+  mostrarConfirmacionEliminar = false;
+  productoPorEliminar:
+    Producto | null = null;
+  eliminando = false;
 
   marcaSeleccionada = 'TODAS';
   categoriaSeleccionada = 'TODAS';
@@ -645,7 +659,15 @@ export class ProductosComponent
   abrirFormulario(): void {
     this.error = '';
     this.ok = '';
+    this.modoEdicion = false;
+    this.productoEditando = null;
     this.mostrarFormulario = true;
+
+    this.form.get(
+      'stockActual'
+    )?.enable({
+      emitEvent: false
+    });
     this.mostrarNuevaMarca = false;
     this.guardandoMarca = false;
     this.mensajeMarca = '';
@@ -685,6 +707,14 @@ export class ProductosComponent
     }
 
     this.mostrarFormulario = false;
+    this.modoEdicion = false;
+    this.productoEditando = null;
+
+    this.form.get(
+      'stockActual'
+    )?.enable({
+      emitEvent: false
+    });
 
     this.form.get('nuevaCategoria')
       ?.clearValidators();
@@ -697,6 +727,184 @@ export class ProductosComponent
     this.mostrarNuevaMarca = false;
     this.mensajeMarca = '';
     this.errorMarca = '';
+  }
+
+  visualizarProducto(
+    producto: Producto
+  ): void {
+    this.productoSeleccionado =
+      producto;
+    this.mostrarDetalle =
+      true;
+    this.error = '';
+  }
+
+  cerrarDetalle(): void {
+    this.mostrarDetalle =
+      false;
+    this.productoSeleccionado =
+      null;
+  }
+
+  editarProducto(
+    producto: Producto
+  ): void {
+    this.error = '';
+    this.ok = '';
+    this.modoEdicion = true;
+    this.productoEditando =
+      producto;
+    this.mostrarFormulario =
+      true;
+    this.mostrarNuevaMarca =
+      false;
+    this.mensajeMarca = '';
+    this.errorMarca = '';
+
+    this.form.patchValue(
+      {
+        codigoBarras:
+          producto.codigoBarras ||
+          producto.codigoInterno ||
+          '',
+        nombre:
+          producto.nombre,
+        categoriaId:
+          producto.categoria?.id ??
+          null,
+        nuevaCategoria: '',
+        marcaId:
+          producto.marca?.id ??
+          null,
+        nuevaMarca: '',
+        modelo:
+          producto.modelo || '',
+        color:
+          producto.color || '',
+        medida:
+          producto.medida || '',
+        material:
+          producto.material || '',
+        sexo:
+          producto.sexo ?? null,
+        precioCompra:
+          Number(
+            producto.precioCompra || 0
+          ),
+        precioVenta:
+          Number(
+            producto.precioVenta || 0
+          ),
+        stockActual:
+          Number(
+            producto.stockActual || 0
+          ),
+        stockMinimo:
+          Number(
+            producto.stockMinimo ?? 5
+          ),
+        proveedorId:
+          producto.proveedor?.id ??
+          null,
+        fechaIngreso:
+          producto.fechaIngreso
+            ? producto.fechaIngreso
+                .slice(0, 10)
+            : this.fechaActual(),
+        estado:
+          producto.estado
+            ? 'ACTIVO'
+            : 'INACTIVO',
+        descripcion:
+          producto.descripcion || ''
+      },
+      {
+        emitEvent: true
+      }
+    );
+
+    this.actualizarValidacionesCampos();
+
+    this.form.get(
+      'stockActual'
+    )?.disable({
+      emitEvent: false
+    });
+  }
+
+  solicitarEliminarProducto(
+    producto: Producto
+  ): void {
+    this.productoPorEliminar =
+      producto;
+    this.mostrarConfirmacionEliminar =
+      true;
+    this.error = '';
+  }
+
+  cancelarEliminarProducto(): void {
+    if (this.eliminando) {
+      return;
+    }
+
+    this.productoPorEliminar =
+      null;
+    this.mostrarConfirmacionEliminar =
+      false;
+  }
+
+  eliminarProducto(): void {
+    if (
+      !this.productoPorEliminar ||
+      this.eliminando
+    ) {
+      return;
+    }
+
+    const producto =
+      this.productoPorEliminar;
+
+    this.eliminando =
+      true;
+    this.error = '';
+    this.ok = '';
+
+    this.productoService
+      .eliminar(
+        producto.id
+      )
+      .pipe(
+        finalize(() => {
+          this.eliminando =
+            false;
+        })
+      )
+      .subscribe({
+        next: (resultado) => {
+          this.ok =
+            resultado.accion ===
+              'ELIMINADO'
+              ? `Producto ${producto.modelo || producto.nombre} eliminado de la base de datos.`
+              : `Producto ${producto.modelo || producto.nombre} desactivado. Se conservó porque tiene historial de ventas.`;
+
+          this.cancelarEliminarProducto();
+
+          if (
+            this.productoSeleccionado?.id ===
+              producto.id
+          ) {
+            this.cerrarDetalle();
+          }
+
+          this.cargarTodo();
+        },
+
+        error: (error) => {
+          this.error =
+            error?.message ||
+            'No se pudo eliminar el producto.';
+        }
+      });
   }
 
   alternarNuevaMarca(): void {
@@ -909,8 +1117,10 @@ export class ProductosComponent
         : of(null);
 
     forkJoin({
-      categoria: categoria$,
-      marca: marca$
+      categoria:
+        categoria$,
+      marca:
+        marca$
     })
       .pipe(
         switchMap(({
@@ -919,86 +1129,91 @@ export class ProductosComponent
         }) => {
           const request:
             ProductoRequest = {
-
             codigoInterno:
               String(
                 value.codigoBarras
               ).trim(),
-
             codigoBarras:
               String(
                 value.codigoBarras
               ).trim(),
-
             nombre:
               String(
                 value.nombre
               ).trim(),
-
             descripcion:
               String(
                 value.descripcion || ''
               ).trim(),
-
             modelo:
               String(
                 value.modelo || ''
               ).trim(),
-
             color:
               String(
                 value.color || ''
               ).trim(),
-
             medida:
               String(
                 value.medida || ''
               ).trim(),
-
             material:
               String(
                 value.material || ''
               ).trim(),
-
             sexo:
               value.sexo === 'F' ||
               value.sexo === 'M'
                 ? value.sexo
                 : null,
-
             precioCompra:
               Number(
                 value.precioCompra
               ),
-
             precioVenta:
               Number(
                 value.precioVenta
               ),
-
             stockActual:
-              Number(
-                value.stockActual
-              ),
-
+              this.modoEdicion &&
+              this.productoEditando
+                ? Number(
+                    this.productoEditando
+                      .stockActual || 0
+                  )
+                : Number(
+                    value.stockActual
+                  ),
             stockMinimo:
               Number(
                 value.stockMinimo ?? 5
               ),
-
             categoriaId:
-              Number(categoria.id),
-
+              Number(
+                categoria.id
+              ),
             marcaId:
               marca
                 ? Number(marca.id)
                 : null,
-
             proveedorId:
-              Number(
-                value.proveedorId
-              )
+              value.proveedorId
+                ? Number(
+                    value.proveedorId
+                  )
+                : null
           };
+
+          if (
+            this.modoEdicion &&
+            this.productoEditando
+          ) {
+            return this.productoService
+              .actualizar(
+                this.productoEditando.id,
+                request
+              );
+          }
 
           return this.productoService
             .crear(request);
@@ -1008,11 +1223,34 @@ export class ProductosComponent
         })
       )
       .subscribe({
-        next: (producto) => {
-          if (producto.marca?.nombre) {
+        next: (
+          resultado:
+            ResultadoRegistroProducto
+        ) => {
+          const producto =
+            resultado.producto;
+
+          if (
+            resultado.accion ===
+              'STOCK_INCREMENTADO'
+          ) {
             this.ok =
-              `Modelo ${producto.modelo || producto.nombre} registrado. ` +
-              `El stock total de ${producto.marca.nombre} se actualizó automáticamente.`;
+              `Producto agregado al stock correctamente. ` +
+              `Se sumaron ${resultado.cantidadAgregada} unidad(es) a ${producto.modelo || producto.nombre}. ` +
+              `Stock anterior: ${resultado.stockAnterior}. ` +
+              `Stock actual: ${resultado.stockNuevo}.`;
+          } else if (
+            resultado.accion ===
+              'ACTUALIZADO'
+          ) {
+            this.ok =
+              `Producto ${producto.modelo || producto.nombre} actualizado correctamente.`;
+          } else if (
+            producto.marca?.nombre
+          ) {
+            this.ok =
+              `Nuevo modelo registrado: ${producto.marca.nombre} ` +
+              `${producto.modelo || producto.nombre}.`;
           } else {
             this.ok =
               `${producto.nombre} registrado con ${producto.stockActual} unidad(es).`;
@@ -1020,6 +1258,25 @@ export class ProductosComponent
 
           this.mostrarFormulario =
             false;
+          this.modoEdicion =
+            false;
+          this.productoEditando =
+            null;
+
+          this.form.get(
+            'stockActual'
+          )?.enable({
+            emitEvent: false
+          });
+
+          /*
+           * Después de crear, actualizar o incrementar
+           * stock se muestra el producto resultante.
+           */
+          this.productoSeleccionado =
+            producto;
+          this.mostrarDetalle =
+            true;
 
           this.cargarTodo();
         },
@@ -1176,6 +1433,27 @@ export class ProductosComponent
     ) {
       this.paginaActual += 1;
     }
+  }
+
+  esBajoStockModelo(
+    producto: Producto
+  ): boolean {
+    return (
+      Number(
+        producto.stockActual || 0
+      ) <=
+      Number(
+        producto.stockMinimo ?? 5
+      )
+    );
+  }
+
+  sinStockModelo(
+    producto: Producto
+  ): boolean {
+    return Number(
+      producto.stockActual || 0
+    ) <= 0;
   }
 
   esBajoStock(
@@ -1526,7 +1804,68 @@ export class ProductosComponent
     clave: string,
     productos: Producto[]
   ): ProductoInventario {
-    const primero = productos[0];
+    const productosOrdenados =
+      [...productos].sort(
+        (a, b) => {
+          const porModelo =
+            String(
+              a.modelo ||
+              a.nombre ||
+              ''
+            ).localeCompare(
+              String(
+                b.modelo ||
+                b.nombre ||
+                ''
+              ),
+              'es',
+              {
+                sensitivity:
+                  'base',
+                numeric: true
+              }
+            );
+
+          if (porModelo !== 0) {
+            return porModelo;
+          }
+
+          const porColor =
+            String(
+              a.color || ''
+            ).localeCompare(
+              String(
+                b.color || ''
+              ),
+              'es',
+              {
+                sensitivity:
+                  'base'
+              }
+            );
+
+          if (porColor !== 0) {
+            return porColor;
+          }
+
+          return String(
+            a.medida || ''
+          ).localeCompare(
+            String(
+              b.medida || ''
+            ),
+            'es',
+            {
+              sensitivity:
+                'base',
+              numeric: true
+            }
+          );
+        }
+      );
+
+    const primero =
+      productosOrdenados[0];
 
     const valoresUnicos = (
       selector: (producto: Producto) =>
@@ -1534,7 +1873,7 @@ export class ProductosComponent
     ): string[] =>
       Array.from(
         new Set(
-          productos
+          productosOrdenados
             .map(selector)
             .map(valor =>
               String(valor || '').trim()
@@ -1580,19 +1919,19 @@ export class ProductosComponent
       );
 
     const preciosCompra =
-      productos.map(
+      productosOrdenados.map(
         producto =>
           Number(producto.precioCompra || 0)
       );
 
     const preciosVenta =
-      productos.map(
+      productosOrdenados.map(
         producto =>
           Number(producto.precioVenta || 0)
       );
 
     const stockTotal =
-      productos.reduce(
+      productosOrdenados.reduce(
         (total, producto) =>
           total +
           Number(producto.stockActual || 0),
@@ -1600,7 +1939,7 @@ export class ProductosComponent
       );
 
     const stockMinimo = Math.max(
-      ...productos.map(
+      ...productosOrdenados.map(
         producto =>
           Number(producto.stockMinimo ?? 5)
       )
@@ -1613,16 +1952,18 @@ export class ProductosComponent
     return {
       ...primero,
       claveInventario: clave,
-      productosAgrupados: productos,
+      productosAgrupados:
+        productosOrdenados,
       cantidadModelos:
-        modelos.length || productos.length,
+        modelos.length ||
+        productosOrdenados.length,
       modelosRegistrados: modelos,
       sexosRegistrados: sexos,
       nombresRegistrados: nombres,
       proveedoresRegistrados: proveedores,
       nombre: marcaNombre,
       descripcion:
-        `${productos.length} modelo(s) registrado(s)`,
+        `${productosOrdenados.length} modelo(s) registrado(s)`,
       modelo: modelos.join(', '),
       color: colores.join(', '),
       medida: medidas.join(', '),
@@ -1642,7 +1983,7 @@ export class ProductosComponent
       precioVentaMax:
         Math.max(...preciosVenta),
       estado:
-        productos.some(
+        productosOrdenados.some(
           producto => producto.estado
         )
     };

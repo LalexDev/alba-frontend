@@ -1,4 +1,4 @@
-<div class="productos-page container-fluid py-4">
+<div class="productos-page">
 
   <header class="productos-header">
     <div>
@@ -15,14 +15,22 @@
       type="button"
       (click)="abrirFormulario()"
     >
-      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <i
+        class="bi bi-plus-lg"
+        aria-hidden="true"
+      ></i>
       Registrar producto
     </button>
   </header>
 
   <section class="stats-grid">
     <article class="stat-card">
-      <span class="stat-icon"><i class="bi bi-boxes" aria-hidden="true"></i></span>
+      <span class="stat-icon">
+        <i
+          class="bi bi-boxes"
+          aria-hidden="true"
+        ></i>
+      </span>
       <div>
         <small>Marcas en inventario</small>
         <strong>{{ totalProductos }}</strong>
@@ -37,7 +45,12 @@
       class="stat-card warning"
       [class.has-alert]="totalBajoStock > 0"
     >
-      <span class="stat-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+      <span class="stat-icon">
+        <i
+          class="bi bi-exclamation-triangle"
+          aria-hidden="true"
+        ></i>
+      </span>
       <div>
         <small>Stock bajo</small>
         <strong>{{ totalBajoStock }}</strong>
@@ -46,7 +59,12 @@
     </article>
 
     <article class="stat-card">
-      <span class="stat-icon"><i class="bi bi-tags" aria-hidden="true"></i></span>
+      <span class="stat-icon">
+        <i
+          class="bi bi-tags"
+          aria-hidden="true"
+        ></i>
+      </span>
       <div>
         <small>Categorías</small>
         <strong>{{ totalCategorias }}</strong>
@@ -55,7 +73,12 @@
     </article>
 
     <article class="stat-card value-card">
-      <span class="stat-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
+      <span class="stat-icon">
+        <i
+          class="bi bi-cash-stack"
+          aria-hidden="true"
+        ></i>
+      </span>
       <div>
         <small>Valorización</small>
         <strong>
@@ -89,8 +112,6 @@
       type="button"
       (click)="cambiarFiltroStock()"
     >
-      <i class="bi bi-box-seam" aria-hidden="true"></i>
-
       {{
         mostrarSoloBajoStock
           ? 'Mostrar todos'
@@ -102,7 +123,7 @@
   <section class="inventory-controls">
 
     <div class="search-box">
-      <i class="bi bi-search" aria-hidden="true"></i>
+      <span aria-hidden="true">⌕</span>
 
       <input
         type="search"
@@ -174,7 +195,7 @@
       [class.active]="mostrarSoloBajoStock"
       (click)="cambiarFiltroStock()"
     >
-      <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+      ⚠
       {{
         mostrarSoloBajoStock
           ? 'Mostrando stock bajo'
@@ -188,7 +209,14 @@
       (click)="exportarInventarioExcel()"
       [disabled]="cargando || productos.length === 0"
     >
-      <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path d="M12 3v12"></path>
+        <path d="m7 10 5 5 5-5"></path>
+        <path d="M5 21h14"></path>
+      </svg>
 
       Descargar inventario
     </button>
@@ -204,7 +232,6 @@
         mostrarSoloBajoStock
       "
     >
-      <i class="bi bi-funnel-x" aria-hidden="true"></i>
       Limpiar filtros
     </button>
 
@@ -240,15 +267,14 @@
         else inventarioVacio
       "
     >
-      <table class="products-table">
+      <table
+        class="products-table brand-model-table"
+      >
         <thead>
           <tr>
             <th>Marca</th>
             <th>Categoría</th>
-            <th>Modelos registrados</th>
-            <th>Características</th>
-            <th>Compra</th>
-            <th>Venta</th>
+            <th>Modelos</th>
             <th>Stock total</th>
             <th>Proveedor</th>
             <th>Estado</th>
@@ -257,172 +283,379 @@
         </thead>
 
         <tbody>
-          <tr
-            *ngFor="let producto of productosPaginados"
-            [class.low-stock-row]="esBajoStock(producto)"
-            [class.out-stock-row]="sinStock(producto)"
+          <ng-container
+            *ngFor="
+              let producto of productosPaginados
+            "
           >
-            <td>
-              <div class="product-cell">
-                <span class="product-placeholder">👓</span>
-                <div>
-                  <strong>
-                    {{
-                      producto.marca?.nombre ||
-                      producto.nombre
-                    }}
-                  </strong>
-                  <small>
-                    {{ producto.cantidadModelos }}
-                    modelo(s) registrado(s)
-                  </small>
+            <tr
+              class="brand-summary-row"
+              [class.low-stock-row]="
+                esBajoStock(producto)
+              "
+              [class.out-stock-row]="
+                sinStock(producto)
+              "
+            >
+              <td>
+                <div class="product-cell">
+                  <span class="product-placeholder">
+                    <i
+                      class="bi bi-eyeglasses"
+                      aria-hidden="true"
+                    ></i>
+                  </span>
+
+                  <div>
+                    <strong>
+                      {{
+                        producto.marca?.nombre ||
+                        producto.nombre
+                      }}
+                    </strong>
+
+                    <small>
+                      {{
+                        producto.productosAgrupados.length
+                      }}
+                      modelo(s) o variante(s)
+                    </small>
+                  </div>
                 </div>
-              </div>
-            </td>
+              </td>
 
-            <td>
-              {{
-                producto.categoria?.nombre ||
-                'Sin categoría'
-              }}
-            </td>
-
-            <td>
-              <strong>
+              <td>
                 {{
-                  producto.modelosRegistrados.join(', ') ||
-                  'Sin modelo'
+                  producto.categoria?.nombre ||
+                  'Sin categoría'
                 }}
-              </strong>
+              </td>
 
-              <small>
-                {{
-                  producto.nombresRegistrados.join(', ')
-                }}
-              </small>
-            </td>
+              <td>
+                <div class="model-name-list">
+                  <span
+                    *ngFor="
+                      let modelo of producto.productosAgrupados
+                    "
+                  >
+                    {{
+                      modelo.modelo ||
+                      modelo.nombre ||
+                      'Sin modelo'
+                    }}
+                  </span>
+                </div>
+              </td>
 
-            <td>
-              <span
-                *ngIf="
-                  producto.sexosRegistrados.length
-                "
-              >
-                Sexo:
-                {{
-                  producto.sexosRegistrados.join(', ')
-                }}
-              </span>
-
-              <small *ngIf="producto.color">
-                Color: {{ producto.color }}
-              </small>
-
-              <small *ngIf="producto.medida">
-                Medida: {{ producto.medida }}
-              </small>
-
-              <small *ngIf="producto.material">
-                Material: {{ producto.material }}
-              </small>
-
-              <span
-                class="not-applicable"
-                *ngIf="
-                  producto.sexosRegistrados.length === 0 &&
-                  !producto.color &&
-                  !producto.medida &&
-                  !producto.material
-                "
-              >
-                No aplica
-              </span>
-            </td>
-
-            <td>
-              {{
-                rangoPrecio(
-                  producto.precioCompraMin,
-                  producto.precioCompraMax
-                )
-              }}
-            </td>
-
-            <td>
-              <strong>
-                {{
-                  rangoPrecio(
-                    producto.precioVentaMin,
-                    producto.precioVentaMax
-                  )
-                }}
-              </strong>
-            </td>
-
-            <td>
-              <span
-                class="stock-badge"
-                [class.low]="esBajoStock(producto)"
-                [class.zero]="sinStock(producto)"
-              >
-                {{ producto.stockActual }}
-
-                <small *ngIf="esBajoStock(producto)">
-                  mínimo {{ producto.stockMinimo ?? 5 }}
-                </small>
-              </span>
-            </td>
-
-            <td>
-              <strong>
-                {{
-                  producto.proveedoresRegistrados.join(', ') ||
-                  'Sin proveedor'
-                }}
-              </strong>
-            </td>
-
-            <td>
-              <span
-                class="status-badge"
-                [class.inactive]="!producto.estado"
-              >
-                {{ producto.estado ? 'Activo' : 'Inactivo' }}
-              </span>
-            </td>
-
-            <td>
-              <div
-                class="supplier-actions"
-                *ngIf="
-                  esBajoStock(producto);
-                  else stockCorrecto
-                "
-              >
-                <button
-                  type="button"
-                  class="whatsapp-button"
-                  (click)="contactarWhatsApp(producto)"
+              <td>
+                <span
+                  class="stock-badge"
+                  [class.low]="
+                    esBajoStock(producto)
+                  "
+                  [class.zero]="
+                    sinStock(producto)
+                  "
                 >
-                  <i class="bi bi-whatsapp" aria-hidden="true"></i>
-                  WhatsApp
-                </button>
+                  {{ producto.stockActual }}
 
-                <button
-                  type="button"
-                  class="email-button"
-                  (click)="contactarCorreo(producto)"
+                  <small>
+                    unidades de la marca
+                  </small>
+                </span>
+              </td>
+
+              <td>
+                <strong>
+                  {{
+                    producto.proveedoresRegistrados.join(', ') ||
+                    'Sin proveedor'
+                  }}
+                </strong>
+              </td>
+
+              <td>
+                <span
+                  class="status-badge"
+                  [class.inactive]="
+                    !producto.estado
+                  "
                 >
-                  <i class="bi bi-envelope" aria-hidden="true"></i>
-                  Correo
-                </button>
-              </div>
+                  {{
+                    producto.estado
+                      ? 'Activo'
+                      : 'Inactivo'
+                  }}
+                </span>
+              </td>
 
-              <ng-template #stockCorrecto>
-                <span class="stock-ok">Correcto</span>
-              </ng-template>
-            </td>
-          </tr>
+              <td>
+                <div
+                  class="supplier-actions"
+                  *ngIf="
+                    esBajoStock(producto);
+                    else stockCorrecto
+                  "
+                >
+                  <button
+                    type="button"
+                    class="whatsapp-button"
+                    (click)="
+                      contactarWhatsApp(
+                        producto
+                      )
+                    "
+                  >
+                    <i
+                      class="bi bi-whatsapp"
+                      aria-hidden="true"
+                    ></i>
+
+                    WhatsApp
+                  </button>
+
+                  <button
+                    type="button"
+                    class="email-button"
+                    (click)="
+                      contactarCorreo(
+                        producto
+                      )
+                    "
+                  >
+                    <i
+                      class="bi bi-envelope"
+                      aria-hidden="true"
+                    ></i>
+
+                    Correo
+                  </button>
+                </div>
+
+                <ng-template #stockCorrecto>
+                  <span class="stock-ok">
+                    Correcto
+                  </span>
+                </ng-template>
+              </td>
+            </tr>
+
+            <tr class="models-detail-row">
+              <td colspan="7">
+                <div class="models-subdivision">
+                  <article
+                    class="model-card"
+                    *ngFor="
+                      let modelo of producto.productosAgrupados
+                    "
+                    [class.low]="
+                      esBajoStockModelo(
+                        modelo
+                      )
+                    "
+                    [class.zero]="
+                      sinStockModelo(
+                        modelo
+                      )
+                    "
+                  >
+                    <header>
+                      <div>
+                        <span class="model-icon">
+                          <i
+                            class="bi bi-box-seam"
+                            aria-hidden="true"
+                          ></i>
+                        </span>
+
+                        <div>
+                          <small>MODELO</small>
+
+                          <strong>
+                            {{
+                              modelo.modelo ||
+                              modelo.nombre ||
+                              'Sin modelo'
+                            }}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <span
+                        class="model-stock"
+                        [class.low]="
+                          esBajoStockModelo(
+                            modelo
+                          )
+                        "
+                        [class.zero]="
+                          sinStockModelo(
+                            modelo
+                          )
+                        "
+                      >
+                        {{
+                          modelo.stockActual
+                        }}
+                        unidad(es)
+                      </span>
+                    </header>
+
+                    <div class="model-data-grid">
+                      <div>
+                        <span>Producto</span>
+                        <strong>
+                          {{ modelo.nombre }}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Código</span>
+                        <strong>
+                          {{
+                            modelo.codigoBarras ||
+                            modelo.codigoInterno
+                          }}
+                        </strong>
+                      </div>
+
+                      <div *ngIf="modelo.sexo">
+                        <span>Sexo</span>
+                        <strong>
+                          {{ modelo.sexo }}
+                        </strong>
+                      </div>
+
+                      <div *ngIf="modelo.color">
+                        <span>Color</span>
+                        <strong>
+                          {{ modelo.color }}
+                        </strong>
+                      </div>
+
+                      <div *ngIf="modelo.medida">
+                        <span>Medida</span>
+                        <strong>
+                          {{ modelo.medida }}
+                        </strong>
+                      </div>
+
+                      <div *ngIf="modelo.material">
+                        <span>Material</span>
+                        <strong>
+                          {{ modelo.material }}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Compra</span>
+                        <strong>
+                          S/
+                          {{
+                            modelo.precioCompra ||
+                            0
+                              | number:'1.2-2'
+                          }}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Venta</span>
+                        <strong>
+                          S/
+                          {{
+                            modelo.precioVenta
+                              | number:'1.2-2'
+                          }}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <footer class="model-card-footer">
+                      <div class="model-footer-info">
+                        <span>
+                          Stock mínimo:
+                          {{
+                            modelo.stockMinimo ??
+                            5
+                          }}
+                        </span>
+
+                        <span
+                          class="model-status"
+                          [class.inactive]="
+                            !modelo.estado
+                          "
+                        >
+                          {{
+                            modelo.estado
+                              ? 'Activo'
+                              : 'Inactivo'
+                          }}
+                        </span>
+                      </div>
+
+                      <div class="model-actions">
+                        <button
+                          type="button"
+                          class="view-model-button"
+                          (click)="
+                            visualizarProducto(
+                              modelo
+                            )
+                          "
+                          title="Visualizar producto"
+                        >
+                          <i
+                            class="bi bi-eye"
+                            aria-hidden="true"
+                          ></i>
+
+                          Ver
+                        </button>
+
+                        <button
+                          type="button"
+                          class="edit-model-button"
+                          (click)="
+                            editarProducto(
+                              modelo
+                            )
+                          "
+                          title="Editar producto"
+                        >
+                          <i
+                            class="bi bi-pencil-square"
+                            aria-hidden="true"
+                          ></i>
+
+                          Editar
+                        </button>
+
+                        <button
+                          type="button"
+                          class="delete-model-button"
+                          (click)="
+                            solicitarEliminarProducto(
+                              modelo
+                            )
+                          "
+                          title="Eliminar producto"
+                        >
+                          <i
+                            class="bi bi-trash3"
+                            aria-hidden="true"
+                          ></i>
+
+                          Eliminar
+                        </button>
+                      </div>
+                    </footer>
+                  </article>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
     </div>
@@ -432,11 +665,6 @@
         class="empty-state"
         *ngIf="!cargando"
       >
-        <i
-          class="bi bi-box-seam empty-state-icon"
-          aria-hidden="true"
-        ></i>
-
         <strong>No se encontraron productos.</strong>
         <span>
           Registra un producto o modifica
@@ -463,7 +691,6 @@
           (click)="paginaAnterior()"
           [disabled]="paginaActual === 1"
         >
-          <i class="bi bi-chevron-left" aria-hidden="true"></i>
           Anterior
         </button>
 
@@ -477,7 +704,6 @@
           [disabled]="paginaActual === totalPaginas"
         >
           Siguiente
-          <i class="bi bi-chevron-right" aria-hidden="true"></i>
         </button>
       </div>
     </footer>
@@ -497,9 +723,20 @@
     >
       <header class="modal-header">
         <div>
-          <span class="modal-kicker">NUEVO PRODUCTO</span>
+          <span class="modal-kicker">
+            {{
+              modoEdicion
+                ? 'EDITAR PRODUCTO'
+                : 'NUEVO PRODUCTO'
+            }}
+          </span>
+
           <h2 id="tituloRegistroProducto">
-            Registrar producto
+            {{
+              modoEdicion
+                ? 'Actualizar producto'
+                : 'Registrar producto'
+            }}
           </h2>
         </div>
 
@@ -510,7 +747,7 @@
           [disabled]="guardando"
           aria-label="Cerrar formulario"
         >
-          <i class="bi bi-x-lg" aria-hidden="true"></i>
+          ×
         </button>
       </header>
 
@@ -538,7 +775,6 @@
                 type="button"
                 (click)="generarCodigo()"
               >
-                <i class="bi bi-upc-scan" aria-hidden="true"></i>
                 Generar
               </button>
             </div>
@@ -624,7 +860,7 @@
                   Selecciona una marca registrada
                 </h3>
                 <p>
-                  Cada modelo se guarda individualmente, pero el inventario suma el stock por marca.
+                  Puedes usar la misma marca en varios productos. Cada modelo se guarda por separado y el inventario suma el stock de la marca.
                 </p>
               </div>
 
@@ -633,20 +869,10 @@
                 class="toggle-brand-button"
                 (click)="alternarNuevaMarca()"
               >
-                <i
-                  class="bi"
-                  [ngClass]="
-                    mostrarNuevaMarca
-                      ? 'bi-x-lg'
-                      : 'bi-plus-lg'
-                  "
-                  aria-hidden="true"
-                ></i>
-
                 {{
                   mostrarNuevaMarca
                     ? 'Cancelar nueva marca'
-                    : 'Registrar marca'
+                    : '+ Registrar marca'
                 }}
               </button>
             </header>
@@ -716,8 +942,7 @@
                 />
 
                 <small>
-                  Cada modelo se registra por separado y
-                  su stock se suma a la marca.
+                  La misma marca puede tener diferentes modelos. Solo se evita registrar exactamente el mismo modelo, color y medida.
                 </small>
 
                 <small
@@ -755,16 +980,6 @@
                 (click)="guardarNuevaMarca()"
                 [disabled]="guardandoMarca"
               >
-                <i
-                  class="bi"
-                  [ngClass]="
-                    guardandoMarca
-                      ? 'bi-arrow-repeat spin-icon'
-                      : 'bi-floppy'
-                  "
-                  aria-hidden="true"
-                ></i>
-
                 {{
                   guardandoMarca
                     ? 'Guardando marca...'
@@ -938,9 +1153,11 @@
             />
             <small>
               {{
-                usarFormularioCompleto
-                  ? 'Esta cantidad se sumará al stock total de la marca.'
-                  : 'Cantidad inicial de este producto.'
+                modoEdicion
+                  ? 'El stock actual no se modifica desde Editar. Usa Movimientos de inventario para ajustes manuales.'
+                  : usarFormularioCompleto
+                    ? 'Si la marca y el modelo ya existen, esta cantidad se suma automáticamente al stock.'
+                    : 'Cantidad inicial de este producto.'
               }}
             </small>
           </div>
@@ -1044,7 +1261,6 @@
             (click)="cerrarFormulario()"
             [disabled]="guardando"
           >
-            <i class="bi bi-x-circle" aria-hidden="true"></i>
             Cancelar
           </button>
 
@@ -1069,11 +1285,367 @@
             {{
               guardando
                 ? 'Guardando...'
-                : 'Guardar producto'
+                : modoEdicion
+                  ? 'Actualizar producto'
+                  : 'Guardar producto'
             }}
           </button>
         </footer>
       </form>
     </section>
   </div>
+
+  <!-- =====================================================
+       DETALLE DEL PRODUCTO
+       ===================================================== -->
+  <div
+    class="modal-backdrop"
+    *ngIf="
+      mostrarDetalle &&
+      productoSeleccionado
+    "
+    (click)="cerrarDetalle()"
+  >
+    <section
+      class="product-detail-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tituloDetalleProducto"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="detail-modal-header">
+        <div>
+          <span>PRODUCTO REGISTRADO</span>
+
+          <h2 id="tituloDetalleProducto">
+            {{
+              productoSeleccionado.modelo ||
+              productoSeleccionado.nombre
+            }}
+          </h2>
+
+          <p>
+            {{
+              productoSeleccionado.marca?.nombre ||
+              'Sin marca'
+            }}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="close-button"
+          (click)="cerrarDetalle()"
+          aria-label="Cerrar detalle"
+        >
+          <i
+            class="bi bi-x-lg"
+            aria-hidden="true"
+          ></i>
+        </button>
+      </header>
+
+      <div class="detail-stock-hero">
+        <span class="detail-product-icon">
+          <i
+            class="bi bi-eyeglasses"
+            aria-hidden="true"
+          ></i>
+        </span>
+
+        <div>
+          <small>STOCK ACTUAL</small>
+
+          <strong>
+            {{
+              productoSeleccionado.stockActual
+            }}
+            unidad(es)
+          </strong>
+        </div>
+
+        <span
+          class="detail-status"
+          [class.inactive]="
+            !productoSeleccionado.estado
+          "
+        >
+          {{
+            productoSeleccionado.estado
+              ? 'Activo'
+              : 'Inactivo'
+          }}
+        </span>
+      </div>
+
+      <div class="product-detail-grid">
+        <div>
+          <span>Nombre</span>
+          <strong>
+            {{ productoSeleccionado.nombre }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Código</span>
+          <strong>
+            {{
+              productoSeleccionado.codigoBarras ||
+              productoSeleccionado.codigoInterno
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Categoría</span>
+          <strong>
+            {{
+              productoSeleccionado.categoria?.nombre ||
+              'Sin categoría'
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Marca</span>
+          <strong>
+            {{
+              productoSeleccionado.marca?.nombre ||
+              'Sin marca'
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Modelo</span>
+          <strong>
+            {{
+              productoSeleccionado.modelo ||
+              'Sin modelo'
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Sexo</span>
+          <strong>
+            {{
+              productoSeleccionado.sexo ||
+              'No aplica'
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Color</span>
+          <strong>
+            {{
+              productoSeleccionado.color ||
+              'No aplica'
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Medida</span>
+          <strong>
+            {{
+              productoSeleccionado.medida ||
+              'No aplica'
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Material</span>
+          <strong>
+            {{
+              productoSeleccionado.material ||
+              'No aplica'
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Precio de compra</span>
+          <strong>
+            S/
+            {{
+              productoSeleccionado.precioCompra ||
+              0
+                | number:'1.2-2'
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Precio de venta</span>
+          <strong>
+            S/
+            {{
+              productoSeleccionado.precioVenta
+                | number:'1.2-2'
+            }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Stock mínimo</span>
+          <strong>
+            {{
+              productoSeleccionado.stockMinimo ??
+              5
+            }}
+          </strong>
+        </div>
+
+        <div class="detail-full-width">
+          <span>Proveedor</span>
+          <strong>
+            {{
+              productoSeleccionado.proveedor?.razonSocial ||
+              productoSeleccionado.proveedor?.contacto ||
+              'Sin proveedor'
+            }}
+          </strong>
+        </div>
+
+        <div class="detail-full-width">
+          <span>Descripción</span>
+          <strong>
+            {{
+              productoSeleccionado.descripcion ||
+              'Sin observaciones adicionales'
+            }}
+          </strong>
+        </div>
+      </div>
+
+      <footer class="detail-modal-actions">
+        <button
+          type="button"
+          class="edit-model-button"
+          (click)="
+            editarProducto(
+              productoSeleccionado
+            );
+            cerrarDetalle()
+          "
+        >
+          <i
+            class="bi bi-pencil-square"
+            aria-hidden="true"
+          ></i>
+
+          Editar producto
+        </button>
+
+        <button
+          type="button"
+          class="delete-model-button"
+          (click)="
+            solicitarEliminarProducto(
+              productoSeleccionado
+            );
+            cerrarDetalle()
+          "
+        >
+          <i
+            class="bi bi-trash3"
+            aria-hidden="true"
+          ></i>
+
+          Eliminar producto
+        </button>
+
+        <button
+          type="button"
+          class="close-detail-button"
+          (click)="cerrarDetalle()"
+        >
+          Cerrar
+        </button>
+      </footer>
+    </section>
+  </div>
+
+  <!-- =====================================================
+       CONFIRMACIÓN DE ELIMINACIÓN
+       ===================================================== -->
+  <div
+    class="modal-backdrop"
+    *ngIf="
+      mostrarConfirmacionEliminar &&
+      productoPorEliminar
+    "
+    (click)="cancelarEliminarProducto()"
+  >
+    <section
+      class="delete-product-modal"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="tituloEliminarProducto"
+      (click)="$event.stopPropagation()"
+    >
+      <span class="delete-warning-icon">
+        <i
+          class="bi bi-exclamation-triangle"
+          aria-hidden="true"
+        ></i>
+      </span>
+
+      <div>
+        <small>CONFIRMAR ELIMINACIÓN</small>
+
+        <h2 id="tituloEliminarProducto">
+          ¿Eliminar
+          {{
+            productoPorEliminar.modelo ||
+            productoPorEliminar.nombre
+          }}?
+        </h2>
+
+        <p>
+          Cuando el producto no tiene ventas será eliminado
+          físicamente. Cuando tiene historial de ventas se
+          desactivará para conservar los comprobantes.
+        </p>
+      </div>
+
+      <footer class="delete-modal-actions">
+        <button
+          type="button"
+          class="cancel-button"
+          (click)="cancelarEliminarProducto()"
+          [disabled]="eliminando"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="confirm-delete-button"
+          (click)="eliminarProducto()"
+          [disabled]="eliminando"
+        >
+          <i
+            class="bi"
+            [ngClass]="
+              eliminando
+                ? 'bi-arrow-repeat spin-icon'
+                : 'bi-trash3'
+            "
+            aria-hidden="true"
+          ></i>
+
+          {{
+            eliminando
+              ? 'Eliminando...'
+              : 'Eliminar producto'
+          }}
+        </button>
+      </footer>
+    </section>
+  </div>
+
 </div>
