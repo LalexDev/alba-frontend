@@ -1,8 +1,8 @@
-<div class="clients-page container-fluid py-4">
+<div class="clients-page">
 
   <header class="clients-header">
     <div class="header-title">
-      <span class="title-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
+      <span class="title-icon">♙</span>
 
       <div>
         <span class="page-kicker">
@@ -32,17 +32,7 @@
         (click)="archivoRecetas.click()"
         [disabled]="procesandoExcel"
       >
-        <i
-          class="bi"
-          [ngClass]="
-            procesandoExcel
-              ? 'bi-arrow-repeat spin-icon'
-              : 'bi-file-earmark-arrow-up'
-          "
-          aria-hidden="true"
-        ></i>
-
-        {{ procesandoExcel ? 'Procesando...' : 'Cargar recetas' }}
+        {{ procesandoExcel ? 'Procesando...' : '↑ Cargar recetas' }}
       </button>
 
       <button
@@ -51,8 +41,7 @@
         (click)="descargarRecetasExcel()"
         [disabled]="totalRecetas === 0"
       >
-        <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
-        Descargar Excel
+        ↓ Descargar Excel
       </button>
 
       <button
@@ -60,7 +49,6 @@
         class="secondary-button template-button"
         (click)="descargarPlantillaExcel()"
       >
-        <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>
         Plantilla Excel
       </button>
 
@@ -70,8 +58,7 @@
         (click)="abrirNuevaReceta()"
         [disabled]="!clienteSeleccionado"
       >
-        <i class="bi bi-file-medical" aria-hidden="true"></i>
-        Nueva receta
+        ＋ Nueva receta
       </button>
 
       <button
@@ -79,15 +66,14 @@
         class="primary-button"
         (click)="abrirNuevoCliente()"
       >
-        <i class="bi bi-person-plus" aria-hidden="true"></i>
-        Registrar cliente
+        ＋ Registrar cliente
       </button>
     </div>
   </header>
 
   <section class="stats-grid">
     <article class="stat-card">
-      <span class="stat-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+      <span class="stat-icon">♙</span>
       <div>
         <small>Clientes registrados</small>
         <strong>{{ totalClientes }}</strong>
@@ -96,7 +82,7 @@
     </article>
 
     <article class="stat-card">
-      <span class="stat-icon"><i class="bi bi-file-medical" aria-hidden="true"></i></span>
+      <span class="stat-icon">▤</span>
       <div>
         <small>Recetas activas</small>
         <strong>{{ recetasActivas }}</strong>
@@ -108,7 +94,7 @@
       class="stat-card warning"
       [class.has-alert]="controlesPendientes > 0"
     >
-      <span class="stat-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
+      <span class="stat-icon">◷</span>
       <div>
         <small>Controles pendientes</small>
         <strong>{{ controlesPendientes }}</strong>
@@ -117,7 +103,7 @@
     </article>
 
     <article class="stat-card">
-      <span class="stat-icon"><i class="bi bi-person-plus" aria-hidden="true"></i></span>
+      <span class="stat-icon">⊕</span>
       <div>
         <small>Nuevos este mes</small>
         <strong>{{ nuevosEsteMes }}</strong>
@@ -128,7 +114,7 @@
 
   <section class="search-controls">
     <div class="search-box">
-      <i class="bi bi-search" aria-hidden="true"></i>
+      <span aria-hidden="true">⌕</span>
 
       <input
         type="search"
@@ -167,7 +153,6 @@
       (click)="limpiarFiltros()"
       *ngIf="search || filtro !== 'TODOS'"
     >
-      <i class="bi bi-funnel-x" aria-hidden="true"></i>
       Limpiar filtros
     </button>
   </section>
@@ -290,7 +275,6 @@
                     class="view-button"
                     (click)="abrirFicha(cliente)"
                   >
-                    <i class="bi bi-eye" aria-hidden="true"></i>
                     Ver ficha
                   </button>
 
@@ -299,7 +283,6 @@
                     class="recipe-button"
                     (click)="abrirNuevaReceta(cliente)"
                   >
-                    <i class="bi bi-prescription2" aria-hidden="true"></i>
                     Receta
                   </button>
 
@@ -308,7 +291,6 @@
                     class="edit-button"
                     (click)="abrirEditarCliente(cliente)"
                   >
-                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
                     Editar
                   </button>
 
@@ -327,15 +309,7 @@
                         : 'Activar cliente'
                     "
                   >
-                    <i
-                      class="bi"
-                      [ngClass]="
-                        cliente.activo
-                          ? 'bi-toggle-on'
-                          : 'bi-toggle-off'
-                      "
-                      aria-hidden="true"
-                    ></i>
+                    {{ cliente.activo ? '●' : '○' }}
                   </button>
                 </div>
               </td>
@@ -346,11 +320,6 @@
 
       <ng-template #clientesVacios>
         <div class="empty-state" *ngIf="!cargando">
-          <i
-            class="bi bi-people empty-state-icon"
-            aria-hidden="true"
-          ></i>
-
           <strong>No hay clientes registrados.</strong>
           <span>
             Registra el primero o carga el Excel de recetas. Al cargar una receta, se crea su cliente asociado cuando todavía no existe.
@@ -373,7 +342,6 @@
             (click)="paginaAnterior()"
             [disabled]="paginaActual === 1"
           >
-            <i class="bi bi-chevron-left" aria-hidden="true"></i>
             Anterior
           </button>
 
@@ -387,7 +355,6 @@
             [disabled]="paginaActual === totalPaginas"
           >
             Siguiente
-            <i class="bi bi-chevron-right" aria-hidden="true"></i>
           </button>
         </div>
       </footer>
@@ -398,7 +365,7 @@
         *ngIf="clienteSeleccionado; else sinSeleccion"
       >
         <header class="quick-header">
-          <span class="quick-icon"><i class="bi bi-person-vcard" aria-hidden="true"></i></span>
+          <span class="quick-icon">▣</span>
           <h2>Ficha rápida</h2>
         </header>
 
@@ -521,7 +488,6 @@
             (click)="abrirFicha(clienteSeleccionado)"
             [disabled]="!clienteSeleccionado.ultimaReceta"
           >
-            <i class="bi bi-eye" aria-hidden="true"></i>
             Ver ficha completa
           </button>
 
@@ -530,7 +496,6 @@
             class="secondary-button"
             (click)="abrirEditarCliente(clienteSeleccionado)"
           >
-            <i class="bi bi-pencil-square" aria-hidden="true"></i>
             Editar cliente
           </button>
 
@@ -539,7 +504,6 @@
             class="primary-button"
             (click)="abrirNuevaReceta(clienteSeleccionado)"
           >
-            <i class="bi bi-file-medical" aria-hidden="true"></i>
             Nueva receta
           </button>
         </div>
@@ -547,16 +511,7 @@
 
       <ng-template #sinSeleccion>
         <div class="empty-quick">
-          <i
-            class="bi bi-person-lines-fill"
-            aria-hidden="true"
-          ></i>
-
-          <strong>Selecciona un cliente</strong>
-
-          <span>
-            Consulta sus datos, receta y orden de trabajo.
-          </span>
+          Selecciona un cliente para consultar su ficha.
         </div>
       </ng-template>
     </aside>
@@ -586,12 +541,15 @@
           (click)="cerrarFicha()"
           aria-label="Cerrar ficha"
         >
-          <i class="bi bi-x-lg" aria-hidden="true"></i>
+          <i
+            class="bi bi-x-lg"
+            aria-hidden="true"
+          ></i>
         </button>
       </header>
 
       <div
-        class="order-sheet physical-sheet"
+        class="order-sheet physical-sheet monochrome-sheet"
         *ngIf="
           clienteSeleccionado.ultimaReceta
             as receta
@@ -802,7 +760,11 @@
           class="cancel-button"
           (click)="cerrarFicha()"
         >
-          <i class="bi bi-x-circle" aria-hidden="true"></i>
+          <i
+            class="bi bi-x-circle"
+            aria-hidden="true"
+          ></i>
+
           Cerrar
         </button>
 
@@ -811,7 +773,11 @@
           class="secondary-button"
           (click)="descargarFichaPdf()"
         >
-          <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+          <i
+            class="bi bi-file-earmark-pdf"
+            aria-hidden="true"
+          ></i>
+
           Descargar PDF
         </button>
 
@@ -820,7 +786,11 @@
           class="primary-button"
           (click)="imprimirFicha()"
         >
-          <i class="bi bi-printer" aria-hidden="true"></i>
+          <i
+            class="bi bi-printer"
+            aria-hidden="true"
+          ></i>
+
           Imprimir
         </button>
       </footer>
@@ -869,7 +839,7 @@
           [disabled]="guardando"
           aria-label="Cerrar formulario"
         >
-          <i class="bi bi-x-lg" aria-hidden="true"></i>
+          ×
         </button>
       </header>
 
@@ -1251,7 +1221,6 @@
             (click)="cerrarFormulario()"
             [disabled]="guardando"
           >
-            <i class="bi bi-x-circle" aria-hidden="true"></i>
             Cancelar
           </button>
 
@@ -1260,16 +1229,6 @@
             class="primary-button"
             [disabled]="guardando"
           >
-            <i
-              class="bi"
-              [ngClass]="
-                guardando
-                  ? 'bi-arrow-repeat spin-icon'
-                  : 'bi-floppy'
-              "
-              aria-hidden="true"
-            ></i>
-
             {{ guardando ? 'Guardando...' : 'Guardar' }}
           </button>
         </footer>

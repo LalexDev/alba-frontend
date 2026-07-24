@@ -419,87 +419,49 @@ export class ClienteService {
       let importadas = 0;
 
       for (const fila of filas) {
-        const ejecutar =
-          async (
-            numeroOrden:
-              string | null
-          ) => {
-            return await this.supabaseService.client.rpc(
-              'importar_receta_excel',
-              {
-                p_numero_orden:
-                  numeroOrden,
-                p_cliente:
-                  fila.cliente,
-                p_documento:
-                  fila.documento || null,
-                p_fecha_entrada:
-                  fila.fechaEntrada,
-                p_monto_cancelado:
+        const { error } =
+          await this.supabaseService.client.rpc(
+            'importar_receta_excel',
+            {
+              p_numero_orden:
+                fila.numeroOrden || null,
+              p_cliente:
+                fila.cliente,
+              p_documento:
+                fila.documento || null,
+              p_fecha_entrada:
+                fila.fechaEntrada,
+              p_monto_cancelado:
+                this.normalizarMonto(
+                  fila.montoCancelado
+                ),
+              p_monto_debe:
+                Math.max(
+                  this.normalizarMonto(
+                    fila.montoTotal
+                  ) -
                   this.normalizarMonto(
                     fila.montoCancelado
                   ),
-                p_monto_debe:
-                  Math.max(
-                    this.normalizarMonto(
-                      fila.montoTotal
-                    ) -
-                    this.normalizarMonto(
-                      fila.montoCancelado
-                    ),
-                    0
-                  ),
-                p_monto_total:
-                  this.normalizarMonto(
-                    fila.montoTotal
-                  ),
-                p_medida:
-                  fila.medida || null,
-                p_montura:
-                  fila.montura || null,
-                p_marca:
-                  fila.marca || null
-              }
-            );
-          };
-
-        let respuesta =
-          await ejecutar(
-            fila.numeroOrden || null
+                  0
+                ),
+              p_monto_total:
+                this.normalizarMonto(
+                  fila.montoTotal
+                ),
+              p_medida:
+                fila.medida || null,
+              p_montura:
+                fila.montura || null,
+              p_marca:
+                fila.marca || null
+            }
           );
 
-        const mensaje =
-          String(
-            respuesta.error?.message ||
-            ''
-          ).toLowerCase();
-
-        if (
-          respuesta.error &&
-          fila.numeroOrden &&
-          (
-            respuesta.error.code ===
-              '23505' ||
-            mensaje.includes(
-              'numero_orden'
-            ) ||
-            mensaje.includes(
-              'duplicate'
-            )
-          )
-        ) {
-          respuesta =
-            await ejecutar(
-              null
-            );
-        }
-
-        if (respuesta.error) {
+        if (error) {
           throw new Error(
             `Orden ${fila.numeroOrden || '(automática)'}: ` +
-            this.traducirError(
-              respuesta.error.message
-            )
+            this.traducirError(error.message)
           );
         }
 
@@ -568,6 +530,27 @@ export class ClienteService {
         throw new Error(error.message);
       }
     });
+  }
+
+  obtenerPorId(
+    idCliente: number
+  ): Observable<Cliente> {
+    return defer(
+      async (): Promise<Cliente> => {
+        if (
+          !Number.isInteger(idCliente) ||
+          idCliente <= 0
+        ) {
+          throw new Error(
+            'El cliente seleccionado no es válido.'
+          );
+        }
+
+        return this.obtenerPorIdInterno(
+          idCliente
+        );
+      }
+    );
   }
 
   historialRecetas(
@@ -1023,22 +1006,11 @@ export class ClienteService {
     }
 
     if (
-      texto.includes('importar_receta_excel')
-    ) {
-      return 'La función para importar recetas no existe o está desactualizada. Ejecuta el archivo 13_corregir_importacion_excel.sql en Supabase.';
-    }
-
-    if (
-      texto.includes('registrar_cliente_receta')
-    ) {
-      return 'La función para registrar clientes y recetas está desactualizada. Ejecuta el archivo 12_corregir_guardado_recetas.sql en Supabase.';
-    }
-
-    if (
+      texto.includes('registrar_cliente_receta') ||
       texto.includes('could not find the function') ||
       texto.includes('schema cache')
     ) {
-      return 'Supabase todavía no actualizó sus funciones. Ejecuta el SQL correspondiente y vuelve a cargar la página.';
+      return 'La función de clientes y recetas de Supabase está desactualizada. Ejecuta el archivo 12_corregir_guardado_recetas.sql.';
     }
 
     return mensaje;

@@ -54,6 +54,7 @@ export class ClientesRecetasComponent
   cargando = false;
   guardando = false;
   procesandoExcel = false;
+  cargandoFicha = false;
   error = '';
   ok = '';
 
@@ -351,16 +352,72 @@ export class ClientesRecetasComponent
   abrirFicha(
     cliente: Cliente
   ): void {
-    this.clienteSeleccionado = cliente;
-
-    if (!cliente.ultimaReceta) {
-      this.error =
-        'El cliente todavía no tiene una receta registrada.';
+    if (this.cargandoFicha) {
       return;
     }
 
-    this.mostrarFicha = true;
+    this.cargandoFicha = true;
     this.error = '';
+    this.ok = '';
+
+    /*
+     * Se vuelve a consultar Supabase antes de abrir la ficha.
+     * Así se muestran diagnóstico, tipo de lente y
+     * observaciones recién guardados.
+     */
+    this.clienteService
+      .obtenerPorId(
+        cliente.id
+      )
+      .pipe(
+        finalize(() => {
+          this.cargandoFicha = false;
+        })
+      )
+      .subscribe({
+        next: (
+          actualizado: Cliente
+        ) => {
+          this.clienteSeleccionado =
+            actualizado;
+
+          const indice =
+            this.clientes.findIndex(
+              item =>
+                item.id ===
+                actualizado.id
+            );
+
+          if (indice >= 0) {
+            this.clientes[indice] =
+              actualizado;
+          }
+
+          if (
+            !actualizado.ultimaReceta
+          ) {
+            this.error =
+              'El cliente todavía no tiene una receta registrada.';
+            return;
+          }
+
+          this.mostrarFicha = true;
+        },
+
+        error: (
+          error: unknown
+        ) => {
+          console.error(
+            'Error al cargar la ficha:',
+            error
+          );
+
+          this.error =
+            error instanceof Error
+              ? error.message
+              : 'No se pudo cargar la ficha actualizada.';
+        }
+      });
   }
 
   cerrarFicha(): void {
@@ -525,7 +582,7 @@ export class ClientesRecetasComponent
             }
 
             body {
-              color: #11344e;
+              color: #000000;
               font-family:
                 Arial,
                 Helvetica,
@@ -539,7 +596,7 @@ export class ClientesRecetasComponent
               height: 70mm;
               padding: 1.8mm;
               overflow: hidden;
-              border: 0.45mm solid #1593c7;
+              border: 0.45mm solid #000000;
               border-radius: 4mm;
               background: #ffffff;
             }
@@ -557,10 +614,13 @@ export class ClientesRecetasComponent
               max-width: 38mm;
               height: 7mm;
               object-fit: contain;
+              filter:
+                grayscale(1)
+                contrast(1.3);
             }
 
             .logo-fallback {
-              color: #1593c7;
+              color: #000000;
               font-size: 9pt;
               font-weight: 900;
               letter-spacing: 0.05em;
@@ -568,7 +628,7 @@ export class ClientesRecetasComponent
 
             .contacto {
               margin-top: 0.25mm;
-              color: #147ca8;
+              color: #000000;
               font-size: 4.2pt;
               font-weight: 800;
               letter-spacing: 0.02em;
@@ -577,7 +637,7 @@ export class ClientesRecetasComponent
 
             .titulo {
               margin: 0.8mm 0 0.55mm;
-              color: #126f98;
+              color: #000000;
               font-size: 6.1pt;
               font-weight: 900;
               letter-spacing: 0.27em;
@@ -588,7 +648,7 @@ export class ClientesRecetasComponent
               width: 29mm;
               margin: 0 auto 0.8mm;
               overflow: hidden;
-              border: 0.22mm solid #1593c7;
+              border: 0.22mm solid #000000;
               border-radius: 1.7mm;
             }
 
@@ -601,14 +661,16 @@ export class ClientesRecetasComponent
             }
 
             .fecha-cabecera {
-              color: #ffffff;
-              background: #1593c7;
+              color: #000000;
+              background: #ffffff;
+              border-bottom:
+                0.22mm solid #000000;
               font-size: 4.6pt;
               font-weight: 900;
             }
 
             .fecha-valores {
-              color: #11344e;
+              color: #000000;
               font-size: 4.9pt;
               font-weight: 900;
             }
@@ -616,7 +678,7 @@ export class ClientesRecetasComponent
             .fecha span {
               padding: 0.45mm 0.2mm;
               border-right:
-                0.18mm solid #1593c7;
+                0.18mm solid #000000;
             }
 
             .fecha span:last-child {
@@ -634,7 +696,7 @@ export class ClientesRecetasComponent
 
             .cliente strong {
               flex: 0 0 auto;
-              color: #126f98;
+              color: #000000;
               font-weight: 900;
             }
 
@@ -644,7 +706,7 @@ export class ClientesRecetasComponent
               padding: 0 0.6mm 0.25mm;
               overflow: hidden;
               border-bottom:
-                0.2mm solid #1593c7;
+                0.2mm solid #000000;
               text-overflow: ellipsis;
               white-space: nowrap;
             }
@@ -652,8 +714,12 @@ export class ClientesRecetasComponent
             .cristales {
               margin-bottom: 0.4mm;
               padding: 0.35mm;
-              color: #ffffff;
-              background: #1593c7;
+              color: #000000;
+              background: #ffffff;
+              border-top:
+                0.22mm solid #000000;
+              border-bottom:
+                0.22mm solid #000000;
               font-size: 4.5pt;
               font-weight: 900;
               letter-spacing: 0.35em;
@@ -672,9 +738,11 @@ export class ClientesRecetasComponent
             .lateral {
               display: grid;
               place-items: center;
+              border:
+                0.22mm solid #000000;
               border-radius: 1.4mm;
-              color: #ffffff;
-              background: #1593c7;
+              color: #000000;
+              background: #ffffff;
               font-size: 4.4pt;
               font-weight: 900;
               letter-spacing: 0.07em;
@@ -694,7 +762,7 @@ export class ClientesRecetasComponent
               height: 3.7mm;
               padding: 0.25mm;
               overflow: hidden;
-              border: 0.18mm solid #78c6e5;
+              border: 0.18mm solid #000000;
               border-radius: 0.8mm;
               font-size: 4.7pt;
               line-height: 1;
@@ -707,7 +775,7 @@ export class ClientesRecetasComponent
               height: 2.4mm;
               padding: 0.1mm;
               border: 0;
-              color: #126f98;
+              color: #000000;
               background: transparent;
               font-size: 4.1pt;
               font-weight: 900;
@@ -716,7 +784,7 @@ export class ClientesRecetasComponent
             tbody th {
               width: 7mm;
               border: 0;
-              color: #11344e;
+              color: #000000;
               background: transparent;
               font-weight: 900;
             }
@@ -731,7 +799,7 @@ export class ClientesRecetasComponent
             }
 
             .dip strong {
-              color: #126f98;
+              color: #000000;
               font-weight: 900;
             }
 
@@ -740,7 +808,7 @@ export class ClientesRecetasComponent
               max-width: 25mm;
               padding-bottom: 0.18mm;
               border-bottom:
-                0.18mm solid #1593c7;
+                0.18mm solid #000000;
             }
 
             .extras {
@@ -759,7 +827,7 @@ export class ClientesRecetasComponent
               min-height: 3mm;
               padding: 0.35mm 0.55mm;
               border:
-                0.16mm solid #9fd7ec;
+                0.16mm solid #000000;
               border-radius: 0.7mm;
               font-size: 4.25pt;
               line-height: 1.05;
@@ -767,7 +835,7 @@ export class ClientesRecetasComponent
 
             .extra strong {
               flex: 0 0 auto;
-              color: #126f98;
+              color: #000000;
               font-size: 3.8pt;
               font-weight: 900;
               text-transform: uppercase;
@@ -789,13 +857,13 @@ export class ClientesRecetasComponent
                 0.25mm;
               overflow: hidden;
               border-bottom:
-                0.18mm solid #1593c7;
+                0.18mm solid #000000;
               font-size: 4.15pt;
               line-height: 1.08;
             }
 
             .linea strong {
-              color: #126f98;
+              color: #000000;
               font-size: 3.8pt;
               font-weight: 900;
               text-transform: uppercase;
@@ -816,7 +884,7 @@ export class ClientesRecetasComponent
 
             @media screen {
               body {
-                background: #eaf4f8;
+                background: #eeeeee;
               }
 
               .receta {
@@ -834,8 +902,28 @@ export class ClientesRecetasComponent
                 height: 70mm !important;
               }
 
+              body,
               .receta {
+                color: #000000 !important;
+                background: #ffffff !important;
+              }
+
+              .receta {
+                border-color: #000000 !important;
                 box-shadow: none;
+              }
+
+              .fecha-cabecera,
+              .cristales,
+              .lateral {
+                color: #000000 !important;
+                background: #ffffff !important;
+              }
+
+              .logo {
+                filter:
+                  grayscale(1)
+                  contrast(1.35);
               }
             }
           </style>
@@ -1307,42 +1395,31 @@ export class ClientesRecetasComponent
 
   async descargarRecetasExcel():
     Promise<void> {
-    const filas =
-      this.clientes.flatMap(
-        cliente =>
-          cliente.recetas.map(
-            receta => [
-              this.fechaParaExcel(
-                receta.fechaEntrada
-              ),
-              receta.numeroOrden || '',
-              cliente.nombreCompleto,
-              Number(
-                receta.montoTotal || 0
-              ),
-              Number(
-                receta.montoCancelado || 0
-              ),
-              Number(
-                receta.montoDebe || 0
-              ),
-              receta.medida ||
-                this.construirMedida(
-                  receta
-                ),
-              [
-                receta.marca,
-                receta.tipoMontura
-              ]
-                .filter(Boolean)
-                .join(' - ')
-            ]
-          )
-      );
+    const filas = this.clientes.flatMap(
+      cliente =>
+        cliente.recetas.map(receta => [
+          this.fechaParaExcel(
+            receta.fechaEntrada
+          ),
+          receta.numeroOrden,
+          cliente.nombreCompleto,
+          receta.montoTotal,
+          receta.montoCancelado,
+          receta.montoDebe,
+          receta.medida ||
+            this.construirMedida(receta),
+          [
+            receta.marca,
+            receta.tipoMontura
+          ]
+            .filter(Boolean)
+            .join(' - ')
+        ])
+    );
 
     if (!filas.length) {
       this.error =
-        'Todavía no hay recetas registradas para descargar.';
+        'Todavía no hay recetas para descargar.';
       return;
     }
 
@@ -1358,13 +1435,11 @@ export class ClientesRecetasComponent
         ).toString();
 
       const respuesta =
-        await fetch(
-          plantillaUrl
-        );
+        await fetch(plantillaUrl);
 
       if (!respuesta.ok) {
         throw new Error(
-          'No se encontró public/assets/Formato receta.xlsx.'
+          'No se encontró la plantilla.'
         );
       }
 
@@ -1382,36 +1457,19 @@ export class ClientesRecetasComponent
       const nombreHoja =
         libro.SheetNames[0];
 
-      if (!nombreHoja) {
-        throw new Error(
-          'El formato no contiene una hoja.'
-        );
-      }
-
       const hoja =
         libro.Sheets[nombreHoja];
 
       if (!hoja) {
         throw new Error(
-          'No se pudo leer la hoja del formato.'
+          'La plantilla no contiene una hoja válida.'
         );
       }
 
-      /*
-       * Formato exacto:
-       * A fecha
-       * B Orden de trabajo
-       * C Nombres
-       * D Total
-       * E A cta.
-       * F saldo
-       * G Medidas
-       * H Montura y medida
-       */
-
+      // Limpiar los datos de ejemplo conservando el formato.
       for (
-        let fila = 1;
-        fila < 5000;
+        let fila = 2;
+        fila < 1000;
         fila += 1
       ) {
         for (
@@ -1443,16 +1501,28 @@ export class ClientesRecetasComponent
               valor,
               indiceColumna
             ) => {
-              const direccion =
+              const destino =
                 utils.encode_cell({
-                  r: indiceFila + 1,
+                  r: indiceFila + 2,
                   c: indiceColumna
                 });
 
-              hoja[direccion] = {
+              const ejemplo =
+                hoja[
+                  utils.encode_cell({
+                    r: 2,
+                    c: indiceColumna
+                  })
+                ];
+
+              hoja[destino] = {
+                ...(ejemplo?.s
+                  ? {
+                      s: ejemplo.s
+                    }
+                  : {}),
                 t:
-                  typeof valor ===
-                    'number'
+                  typeof valor === 'number'
                     ? 'n'
                     : 's',
                 v: valor ?? ''
@@ -1462,13 +1532,49 @@ export class ClientesRecetasComponent
                 indiceColumna >= 3 &&
                 indiceColumna <= 5
               ) {
-                hoja[direccion].z =
+                hoja[destino].z =
                   'S/ #,##0.00';
               }
             }
           );
         }
       );
+
+      hoja['!ref'] =
+        `A1:H${Math.max(
+          filas.length + 2,
+          5
+        )}`;
+
+      writeFileXLSX(
+        libro,
+        `formato-recetas-optica-alba-${this.fechaActual()}.xlsx`
+      );
+
+      this.ok =
+        'Excel generado con el formato enviado.';
+    } catch (error: unknown) {
+      console.error(
+        'Error al usar la plantilla:',
+        error
+      );
+
+      // Respaldo con la misma estructura de ocho columnas.
+      const hoja =
+        utils.aoa_to_sheet([
+          [
+            'fecha',
+            'Orden de trabajo',
+            '',
+            'Total ',
+            'A cta.',
+            'saldo',
+            'Medidas ',
+            ''
+          ],
+          [],
+          ...filas
+        ]);
 
       hoja['!cols'] = [
         { wch: 15 },
@@ -1477,54 +1583,90 @@ export class ClientesRecetasComponent
         { wch: 14 },
         { wch: 14 },
         { wch: 14 },
-        { wch: 60 },
-        { wch: 38 }
+        { wch: 70 },
+        { wch: 32 }
       ];
 
-      hoja['!ref'] =
-        `A1:H${filas.length + 1}`;
+      const libro =
+        utils.book_new();
+
+      utils.book_append_sheet(
+        libro,
+        hoja,
+        'Hoja1'
+      );
 
       writeFileXLSX(
         libro,
-        `recetas-optica-alba-${this.fechaActual()}.xlsx`
+        `formato-recetas-optica-alba-${this.fechaActual()}.xlsx`
       );
 
       this.ok =
-        `${filas.length} receta(s) descargada(s) con el formato exacto.`;
-    } catch (error: unknown) {
-      console.error(
-        'Error al descargar recetas:',
-        error
-      );
-
-      this.error =
-        error instanceof Error
-          ? error.message
-          : 'No se pudo generar el Excel.';
+        'Excel generado con la estructura del formato.';
     } finally {
       this.procesandoExcel = false;
     }
   }
 
   descargarPlantillaExcel(): void {
-    const url = new URL(
-      'assets/Formato%20receta.xlsx',
-      document.baseURI
-    ).toString();
+    const hoja =
+      utils.aoa_to_sheet([[
+        'Orden de trabajo',
+        'Cliente',
+        'Documento',
+        'Fecha de entrada',
+        'Cancelado',
+        'Debe',
+        'Total',
+        'Medida',
+        'Montura',
+        'Marca'
+      ]]);
 
-    const enlace =
-      document.createElement('a');
+    hoja['!cols'] = [
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 16 },
+      { wch: 18 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 70 },
+      { wch: 28 },
+      { wch: 20 }
+    ];
 
-    enlace.href = url;
-    enlace.download =
-      'Formato receta.xlsx';
+    const instrucciones =
+      utils.aoa_to_sheet([
+        ['INSTRUCCIONES'],
+        ['1. No cambies los nombres ni el orden de las columnas.'],
+        ['2. Cliente es obligatorio. Documento permite evitar duplicados.'],
+        ['3. Fecha de entrada: DD/MM/AAAA o AAAA-MM-DD.'],
+        ['4. Cancelado + Debe debe ser igual a Total.'],
+        ['5. La carga crea el cliente asociado cuando todavía no existe.'],
+        ['6. Orden de trabajo vacía: el sistema genera una automáticamente.']
+      ]);
 
-    document.body.appendChild(
-      enlace
+    instrucciones['!cols'] = [
+      { wch: 95 }
+    ];
+
+    const libro = utils.book_new();
+    utils.book_append_sheet(
+      libro,
+      hoja,
+      'Recetas'
+    );
+    utils.book_append_sheet(
+      libro,
+      instrucciones,
+      'Instrucciones'
     );
 
-    enlace.click();
-    enlace.remove();
+    writeFileXLSX(
+      libro,
+      'plantilla-recetas-optica-alba.xlsx'
+    );
   }
 
   async cargarRecetasExcel(
@@ -1532,7 +1674,6 @@ export class ClientesRecetasComponent
   ): Promise<void> {
     const input =
       event.target as HTMLInputElement;
-
     const archivo =
       input.files?.[0];
 
@@ -1547,335 +1688,202 @@ export class ClientesRecetasComponent
     try {
       const contenido =
         await archivo.arrayBuffer();
-
-      const libro = read(
-        contenido,
-        {
-          type: 'array',
-          cellDates: true
-        }
-      );
+      const libro = read(contenido, {
+        type: 'array',
+        cellDates: true
+      });
 
       const nombreHoja =
         libro.SheetNames[0];
 
       if (!nombreHoja) {
-        this.ok =
-          'El archivo no contiene una hoja para importar.';
-        return;
+        throw new Error(
+          'El archivo no contiene hojas.'
+        );
       }
 
       const hoja =
         libro.Sheets[nombreHoja];
+      const filasCrudas =
+        utils.sheet_to_json(hoja, {
+          defval: ''
+        }) as Record<string, unknown>[];
 
-      if (!hoja) {
-        this.ok =
-          'No se pudo leer la primera hoja del archivo.';
-        return;
+      if (!filasCrudas.length) {
+        throw new Error(
+          'El Excel no contiene registros para importar.'
+        );
       }
 
-      const matriz =
-        utils.sheet_to_json(
-          hoja,
-          {
-            header: 1,
-            defval: '',
-            raw: true,
-            blankrows: true
-          }
-        ) as unknown[][];
+      const filas: RecetaExcelImport[] = [];
+      const errores: string[] = [];
+      const ordenesArchivo = new Set<string>();
 
-      const filaEncabezado =
-        matriz.findIndex(
-          fila => {
-            const columnas =
-              (fila || [])
-                .map(
-                  valor =>
-                    this.normalizar(
-                      String(
-                        valor ?? ''
-                      )
-                    )
-                );
+      filasCrudas.forEach(
+        (
+          fila: Record<string, unknown>,
+          indice: number
+        ) => {
+          const numeroFila = indice + 2;
+          const numeroOrden =
+            this.textoFila(
+              fila,
+              'Orden de trabajo'
+            );
+          const cliente =
+            this.textoFila(
+              fila,
+              'Cliente'
+            );
+          const documento =
+            this.textoFila(
+              fila,
+              'Documento'
+            );
+          const fechaEntrada =
+            this.fechaFila(
+              this.valorFila(
+                fila,
+                'Fecha de entrada'
+              )
+            );
+          const cancelado =
+            this.montoFila(
+              this.valorFila(
+                fila,
+                'Cancelado'
+              )
+            );
+          const debe =
+            this.montoFila(
+              this.valorFila(
+                fila,
+                'Debe'
+              )
+            );
+          const total =
+            this.montoFila(
+              this.valorFila(
+                fila,
+                'Total'
+              )
+            );
+          const medida =
+            this.textoFila(
+              fila,
+              'Medida'
+            );
+          const montura =
+            this.textoFila(
+              fila,
+              'Montura'
+            );
+          const marca =
+            this.textoFila(
+              fila,
+              'Marca'
+            );
 
-            const fecha =
-              columnas[0] ===
-                'fecha';
-
-            const orden =
-              columnas[1] ===
-                'orden de trabajo';
-
-            const nombres =
-              columnas[2] ===
-                'nombres' ||
-              columnas[2] ===
-                'cliente';
-
-            const total =
-              columnas[3] ===
-                'total';
-
-            const cuenta =
-              columnas[4] ===
-                'a cta.' ||
-              columnas[4] ===
-                'a cta' ||
-              columnas[4] ===
-                'a cuenta';
-
-            const saldo =
-              columnas[5] ===
-                'saldo' ||
-              columnas[5] ===
-                'debe';
-
-            const medidas =
-              columnas[6] ===
-                'medidas' ||
-              columnas[6] ===
-                'medida';
-
-            const montura =
-              columnas[7] ===
-                'montura y medida' ||
-              columnas[7] ===
-                'montura';
-
-            return (
-              fecha &&
-              orden &&
-              nombres &&
-              total &&
-              cuenta &&
-              saldo &&
-              medidas &&
-              montura
+          if (!cliente) {
+            errores.push(
+              `Fila ${numeroFila}: falta Cliente.`
             );
           }
-        );
 
-      if (filaEncabezado < 0) {
-        this.ok =
-          'No se importó el archivo porque no corresponde al modelo de recetas.';
-        return;
-      }
-
-      const filas:
-        RecetaExcelImport[] = [];
-
-      const ordenesArchivo =
-        new Set<string>();
-
-      let filasOmitidas = 0;
-      let saldosRecalculados = 0;
-      let ordenesAutomaticas = 0;
-
-      for (
-        let indice =
-          filaEncabezado + 1;
-        indice < matriz.length;
-        indice += 1
-      ) {
-        const fila =
-          matriz[indice] || [];
-
-        const filaVacia =
-          fila.every(
-            valor =>
-              String(
-                valor ?? ''
-              ).trim() === ''
-          );
-
-        if (filaVacia) {
-          continue;
-        }
-
-        const cliente =
-          String(
-            fila[2] ?? ''
-          ).trim();
-
-        if (!cliente) {
-          filasOmitidas += 1;
-          continue;
-        }
-
-        const fechaEntrada =
-          this.fechaFila(
-            fila[0]
-          ) ||
-          this.fechaActual();
-
-        let numeroOrden =
-          String(
-            fila[1] ?? ''
-          ).trim();
-
-        const totalLeido =
-          this.montoFila(
-            fila[3]
-          );
-
-        const cuentaLeida =
-          this.montoFila(
-            fila[4]
-          );
-
-        if (
-          totalLeido === null ||
-          cuentaLeida === null
-        ) {
-          filasOmitidas += 1;
-          continue;
-        }
-
-        const total =
-          Math.max(
-            Number(
-              totalLeido.toFixed(2)
-            ),
-            0
-          );
-
-        const cancelado =
-          Math.min(
-            Math.max(
-              Number(
-                cuentaLeida.toFixed(2)
-              ),
-              0
-            ),
-            total
-          );
-
-        const saldoCalculado =
-          Number(
-            (
-              total -
-              cancelado
-            ).toFixed(2)
-          );
-
-        const saldoExcel =
-          this.montoFila(
-            fila[5]
-          );
-
-        if (
-          saldoExcel === null ||
-          Math.abs(
-            saldoExcel -
-            saldoCalculado
-          ) > 0.01
-        ) {
-          saldosRecalculados += 1;
-        }
-
-        const ordenNormalizada =
-          this.normalizar(
-            numeroOrden
-          );
-
-        if (
-          ordenNormalizada &&
-          ordenesArchivo.has(
-            ordenNormalizada
-          )
-        ) {
-          numeroOrden = '';
-          ordenesAutomaticas += 1;
-        }
-
-        if (ordenNormalizada) {
-          ordenesArchivo.add(
-            ordenNormalizada
-          );
-        }
-
-        filas.push({
-          numeroOrden,
-          cliente,
-          documento: '',
-          fechaEntrada,
-          montoCancelado:
-            cancelado,
-          montoDebe:
-            saldoCalculado,
-          montoTotal:
-            total,
-          medida:
-            String(
-              fila[6] ?? ''
-            ).trim(),
-          montura:
-            String(
-              fila[7] ?? ''
-            ).trim(),
-          marca: ''
-        });
-      }
-
-      if (!filas.length) {
-        this.ok =
-          filasOmitidas > 0
-            ? `No se encontraron filas completas. Se omitieron ${filasOmitidas} fila(s).`
-            : 'El formato es correcto, pero todavía no contiene recetas.';
-        return;
-      }
-
-      const importadas =
-        await new Promise<number>(
-          (
-            resolve,
-            reject
-          ) => {
-            this.clienteService
-              .importarRecetas(
-                filas
-              )
-              .subscribe({
-                next:
-                  (
-                    cantidad:
-                      number
-                  ) =>
-                    resolve(
-                      cantidad
-                    ),
-
-                error:
-                  (
-                    error:
-                      unknown
-                  ) =>
-                    reject(
-                      error
-                    )
-              });
+          if (!fechaEntrada) {
+            errores.push(
+              `Fila ${numeroFila}: fecha de entrada inválida.`
+            );
           }
+
+          if (
+            cancelado === null ||
+            debe === null ||
+            total === null
+          ) {
+            errores.push(
+              `Fila ${numeroFila}: importes inválidos.`
+            );
+          } else if (
+            Math.abs(
+              cancelado + debe - total
+            ) > 0.01
+          ) {
+            errores.push(
+              `Fila ${numeroFila}: Cancelado + Debe no coincide con Total.`
+            );
+          }
+
+          const ordenNormalizada =
+            this.normalizar(numeroOrden);
+
+          if (
+            ordenNormalizada &&
+            ordenesArchivo.has(
+              ordenNormalizada
+            )
+          ) {
+            errores.push(
+              `Fila ${numeroFila}: orden de trabajo repetida en el archivo.`
+            );
+          }
+
+          if (ordenNormalizada) {
+            ordenesArchivo.add(
+              ordenNormalizada
+            );
+          }
+
+          if (
+            cliente &&
+            fechaEntrada &&
+            cancelado !== null &&
+            debe !== null &&
+            total !== null &&
+            Math.abs(
+              cancelado + debe - total
+            ) <= 0.01
+          ) {
+            filas.push({
+              numeroOrden,
+              cliente,
+              documento,
+              fechaEntrada,
+              montoCancelado:
+                cancelado,
+              montoDebe:
+                debe,
+              montoTotal:
+                total,
+              medida,
+              montura,
+              marca
+            });
+          }
+        }
+      );
+
+      if (errores.length) {
+        throw new Error(
+          errores.slice(0, 8).join(' ')
         );
+      }
+
+      const importadas = await new Promise<number>(
+        (resolve, reject) => {
+          this.clienteService
+            .importarRecetas(filas)
+            .subscribe({
+              next: (cantidad: number) =>
+                resolve(cantidad),
+              error: (error: unknown) =>
+                reject(error)
+            });
+        }
+      );
 
       this.ok =
-        `${importadas} receta(s) cargada(s) correctamente.` +
-        (
-          saldosRecalculados > 0
-            ? ` Se recalculó el saldo de ${saldosRecalculados} fila(s).`
-            : ''
-        ) +
-        (
-          ordenesAutomaticas > 0
-            ? ` Se generó una orden automática para ${ordenesAutomaticas} registro(s) repetido(s).`
-            : ''
-        ) +
-        (
-          filasOmitidas > 0
-            ? ` Se omitieron ${filasOmitidas} fila(s) incompleta(s).`
-            : ''
-        );
-
+        `${importadas} receta(s) importada(s) correctamente.`;
       this.cargar();
     } catch (error: unknown) {
       console.error(
@@ -2277,117 +2285,36 @@ export class ClientesRecetasComponent
   private fechaFila(
     valor: unknown
   ): string {
-    const fechaSerial = (
-      serial: number
-    ): string => {
-      if (
-        !Number.isFinite(serial) ||
-        serial <= 0
-      ) {
-        return '';
-      }
-
-      const fecha =
-        new Date(
-          Date.UTC(
-            1899,
-            11,
-            30
-          ) +
-          Math.floor(serial) *
-          86400000
-        );
-
-      return [
-        fecha.getUTCFullYear(),
-        String(
-          fecha.getUTCMonth() + 1
-        ).padStart(2, '0'),
-        String(
-          fecha.getUTCDate()
-        ).padStart(2, '0')
-      ].join('-');
-    };
-
     if (valor instanceof Date) {
       return [
         valor.getFullYear(),
-        String(
-          valor.getMonth() + 1
-        ).padStart(2, '0'),
-        String(
-          valor.getDate()
-        ).padStart(2, '0')
+        String(valor.getMonth() + 1)
+          .padStart(2, '0'),
+        String(valor.getDate())
+          .padStart(2, '0')
       ].join('-');
     }
 
-    if (
-      typeof valor === 'number'
-    ) {
-      return fechaSerial(
-        valor
-      );
-    }
-
     const texto =
-      String(
-        valor ?? ''
-      ).trim();
+      String(valor ?? '').trim();
 
-    if (!texto) {
-      return '';
-    }
-
-    if (
-      /^\d{4}-\d{2}-\d{2}$/
-        .test(texto)
-    ) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
       return texto;
     }
 
-    if (
-      /^\d+(\.\d+)?$/
-        .test(texto)
-    ) {
-      const serial =
-        Number(texto);
-
-      if (
-        serial >= 20000 &&
-        serial <= 90000
-      ) {
-        return fechaSerial(
-          serial
-        );
-      }
-    }
-
-    const coincidencia =
-      texto.match(
-        /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2}|\d{4})$/
-      );
+    const coincidencia = texto.match(
+      /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/
+    );
 
     if (!coincidencia) {
       return '';
     }
 
-    const dia =
-      coincidencia[1]
-        .padStart(2, '0');
-
-    const mes =
-      coincidencia[2]
-        .padStart(2, '0');
-
-    let anio =
-      coincidencia[3];
-
-    if (anio.length === 2) {
-      anio =
-        Number(anio) >= 70
-          ? `19${anio}`
-          : `20${anio}`;
-    }
+    const dia = coincidencia[1]
+      .padStart(2, '0');
+    const mes = coincidencia[2]
+      .padStart(2, '0');
+    const anio = coincidencia[3];
 
     return `${anio}-${mes}-${dia}`;
   }

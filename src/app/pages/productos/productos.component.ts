@@ -66,6 +66,8 @@ export class ProductosComponent
   mensajeMarca = '';
   errorMarca = '';
 
+  mensajeLecturaEscaner = '';
+
   search = '';
   error = '';
   ok = '';
@@ -672,6 +674,7 @@ export class ProductosComponent
     this.guardandoMarca = false;
     this.mensajeMarca = '';
     this.errorMarca = '';
+    this.mensajeLecturaEscaner = '';
 
     this.form.reset({
       codigoBarras: '',
@@ -697,8 +700,6 @@ export class ProductosComponent
       estado: 'ACTIVO',
       descripcion: ''
     });
-
-    this.generarCodigo();
   }
 
   cerrarFormulario(): void {
@@ -1020,39 +1021,126 @@ export class ProductosComponent
       });
   }
 
-  generarCodigo(): void {
-    const mayorNumero =
-      this.productos.reduce(
-        (mayor, producto) => {
-          const coincidencia =
-            String(
-              producto.codigoBarras || ''
-            ).match(/(\d+)$/);
+  procesarLecturaEscaner(
+    event?: Event
+  ): void {
+    event?.preventDefault();
 
-          const numero =
-            coincidencia
-              ? Number(coincidencia[1])
-              : 0;
+    const lectura =
+      String(
+        this.form.get(
+          'codigoBarras'
+        )?.value || ''
+      ).trim();
 
-          return Math.max(
-            mayor,
-            numero
-          );
-        },
-        0
+    if (!lectura) {
+      this.mensajeLecturaEscaner =
+        '';
+      return;
+    }
+
+    const medida =
+      this.extraerMedidaMontura(
+        lectura
       );
 
-    const siguiente =
-      String(mayorNumero + 1)
-        .padStart(6, '0');
+    if (!medida) {
+      this.mensajeLecturaEscaner =
+        'Código capturado. Escribe la medida manualmente cuando el lector no la incluya.';
+      return;
+    }
 
-    this.form.patchValue({
-      codigoBarras:
-        `OPT-${siguiente}`
-    });
+    this.form.patchValue(
+      {
+        codigoBarras:
+          medida,
+        medida
+      },
+      {
+        emitEvent: true
+      }
+    );
+
+    this.mensajeLecturaEscaner =
+      `Código de barras y medida cargados: ${medida}.`;
+  }
+
+  private extraerMedidaMontura(
+    valor: string
+  ): string | null {
+    const texto =
+      String(valor || '')
+        .trim()
+        .toUpperCase()
+        .replace(
+          /[×X]/g,
+          '-'
+        )
+        .replace(
+          /[\/\\|_]/g,
+          '-'
+        )
+        .replace(
+          /\s+/g,
+          '-'
+        )
+        .replace(
+          /-+/g,
+          '-'
+        );
+
+    /*
+     * Formatos aceptados:
+     * 52-18-140
+     * 52/18/140
+     * 52 18 140
+     * 52x18x140
+     * EXP-52-18-140
+     */
+    const coincidencia =
+      texto.match(
+        /(?:^|[^0-9])(\d{2,3})-(\d{2,3})-(\d{3})(?:$|[^0-9])/
+      );
+
+    if (coincidencia) {
+      return [
+        coincidencia[1],
+        coincidencia[2],
+        coincidencia[3]
+      ].join('-');
+    }
+
+    /*
+     * Algunos lectores entregan solo los siete dígitos:
+     * 5218140 -> 52-18-140
+     */
+    const soloDigitos =
+      String(valor || '')
+        .replace(/\D/g, '');
+
+    if (soloDigitos.length === 7) {
+      return [
+        soloDigitos.slice(0, 2),
+        soloDigitos.slice(2, 4),
+        soloDigitos.slice(4, 7)
+      ].join('-');
+    }
+
+    return null;
   }
 
   guardar(): void {
+    const lecturaPendiente =
+      String(
+        this.form.get(
+          'codigoBarras'
+        )?.value || ''
+      ).trim();
+
+    if (lecturaPendiente) {
+      this.procesarLecturaEscaner();
+    }
+
     if (
       this.guardando ||
       this.guardandoMarca
@@ -1130,9 +1218,9 @@ export class ProductosComponent
           const request:
             ProductoRequest = {
             codigoInterno:
-              String(
-                value.codigoBarras
-              ).trim(),
+              this.productoEditando
+                ?.codigoInterno ||
+              undefined,
             codigoBarras:
               String(
                 value.codigoBarras
@@ -1258,6 +1346,11 @@ export class ProductosComponent
 
           this.mostrarFormulario =
             false;
+
+
+          this.mensajeLecturaEscaner =
+            '';
+
           this.modoEdicion =
             false;
           this.productoEditando =

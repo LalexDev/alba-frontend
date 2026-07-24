@@ -1,5 +1,8 @@
 import { Injectable } from '@angular/core';
-import { defer, Observable } from 'rxjs';
+import {
+  defer,
+  Observable
+} from 'rxjs';
 
 import {
   Categoria,
@@ -12,7 +15,9 @@ import {
   ResultadoRegistroProducto
 } from '../models/producto.model';
 
-import { SupabaseService } from './supabase.service';
+import {
+  SupabaseService
+} from './supabase.service';
 
 interface CategoriaDb {
   id_categoria: number;
@@ -55,9 +60,20 @@ interface ProductoDb {
   creado_en?: string | null;
   activo: boolean;
 
-  categoria?: CategoriaDb | CategoriaDb[] | null;
-  marca?: MarcaDb | MarcaDb[] | null;
-  proveedor?: ProveedorDb | ProveedorDb[] | null;
+  categoria?:
+    CategoriaDb |
+    CategoriaDb[] |
+    null;
+
+  marca?:
+    MarcaDb |
+    MarcaDb[] |
+    null;
+
+  proveedor?:
+    ProveedorDb |
+    ProveedorDb[] |
+    null;
 }
 
 @Injectable({
@@ -108,26 +124,44 @@ export class ProductoService {
   `;
 
   constructor(
-    private supabaseService: SupabaseService
+    private supabaseService:
+      SupabaseService
   ) {}
 
   listar(): Observable<Producto[]> {
     return defer(async () => {
-      const { data, error } =
+      const {
+        data,
+        error
+      } =
         await this.supabaseService.client
           .from('productos')
-          .select(this.columnasProducto)
-          .order('nombre', { ascending: true });
+          .select(
+            this.columnasProducto
+          )
+          .order(
+            'nombre',
+            {
+              ascending: true
+            }
+          );
 
       if (error) {
-        console.error('Error al listar productos:', error);
-        throw new Error(error.message);
+        console.error(
+          'Error al listar productos:',
+          error
+        );
+
+        throw new Error(
+          error.message
+        );
       }
 
-      return (data ?? []).map((fila) =>
-        this.mapearProducto(
-          fila as unknown as ProductoDb
-        )
+      return (data ?? []).map(
+        fila =>
+          this.mapearProducto(
+            fila as unknown as ProductoDb
+          )
       );
     });
   }
@@ -137,182 +171,200 @@ export class ProductoService {
   ): Observable<ResultadoRegistroProducto> {
     return defer(
       async (): Promise<ResultadoRegistroProducto> => {
-      const codigoBarras =
-        String(request.codigoBarras || '').trim();
+        const codigoBarras =
+          this.normalizarCodigoEscaneado(
+            request.codigoBarras
+          );
 
-      const codigoInterno =
-        String(
-          request.codigoInterno ||
-          request.codigoBarras ||
-          ''
-        ).trim();
+        const nombre =
+          String(
+            request.nombre || ''
+          ).trim();
 
-      const nombre =
-        String(request.nombre || '').trim();
+        if (!codigoBarras) {
+          throw new Error(
+            'Escanea o escribe el código de barras de la montura.'
+          );
+        }
 
-      if (!nombre) {
-        throw new Error(
-          'El nombre del producto es obligatorio.'
-        );
-      }
+        if (!nombre) {
+          throw new Error(
+            'El nombre del producto es obligatorio.'
+          );
+        }
 
-      if (!request.categoriaId) {
-        throw new Error(
-          'Selecciona una categoría.'
-        );
-      }
+        if (!request.categoriaId) {
+          throw new Error(
+            'Selecciona una categoría.'
+          );
+        }
 
-      const stockMinimo =
-        Number(request.stockMinimo ?? 5);
+        const stockMinimo =
+          Number(
+            request.stockMinimo ?? 5
+          );
 
-      const { data, error } =
-        await this.supabaseService.client.rpc(
-          'crear_producto',
-          {
-            p_codigo_interno:
-              codigoInterno ||
-              codigoBarras ||
-              null,
-            p_codigo_barras:
-              codigoBarras ||
-              null,
-            p_nombre:
-              nombre,
-            p_descripcion:
-              request.descripcion?.trim() || null,
-            p_modelo:
-              request.modelo?.trim() || null,
-            p_color:
-              request.color?.trim() || null,
-            p_medida:
-              request.medida?.trim() || null,
-            p_material:
-              request.material?.trim() || null,
-            p_precio_compra:
-              Number(request.precioCompra || 0),
-            p_precio_venta:
-              Number(request.precioVenta || 0),
-            p_stock_inicial:
-              Number(request.stockActual || 0),
-            p_stock_minimo:
-              Number.isFinite(stockMinimo)
-                ? stockMinimo
-                : 5,
-            p_id_categoria:
-              Number(request.categoriaId),
-            p_id_marca:
-              request.marcaId
-                ? Number(request.marcaId)
-                : null,
-            p_id_proveedor:
-              request.proveedorId
-                ? Number(request.proveedorId)
-                : null
-          }
-        );
-
-      if (error) {
-        console.error(
-          'Error al crear producto:',
-          error
-        );
-
-        throw new Error(
-          this.traducirError(error.message)
-        );
-      }
-
-      const respuesta = data as {
-        id_producto?: number;
-        accion?:
-          'CREADO' |
-          'STOCK_INCREMENTADO';
-        cantidad_agregada?: number;
-        stock_anterior?: number;
-        stock_nuevo?: number;
-      } | null;
-
-      const idProducto = Number(
-        respuesta?.id_producto
-      );
-
-      if (!idProducto) {
-        throw new Error(
-          'El producto se guardó, pero no se obtuvo su identificador.'
-        );
-      }
-
-      const accion:
-        ResultadoRegistroProducto['accion'] =
-          respuesta?.accion ===
-            'STOCK_INCREMENTADO'
-            ? 'STOCK_INCREMENTADO'
-            : 'CREADO';
-
-      const cantidadAgregada =
-        Number(
-          respuesta?.cantidad_agregada ??
-          request.stockActual ??
-          0
-        );
-
-      const stockAnterior =
-        Number(
-          respuesta?.stock_anterior ??
-          0
-        );
-
-      const stockNuevo =
-        Number(
-          respuesta?.stock_nuevo ??
-          cantidadAgregada
-        );
-
-      const sexo =
-        request.sexo === 'F' ||
-        request.sexo === 'M'
-          ? request.sexo
-          : null;
-
-      if (sexo) {
         const {
-          error: errorSexo
+          data,
+          error
         } =
           await this.supabaseService.client
             .rpc(
-              'actualizar_sexo_producto',
+              'crear_producto',
               {
-                p_id_producto:
-                  idProducto,
-                p_sexo:
-                  sexo
+                /*
+                 * Supabase genera el código interno OPT.
+                 * El código físico escaneado se guarda en
+                 * codigo_barras y puede repetirse.
+                 */
+                p_codigo_interno:
+                  request.codigoInterno
+                    ?.trim() ||
+                  null,
+                p_codigo_barras:
+                  codigoBarras,
+                p_nombre:
+                  nombre,
+                p_descripcion:
+                  request.descripcion
+                    ?.trim() ||
+                  null,
+                p_modelo:
+                  request.modelo
+                    ?.trim() ||
+                  null,
+                p_color:
+                  request.color
+                    ?.trim() ||
+                  null,
+                p_medida:
+                  request.medida
+                    ?.trim() ||
+                  this.normalizarMedidaEscaneada(
+                    codigoBarras
+                  ),
+                p_material:
+                  request.material
+                    ?.trim() ||
+                  null,
+                p_precio_compra:
+                  Number(
+                    request.precioCompra || 0
+                  ),
+                p_precio_venta:
+                  Number(
+                    request.precioVenta || 0
+                  ),
+                p_stock_inicial:
+                  Number(
+                    request.stockActual || 0
+                  ),
+                p_stock_minimo:
+                  Number.isFinite(
+                    stockMinimo
+                  )
+                    ? stockMinimo
+                    : 5,
+                p_id_categoria:
+                  Number(
+                    request.categoriaId
+                  ),
+                p_id_marca:
+                  request.marcaId
+                    ? Number(
+                        request.marcaId
+                      )
+                    : null,
+                p_id_proveedor:
+                  request.proveedorId
+                    ? Number(
+                        request.proveedorId
+                      )
+                    : null
               }
             );
 
-        if (errorSexo) {
+        if (error) {
           console.error(
-            'Error al guardar sexo:',
-            errorSexo
+            'Error al crear producto:',
+            error
           );
 
           throw new Error(
-            'El producto se creó, pero no se pudo guardar el sexo. Ejecuta el SQL 11_productos_sexo.sql.'
+            this.traducirError(
+              error.message
+            )
           );
         }
-      }
 
-      const producto =
-        await this.obtenerPorId(
-          idProducto
+        const respuesta =
+          data as {
+            id_producto?: number;
+            accion?:
+              'CREADO' |
+              'STOCK_INCREMENTADO';
+            cantidad_agregada?: number;
+            stock_anterior?: number;
+            stock_nuevo?: number;
+          } | null;
+
+        const idProducto =
+          Number(
+            respuesta?.id_producto
+          );
+
+        if (!idProducto) {
+          throw new Error(
+            'El producto se guardó, pero no se obtuvo su identificador.'
+          );
+        }
+
+        const accion:
+          ResultadoRegistroProducto['accion'] =
+            respuesta?.accion ===
+              'STOCK_INCREMENTADO'
+              ? 'STOCK_INCREMENTADO'
+              : 'CREADO';
+
+        const cantidadAgregada =
+          Number(
+            respuesta
+              ?.cantidad_agregada ??
+            request.stockActual ??
+            0
+          );
+
+        const stockAnterior =
+          Number(
+            respuesta
+              ?.stock_anterior ??
+            0
+          );
+
+        const stockNuevo =
+          Number(
+            respuesta
+              ?.stock_nuevo ??
+            cantidadAgregada
+          );
+
+        await this.guardarSexo(
+          idProducto,
+          request.sexo
         );
 
-      return {
-        producto,
-        accion,
-        cantidadAgregada,
-        stockAnterior,
-        stockNuevo
-      };
+        const producto =
+          await this.obtenerPorId(
+            idProducto
+          );
+
+        return {
+          producto,
+          accion,
+          cantidadAgregada,
+          stockAnterior,
+          stockNuevo
+        };
       }
     );
   }
@@ -323,118 +375,147 @@ export class ProductoService {
   ): Observable<ResultadoRegistroProducto> {
     return defer(
       async (): Promise<ResultadoRegistroProducto> => {
-      if (
-        !Number.isInteger(idProducto) ||
-        idProducto <= 0
-      ) {
-        throw new Error(
-          'El producto seleccionado no es válido.'
-        );
-      }
+        if (
+          !Number.isInteger(
+            idProducto
+          ) ||
+          idProducto <= 0
+        ) {
+          throw new Error(
+            'El producto seleccionado no es válido.'
+          );
+        }
 
-      const { data, error } =
-        await this.supabaseService.client.rpc(
-          'actualizar_producto_detalle',
-          {
-            p_id_producto:
-              idProducto,
-            p_codigo_interno:
-              String(
-                request.codigoInterno ||
-                request.codigoBarras ||
-                ''
-              ).trim(),
-            p_codigo_barras:
-              String(
-                request.codigoBarras || ''
-              ).trim(),
-            p_nombre:
-              String(
-                request.nombre || ''
-              ).trim(),
-            p_descripcion:
-              request.descripcion?.trim() ||
-              null,
-            p_modelo:
-              request.modelo?.trim() ||
-              null,
-            p_color:
-              request.color?.trim() ||
-              null,
-            p_medida:
-              request.medida?.trim() ||
-              null,
-            p_material:
-              request.material?.trim() ||
-              null,
-            p_sexo:
-              request.sexo === 'F' ||
-              request.sexo === 'M'
-                ? request.sexo
-                : null,
-            p_precio_compra:
-              Number(
-                request.precioCompra || 0
-              ),
-            p_precio_venta:
-              Number(
-                request.precioVenta || 0
-              ),
-            p_stock_minimo:
-              Number(
-                request.stockMinimo ?? 5
-              ),
-            p_id_categoria:
-              Number(
-                request.categoriaId
-              ),
-            p_id_marca:
-              request.marcaId
-                ? Number(request.marcaId)
-                : null,
-            p_id_proveedor:
-              request.proveedorId
-                ? Number(request.proveedorId)
-                : null,
-            p_activo:
-              true
-          }
+        const codigoBarras =
+          this.normalizarCodigoEscaneado(
+            request.codigoBarras
+          );
+
+        if (!codigoBarras) {
+          throw new Error(
+            'El código de barras de la montura es obligatorio.'
+          );
+        }
+
+        const {
+          data,
+          error
+        } =
+          await this.supabaseService.client
+            .rpc(
+              'actualizar_producto_detalle',
+              {
+                p_id_producto:
+                  idProducto,
+                p_codigo_interno:
+                  request.codigoInterno
+                    ?.trim() ||
+                  null,
+                p_codigo_barras:
+                  codigoBarras,
+                p_nombre:
+                  String(
+                    request.nombre || ''
+                  ).trim(),
+                p_descripcion:
+                  request.descripcion
+                    ?.trim() ||
+                  null,
+                p_modelo:
+                  request.modelo
+                    ?.trim() ||
+                  null,
+                p_color:
+                  request.color
+                    ?.trim() ||
+                  null,
+                p_medida:
+                  request.medida
+                    ?.trim() ||
+                  this.normalizarMedidaEscaneada(
+                    codigoBarras
+                  ),
+                p_material:
+                  request.material
+                    ?.trim() ||
+                  null,
+                p_sexo:
+                  request.sexo === 'F' ||
+                  request.sexo === 'M'
+                    ? request.sexo
+                    : null,
+                p_precio_compra:
+                  Number(
+                    request.precioCompra || 0
+                  ),
+                p_precio_venta:
+                  Number(
+                    request.precioVenta || 0
+                  ),
+                p_stock_minimo:
+                  Number(
+                    request.stockMinimo ?? 5
+                  ),
+                p_id_categoria:
+                  Number(
+                    request.categoriaId
+                  ),
+                p_id_marca:
+                  request.marcaId
+                    ? Number(
+                        request.marcaId
+                      )
+                    : null,
+                p_id_proveedor:
+                  request.proveedorId
+                    ? Number(
+                        request.proveedorId
+                      )
+                    : null,
+                p_activo:
+                  true
+              }
+            );
+
+        if (error) {
+          throw new Error(
+            this.traducirError(
+              error.message
+            )
+          );
+        }
+
+        const idConfirmado =
+          Number(
+            (
+              data as {
+                id_producto?: number;
+              } | null
+            )?.id_producto ||
+            idProducto
+          );
+
+        await this.guardarSexo(
+          idConfirmado,
+          request.sexo
         );
 
-      if (error) {
-        throw new Error(
-          this.traducirError(
-            error.message
-          )
-        );
-      }
+        const producto =
+          await this.obtenerPorId(
+            idConfirmado
+          );
 
-      const idConfirmado =
-        Number(
-          (
-            data as {
-              id_producto?: number;
-            } | null
-          )?.id_producto ||
-          idProducto
-        );
-
-      const producto =
-        await this.obtenerPorId(
-          idConfirmado
-        );
-
-      return {
-        producto,
-        accion:
-          'ACTUALIZADO' as const,
-        cantidadAgregada:
-          0,
-        stockAnterior:
-          producto.stockActual,
-        stockNuevo:
-          producto.stockActual
-      };
+        return {
+          producto,
+          accion:
+            'ACTUALIZADO',
+          cantidadAgregada:
+            0,
+          stockAnterior:
+            producto.stockActual,
+          stockNuevo:
+            producto.stockActual
+        };
       }
     );
   }
@@ -444,61 +525,67 @@ export class ProductoService {
   ): Observable<ResultadoEliminacionProducto> {
     return defer(
       async (): Promise<ResultadoEliminacionProducto> => {
-      if (
-        !Number.isInteger(idProducto) ||
-        idProducto <= 0
-      ) {
-        throw new Error(
-          'El producto seleccionado no es válido.'
-        );
-      }
-
-      const { data, error } =
-        await this.supabaseService.client.rpc(
-          'eliminar_producto_seguro',
-          {
-            p_id_producto:
-              idProducto
-          }
-        );
-
-      if (error) {
-        throw new Error(
-          this.traducirError(
-            error.message
-          )
-        );
-      }
-
-      const respuesta =
-        data as {
-          id_producto?: number;
-          accion?: string;
-          mensaje?: string;
-        } | null;
-
-      const accion:
-        ResultadoEliminacionProducto['accion'] =
-          respuesta?.accion ===
-            'DESACTIVADO'
-            ? 'DESACTIVADO'
-            : 'ELIMINADO';
-
-      return {
-        idProducto:
-          Number(
-            respuesta?.id_producto ||
+        if (
+          !Number.isInteger(
             idProducto
-          ),
-        accion,
-        mensaje:
-          respuesta?.mensaje ||
-          (
-            accion === 'ELIMINADO'
-              ? 'Producto eliminado.'
-              : 'Producto desactivado para conservar su historial.'
-          )
-      };
+          ) ||
+          idProducto <= 0
+        ) {
+          throw new Error(
+            'El producto seleccionado no es válido.'
+          );
+        }
+
+        const {
+          data,
+          error
+        } =
+          await this.supabaseService.client
+            .rpc(
+              'eliminar_producto_seguro',
+              {
+                p_id_producto:
+                  idProducto
+              }
+            );
+
+        if (error) {
+          throw new Error(
+            this.traducirError(
+              error.message
+            )
+          );
+        }
+
+        const respuesta =
+          data as {
+            id_producto?: number;
+            accion?: string;
+            mensaje?: string;
+          } | null;
+
+        const accion:
+          ResultadoEliminacionProducto['accion'] =
+            respuesta?.accion ===
+              'DESACTIVADO'
+              ? 'DESACTIVADO'
+              : 'ELIMINADO';
+
+        return {
+          idProducto:
+            Number(
+              respuesta?.id_producto ||
+              idProducto
+            ),
+          accion,
+          mensaje:
+            respuesta?.mensaje ||
+            (
+              accion === 'ELIMINADO'
+                ? 'Producto eliminado.'
+                : 'Producto desactivado para conservar su historial.'
+            )
+        };
       }
     );
   }
@@ -509,9 +596,9 @@ export class ProductoService {
     return defer(
       async (): Promise<ResultadoBusquedaEscanerProducto> => {
         const valor =
-          String(
-            valorEscaneado || ''
-          ).trim();
+          this.normalizarCodigoEscaneado(
+            valorEscaneado
+          );
 
         if (!valor) {
           throw new Error(
@@ -520,129 +607,62 @@ export class ProductoService {
         }
 
         /*
-         * Cuando la lectura tiene formato de medida, siempre
-         * buscamos TODAS las monturas que comparten esa medida.
-         *
-         * Ejemplo:
-         * 52-18-140
+         * El código interno OPT sigue disponible para
+         * tareas administrativas, aunque no se imprime
+         * en la montura.
          */
-        const medida =
-          this.normalizarMedidaEscaneada(
-            valor
+        const porCodigoInterno =
+          await this.supabaseService.client
+            .from('productos')
+            .select(
+              this.columnasProducto
+            )
+            .eq(
+              'activo',
+              true
+            )
+            .eq(
+              'codigo_interno',
+              valor
+            )
+            .gt(
+              'stock_actual',
+              0
+            )
+            .maybeSingle();
+
+        if (
+          porCodigoInterno.error
+        ) {
+          throw new Error(
+            porCodigoInterno
+              .error.message
           );
+        }
 
-        if (medida) {
-          const {
-            data,
-            error
-          } =
-            await this.supabaseService.client
-              .from('productos')
-              .select(
-                this.columnasProducto
-              )
-              .eq(
-                'activo',
-                true
-              )
-              .eq(
-                'medida',
-                medida
-              )
-              .gt(
-                'stock_actual',
-                0
-              );
-
-          if (error) {
-            throw new Error(
-              error.message
-            );
-          }
-
-          const productos =
-            (data ?? [])
-              .map(
-                fila =>
-                  this.mapearProducto(
-                    fila as unknown as ProductoDb
-                  )
-              )
-              .sort(
-                (a, b) => {
-                  const marca =
-                    String(
-                      a.marca?.nombre || ''
-                    ).localeCompare(
-                      String(
-                        b.marca?.nombre || ''
-                      ),
-                      'es',
-                      {
-                        sensitivity:
-                          'base'
-                      }
-                    );
-
-                  if (marca !== 0) {
-                    return marca;
-                  }
-
-                  const color =
-                    String(
-                      a.color || ''
-                    ).localeCompare(
-                      String(
-                        b.color || ''
-                      ),
-                      'es',
-                      {
-                        sensitivity:
-                          'base'
-                      }
-                    );
-
-                  if (color !== 0) {
-                    return color;
-                  }
-
-                  return String(
-                    a.modelo || ''
-                  ).localeCompare(
-                    String(
-                      b.modelo || ''
-                    ),
-                    'es',
-                    {
-                      sensitivity:
-                        'base',
-                      numeric:
-                        true
-                    }
-                  );
-                }
-              );
-
-          if (productos.length === 0) {
-            throw new Error(
-              `No hay monturas con stock para la medida ${medida}.`
-            );
-          }
-
+        if (
+          porCodigoInterno.data
+        ) {
           return {
             tipo:
-              'MEDIDA',
+              'CODIGO_UNICO',
             valorEscaneado:
-              medida,
-            productos
+              valor,
+            productos: [
+              this.mapearProducto(
+                porCodigoInterno
+                  .data as unknown as ProductoDb
+              )
+            ]
           };
         }
 
         /*
-         * Un código interno OPT sí identifica exactamente
-         * a un solo producto.
+         * El código físico de la montura puede repetirse
+         * en distintas marcas. Se recuperan todas las
+         * coincidencias disponibles.
          */
-        const porBarras =
+        const porCodigoFisico =
           await this.supabaseService.client
             .from('productos')
             .select(
@@ -656,73 +676,110 @@ export class ProductoService {
               'codigo_barras',
               valor
             )
-            .maybeSingle();
-
-        if (porBarras.error) {
-          throw new Error(
-            porBarras.error.message
-          );
-        }
-
-        let filaExacta =
-          porBarras.data;
-
-        if (!filaExacta) {
-          const porCodigoInterno =
-            await this.supabaseService.client
-              .from('productos')
-              .select(
-                this.columnasProducto
-              )
-              .eq(
-                'activo',
-                true
-              )
-              .eq(
-                'codigo_interno',
-                valor
-              )
-              .maybeSingle();
-
-          if (porCodigoInterno.error) {
-            throw new Error(
-              porCodigoInterno.error.message
+            .gt(
+              'stock_actual',
+              0
             );
-          }
 
-          filaExacta =
-            porCodigoInterno.data;
-        }
-
-        if (!filaExacta) {
+        if (
+          porCodigoFisico.error
+        ) {
           throw new Error(
-            'Producto no encontrado.'
+            porCodigoFisico
+              .error.message
           );
         }
 
-        const producto =
-          this.mapearProducto(
-            filaExacta as unknown as ProductoDb
+        let productos =
+          (porCodigoFisico.data ?? [])
+            .map(
+              fila =>
+                this.mapearProducto(
+                  fila as unknown as ProductoDb
+                )
+            );
+
+        /*
+         * Compatibilidad con registros antiguos:
+         * cuando no coincida codigo_barras, se intenta
+         * por la medida normalizada.
+         */
+        if (
+          productos.length === 0
+        ) {
+          const medida =
+            this.normalizarMedidaEscaneada(
+              valor
+            );
+
+          if (medida) {
+            const porMedida =
+              await this.supabaseService.client
+                .from('productos')
+                .select(
+                  this.columnasProducto
+                )
+                .eq(
+                  'activo',
+                  true
+                )
+                .eq(
+                  'medida',
+                  medida
+                )
+                .gt(
+                  'stock_actual',
+                  0
+                );
+
+            if (porMedida.error) {
+              throw new Error(
+                porMedida.error.message
+              );
+            }
+
+            productos =
+              (porMedida.data ?? [])
+                .map(
+                  fila =>
+                    this.mapearProducto(
+                      fila as unknown as ProductoDb
+                    )
+                );
+          }
+        }
+
+        productos =
+          this.ordenarYUnificar(
+            productos
           );
 
         if (
-          Number(
-            producto.stockActual || 0
-          ) <= 0
+          productos.length === 0
         ) {
           throw new Error(
-            'El producto está agotado.'
+            `No se encontraron monturas disponibles para el código ${valor}.`
           );
+        }
+
+        if (
+          productos.length === 1
+        ) {
+          return {
+            tipo:
+              'CODIGO_UNICO',
+            valorEscaneado:
+              valor,
+            productos
+          };
         }
 
         return {
           tipo:
-            'CODIGO_UNICO',
+            'MEDIDA',
           valorEscaneado:
             valor,
-          productos: [
-            producto
-          ]
+          productos
         };
       }
     );
@@ -732,24 +789,61 @@ export class ProductoService {
     codigo: string
   ): Observable<Producto> {
     return defer(async () => {
-      const codigoNormalizado =
-        String(codigo || '').trim();
+      const valor =
+        this.normalizarCodigoEscaneado(
+          codigo
+        );
 
-      if (!codigoNormalizado) {
+      if (!valor) {
         throw new Error(
           'Ingresa o escanea un código.'
+        );
+      }
+
+      const porInterno =
+        await this.supabaseService.client
+          .from('productos')
+          .select(
+            this.columnasProducto
+          )
+          .eq(
+            'codigo_interno',
+            valor
+          )
+          .limit(1);
+
+      if (porInterno.error) {
+        throw new Error(
+          porInterno.error.message
+        );
+      }
+
+      const filaInterna =
+        porInterno.data?.[0];
+
+      if (filaInterna) {
+        return this.mapearProducto(
+          filaInterna as unknown as ProductoDb
         );
       }
 
       const porBarras =
         await this.supabaseService.client
           .from('productos')
-          .select(this.columnasProducto)
+          .select(
+            this.columnasProducto
+          )
           .eq(
             'codigo_barras',
-            codigoNormalizado
+            valor
           )
-          .maybeSingle();
+          .order(
+            'id_producto',
+            {
+              ascending: true
+            }
+          )
+          .limit(1);
 
       if (porBarras.error) {
         throw new Error(
@@ -757,43 +851,28 @@ export class ProductoService {
         );
       }
 
-      if (porBarras.data) {
-        return this.mapearProducto(
-          porBarras.data as unknown as ProductoDb
-        );
-      }
+      const fila =
+        porBarras.data?.[0];
 
-      const porCodigoInterno =
-        await this.supabaseService.client
-          .from('productos')
-          .select(this.columnasProducto)
-          .eq(
-            'codigo_interno',
-            codigoNormalizado
-          )
-          .maybeSingle();
-
-      if (porCodigoInterno.error) {
-        throw new Error(
-          porCodigoInterno.error.message
-        );
-      }
-
-      if (!porCodigoInterno.data) {
+      if (!fila) {
         throw new Error(
           'Producto no encontrado.'
         );
       }
 
       return this.mapearProducto(
-        porCodigoInterno.data as unknown as ProductoDb
+        fila as unknown as ProductoDb
       );
     });
   }
 
-  categorias(): Observable<Categoria[]> {
+  categorias():
+    Observable<Categoria[]> {
     return defer(async () => {
-      const { data, error } =
+      const {
+        data,
+        error
+      } =
         await this.supabaseService.client
           .from('categorias')
           .select(`
@@ -802,22 +881,43 @@ export class ProductoService {
             descripcion,
             activo
           `)
-          .eq('activo', true)
-          .order('nombre', { ascending: true });
+          .eq(
+            'activo',
+            true
+          )
+          .order(
+            'nombre',
+            {
+              ascending: true
+            }
+          );
 
       if (error) {
-        throw new Error(error.message);
+        throw new Error(
+          error.message
+        );
       }
 
       return (data ?? []).map(
-        (categoria): Categoria => ({
-          id: Number(categoria.id_categoria),
-          nombre: String(categoria.nombre),
-          descripcion:
-            categoria.descripcion ?? '',
-          estado:
-            Boolean(categoria.activo)
-        })
+        (categoria):
+          Categoria => ({
+            id:
+              Number(
+                categoria
+                  .id_categoria
+              ),
+            nombre:
+              String(
+                categoria.nombre
+              ),
+            descripcion:
+              categoria.descripcion ??
+              '',
+            estado:
+              Boolean(
+                categoria.activo
+              )
+          })
       );
     });
   }
@@ -827,30 +927,43 @@ export class ProductoService {
   ): Observable<Categoria> {
     return defer(async () => {
       const nombreLimpio =
-        this.normalizarNombre(nombre);
+        this.normalizarNombre(
+          nombre
+        );
 
-      if (nombreLimpio.length < 2) {
+      if (
+        nombreLimpio.length < 2
+      ) {
         throw new Error(
           'Escribe una categoría válida.'
         );
       }
 
-      const { data, error } =
-        await this.supabaseService.client.rpc(
-          'crear_categoria_si_no_existe',
-          {
-            p_nombre: nombreLimpio,
-            p_descripcion: null
-          }
-        );
+      const {
+        data,
+        error
+      } =
+        await this.supabaseService.client
+          .rpc(
+            'crear_categoria_si_no_existe',
+            {
+              p_nombre:
+                nombreLimpio,
+              p_descripcion:
+                null
+            }
+          );
 
       if (error) {
         throw new Error(
-          this.traducirError(error.message)
+          this.traducirError(
+            error.message
+          )
         );
       }
 
-      const idCategoria = Number(data);
+      const idCategoria =
+        Number(data);
 
       if (!idCategoria) {
         throw new Error(
@@ -867,7 +980,10 @@ export class ProductoService {
             descripcion,
             activo
           `)
-          .eq('id_categoria', idCategoria)
+          .eq(
+            'id_categoria',
+            idCategoria
+          )
           .single();
 
       if (
@@ -875,27 +991,41 @@ export class ProductoService {
         !respuesta.data
       ) {
         throw new Error(
-          respuesta.error?.message ||
+          respuesta.error
+            ?.message ||
           'No se pudo consultar la categoría.'
         );
       }
 
       return {
         id:
-          Number(respuesta.data.id_categoria),
+          Number(
+            respuesta.data
+              .id_categoria
+          ),
         nombre:
-          String(respuesta.data.nombre),
+          String(
+            respuesta.data.nombre
+          ),
         descripcion:
-          respuesta.data.descripcion ?? '',
+          respuesta.data
+            .descripcion ??
+          '',
         estado:
-          Boolean(respuesta.data.activo)
+          Boolean(
+            respuesta.data.activo
+          )
       };
     });
   }
 
-  marcas(): Observable<Marca[]> {
+  marcas():
+    Observable<Marca[]> {
     return defer(async () => {
-      const { data, error } =
+      const {
+        data,
+        error
+      } =
         await this.supabaseService.client
           .from('marcas')
           .select(`
@@ -903,19 +1033,39 @@ export class ProductoService {
             nombre,
             activo
           `)
-          .eq('activo', true)
-          .order('nombre', { ascending: true });
+          .eq(
+            'activo',
+            true
+          )
+          .order(
+            'nombre',
+            {
+              ascending: true
+            }
+          );
 
       if (error) {
-        throw new Error(error.message);
+        throw new Error(
+          error.message
+        );
       }
 
       return (data ?? []).map(
-        (marca): Marca => ({
-          id: Number(marca.id_marca),
-          nombre: String(marca.nombre),
-          estado: Boolean(marca.activo)
-        })
+        (marca):
+          Marca => ({
+            id:
+              Number(
+                marca.id_marca
+              ),
+            nombre:
+              String(
+                marca.nombre
+              ),
+            estado:
+              Boolean(
+                marca.activo
+              )
+          })
       );
     });
   }
@@ -925,7 +1075,9 @@ export class ProductoService {
   ): Observable<Marca> {
     return defer(async () => {
       const nombreLimpio =
-        this.normalizarNombre(nombre);
+        this.normalizarNombre(
+          nombre
+        );
 
       if (!nombreLimpio) {
         throw new Error(
@@ -933,21 +1085,29 @@ export class ProductoService {
         );
       }
 
-      const { data, error } =
-        await this.supabaseService.client.rpc(
-          'crear_marca_si_no_existe',
-          {
-            p_nombre: nombreLimpio
-          }
-        );
+      const {
+        data,
+        error
+      } =
+        await this.supabaseService.client
+          .rpc(
+            'crear_marca_si_no_existe',
+            {
+              p_nombre:
+                nombreLimpio
+            }
+          );
 
       if (error) {
         throw new Error(
-          this.traducirError(error.message)
+          this.traducirError(
+            error.message
+          )
         );
       }
 
-      const idMarca = Number(data);
+      const idMarca =
+        Number(data);
 
       if (!idMarca) {
         throw new Error(
@@ -963,7 +1123,10 @@ export class ProductoService {
             nombre,
             activo
           `)
-          .eq('id_marca', idMarca)
+          .eq(
+            'id_marca',
+            idMarca
+          )
           .single();
 
       if (
@@ -971,25 +1134,36 @@ export class ProductoService {
         !respuesta.data
       ) {
         throw new Error(
-          respuesta.error?.message ||
+          respuesta.error
+            ?.message ||
           'No se pudo consultar la marca.'
         );
       }
 
       return {
         id:
-          Number(respuesta.data.id_marca),
+          Number(
+            respuesta.data.id_marca
+          ),
         nombre:
-          String(respuesta.data.nombre),
+          String(
+            respuesta.data.nombre
+          ),
         estado:
-          Boolean(respuesta.data.activo)
+          Boolean(
+            respuesta.data.activo
+          )
       };
     });
   }
 
-  proveedores(): Observable<Proveedor[]> {
+  proveedores():
+    Observable<Proveedor[]> {
     return defer(async () => {
-      const { data, error } =
+      const {
+        data,
+        error
+      } =
         await this.supabaseService.client
           .from('proveedores')
           .select(`
@@ -1001,48 +1175,120 @@ export class ProductoService {
             direccion,
             activo
           `)
-          .eq('activo', true)
-          .order('razon_social', {
-            ascending: true
-          });
+          .eq(
+            'activo',
+            true
+          )
+          .order(
+            'razon_social',
+            {
+              ascending: true
+            }
+          );
 
       if (error) {
-        throw new Error(error.message);
+        throw new Error(
+          error.message
+        );
       }
 
       return (data ?? []).map(
-        (proveedor): Proveedor => ({
-          id:
-            Number(proveedor.id_proveedor),
-          razonSocial:
-            proveedor.razon_social ?? '',
-          contacto:
-            proveedor.nombre_contacto ?? '',
-          telefono:
-            proveedor.telefono ?? '',
-          correo:
-            proveedor.email ?? '',
-          direccion:
-            proveedor.direccion ?? '',
-          estado:
-            Boolean(proveedor.activo)
-        })
+        (proveedor):
+          Proveedor => ({
+            id:
+              Number(
+                proveedor
+                  .id_proveedor
+              ),
+            razonSocial:
+              proveedor
+                .razon_social ??
+              '',
+            contacto:
+              proveedor
+                .nombre_contacto ??
+              '',
+            telefono:
+              proveedor.telefono ??
+              '',
+            correo:
+              proveedor.email ??
+              '',
+            direccion:
+              proveedor.direccion ??
+              '',
+            estado:
+              Boolean(
+                proveedor.activo
+              )
+          })
       );
     });
+  }
+
+  private async guardarSexo(
+    idProducto: number,
+    sexo:
+      'F' |
+      'M' |
+      null |
+      undefined
+  ): Promise<void> {
+    if (
+      sexo !== 'F' &&
+      sexo !== 'M'
+    ) {
+      return;
+    }
+
+    const {
+      error
+    } =
+      await this.supabaseService.client
+        .rpc(
+          'actualizar_sexo_producto',
+          {
+            p_id_producto:
+              idProducto,
+            p_sexo:
+              sexo
+          }
+        );
+
+    if (error) {
+      console.error(
+        'Error al guardar sexo:',
+        error
+      );
+
+      throw new Error(
+        'El producto se guardó, pero no se pudo actualizar el sexo.'
+      );
+    }
   }
 
   private async obtenerPorId(
     idProducto: number
   ): Promise<Producto> {
-    const { data, error } =
+    const {
+      data,
+      error
+    } =
       await this.supabaseService.client
         .from('productos')
-        .select(this.columnasProducto)
-        .eq('id_producto', idProducto)
+        .select(
+          this.columnasProducto
+        )
+        .eq(
+          'id_producto',
+          idProducto
+        )
         .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new Error(
+        error.message
+      );
     }
 
     return this.mapearProducto(
@@ -1050,8 +1296,47 @@ export class ProductoService {
     );
   }
 
+  private normalizarCodigoEscaneado(
+    valor:
+      string |
+      null |
+      undefined
+  ): string {
+    const original =
+      String(
+        valor || ''
+      ).trim();
+
+    if (!original) {
+      return '';
+    }
+
+    const medida =
+      this.normalizarMedidaEscaneada(
+        original
+      );
+
+    /*
+     * Cuando la lectura es únicamente una medida,
+     * se guarda de forma uniforme: 52-18-140.
+     * Un código con prefijo se conserva completo.
+     */
+    if (
+      medida &&
+      /^[0-9\s/\\|_xX×-]+$/
+        .test(original)
+    ) {
+      return medida;
+    }
+
+    return original.toUpperCase();
+  }
+
   private normalizarMedidaEscaneada(
-    valor: string
+    valor:
+      string |
+      null |
+      undefined
   ): string | null {
     const texto =
       String(
@@ -1110,67 +1395,173 @@ export class ProductoService {
     return null;
   }
 
+  private ordenarYUnificar(
+    productos: Producto[]
+  ): Producto[] {
+    const unicos =
+      Array.from(
+        new Map(
+          productos.map(
+            producto => [
+              producto.id,
+              producto
+            ]
+          )
+        ).values()
+      );
+
+    return unicos.sort(
+      (a, b) => {
+        const porMarca =
+          String(
+            a.marca?.nombre || ''
+          ).localeCompare(
+            String(
+              b.marca?.nombre || ''
+            ),
+            'es',
+            {
+              sensitivity:
+                'base'
+            }
+          );
+
+        if (porMarca !== 0) {
+          return porMarca;
+        }
+
+        const porColor =
+          String(
+            a.color || ''
+          ).localeCompare(
+            String(
+              b.color || ''
+            ),
+            'es',
+            {
+              sensitivity:
+                'base'
+            }
+          );
+
+        if (porColor !== 0) {
+          return porColor;
+        }
+
+        return String(
+          a.modelo || ''
+        ).localeCompare(
+          String(
+            b.modelo || ''
+          ),
+          'es',
+          {
+            sensitivity:
+              'base',
+            numeric:
+              true
+          }
+        );
+      }
+    );
+  }
+
   private mapearProducto(
     fila: ProductoDb
   ): Producto {
     const categoriaDb =
-      this.obtenerRelacion(fila.categoria);
+      this.obtenerRelacion(
+        fila.categoria
+      );
 
     const marcaDb =
-      this.obtenerRelacion(fila.marca);
+      this.obtenerRelacion(
+        fila.marca
+      );
 
     const proveedorDb =
-      this.obtenerRelacion(fila.proveedor);
+      this.obtenerRelacion(
+        fila.proveedor
+      );
 
     return {
-      id: Number(fila.id_producto),
+      id:
+        Number(
+          fila.id_producto
+        ),
       codigoInterno:
-        fila.codigo_interno ?? '',
+        fila.codigo_interno ??
+        '',
       codigoBarras:
         fila.codigo_barras,
       nombre:
         fila.nombre,
       descripcion:
-        fila.descripcion ?? '',
+        fila.descripcion ??
+        '',
       modelo:
-        fila.modelo ?? '',
+        fila.modelo ??
+        '',
       color:
-        fila.color ?? '',
+        fila.color ??
+        '',
       medida:
-        fila.medida ?? '',
+        fila.medida ??
+        '',
       material:
-        fila.material ?? '',
+        fila.material ??
+        '',
       sexo:
         fila.sexo === 'F' ||
         fila.sexo === 'M'
           ? fila.sexo
           : undefined,
       precioCompra:
-        Number(fila.precio_compra ?? 0),
+        Number(
+          fila.precio_compra ??
+          0
+        ),
       precioVenta:
-        Number(fila.precio_venta ?? 0),
+        Number(
+          fila.precio_venta ??
+          0
+        ),
       stockActual:
-        Number(fila.stock_actual ?? 0),
+        Number(
+          fila.stock_actual ??
+          0
+        ),
       stockMinimo:
-        Number(fila.stock_minimo ?? 5),
+        Number(
+          fila.stock_minimo ??
+          5
+        ),
       fechaIngreso:
-        fila.creado_en ?? undefined,
+        fila.creado_en ??
+        undefined,
       estado:
-        Boolean(fila.activo),
+        Boolean(
+          fila.activo
+        ),
 
       categoria:
         categoriaDb
           ? {
               id:
                 Number(
-                  categoriaDb.id_categoria
+                  categoriaDb
+                    .id_categoria
                 ),
               nombre:
                 categoriaDb.nombre,
               descripcion:
-                categoriaDb.descripcion ?? '',
+                categoriaDb
+                  .descripcion ??
+                '',
               estado:
-                Boolean(categoriaDb.activo)
+                Boolean(
+                  categoriaDb.activo
+                )
             }
           : undefined,
 
@@ -1178,11 +1569,15 @@ export class ProductoService {
         marcaDb
           ? {
               id:
-                Number(marcaDb.id_marca),
+                Number(
+                  marcaDb.id_marca
+                ),
               nombre:
                 marcaDb.nombre,
               estado:
-                Boolean(marcaDb.activo)
+                Boolean(
+                  marcaDb.activo
+                )
             }
           : undefined,
 
@@ -1191,166 +1586,161 @@ export class ProductoService {
           ? {
               id:
                 Number(
-                  proveedorDb.id_proveedor
+                  proveedorDb
+                    .id_proveedor
                 ),
               razonSocial:
-                proveedorDb.razon_social ?? '',
+                proveedorDb
+                  .razon_social ??
+                '',
               contacto:
-                proveedorDb.nombre_contacto ?? '',
+                proveedorDb
+                  .nombre_contacto ??
+                '',
               telefono:
-                proveedorDb.telefono ?? '',
+                proveedorDb
+                  .telefono ??
+                '',
               correo:
-                proveedorDb.email ?? '',
+                proveedorDb.email ??
+                '',
               direccion:
-                proveedorDb.direccion ?? '',
+                proveedorDb
+                  .direccion ??
+                '',
               estado:
-                Boolean(proveedorDb.activo)
+                Boolean(
+                  proveedorDb.activo
+                )
             }
           : undefined
     };
   }
 
   private obtenerRelacion<T>(
-    relacion: T | T[] | null | undefined
-  ): T | undefined {
-    if (!relacion) {
-      return undefined;
+    relacion:
+      T |
+      T[] |
+      null |
+      undefined
+  ): T | null {
+    if (
+      Array.isArray(
+        relacion
+      )
+    ) {
+      return relacion[0] ??
+        null;
     }
 
-    return Array.isArray(relacion)
-      ? relacion[0]
-      : relacion;
+    return relacion ??
+      null;
   }
 
   private normalizarNombre(
     valor: string
   ): string {
-    return String(valor || '')
+    return String(
+      valor || ''
+    )
       .trim()
-      .replace(/\s+/g, ' ')
       .replace(
-        /(^|\s)\S/g,
-        letra => letra.toUpperCase()
-      );
+        /\s+/g,
+        ' '
+      )
+      .toUpperCase();
   }
 
   private traducirError(
-    mensaje: string
+    mensaje:
+      string |
+      null |
+      undefined
   ): string {
     const texto =
-      String(mensaje || '').toLowerCase();
+      String(
+        mensaje || ''
+      ).toLowerCase();
 
     if (
       texto.includes(
         'actualizar_producto_detalle'
-      ) ||
-      texto.includes(
-        'eliminar_producto_seguro'
       )
     ) {
       return (
         'Falta ejecutar el archivo ' +
-        '29_productos_visualizar_editar_eliminar.sql en Supabase.'
+        '34_codigo_barras_repetible.sql en Supabase.'
       );
     }
 
     if (
       texto.includes(
-        'producto con ventas'
-      )
-    ) {
-      return (
-        'El producto tiene historial de ventas y solo puede desactivarse.'
-      );
-    }
-
-    if (
-      texto.includes(
-        'productos_siempre_sumar_stock'
-      )
-    ) {
-      return (
-        'Falta ejecutar el archivo ' +
-        '31_productos_siempre_sumar_stock.sql en Supabase.'
-      );
-    }
-
-    if (
-      texto.includes(
-        'registrar_producto_o_incrementar_stock'
+        'crear_producto'
+      ) &&
+      (
+        texto.includes(
+          'not found'
+        ) ||
+        texto.includes(
+          'schema cache'
+        )
       )
     ) {
       return (
         'Falta ejecutar el archivo ' +
-        '28_productos_modelos_stock_automatico.sql en Supabase.'
+        '34_codigo_barras_repetible.sql en Supabase.'
       );
     }
 
     if (
       texto.includes(
-        'mismo producto, modelo, color y medida'
-      )
-    ) {
-      return (
-        'No se pudo sumar la cantidad al stock existente. ' +
-        'Ejecuta el archivo 31_productos_siempre_sumar_stock.sql en Supabase.'
-      );
-    }
-
-    if (
+        'duplicate key'
+      ) &&
       texto.includes(
         'codigo_barras'
-      ) ||
-      texto.includes(
-        'código de barras'
       )
     ) {
       return (
-        'El código único ya pertenece a otro producto. ' +
-        'Presiona Generar para obtener un nuevo código OPT.'
+        'La base de datos todavía exige que el código físico sea único. ' +
+        'Ejecuta 34_codigo_barras_repetible.sql.'
       );
     }
 
     if (
+      texto.includes(
+        'duplicate key'
+      ) &&
       texto.includes(
         'codigo_interno'
-      ) ||
-      texto.includes(
-        'código interno'
       )
     ) {
       return (
-        'El código interno ya está registrado. ' +
-        'Vuelve a generar el código del producto.'
-      );
-    }
-
-    if (
-      texto.includes('duplicate') ||
-      texto.includes('unique')
-    ) {
-      return (
-        'Existe un dato único repetido. Revisa el código del producto; ' +
-        'la marca puede reutilizarse con modelos diferentes.'
+        'No se pudo generar el identificador interno. ' +
+        'Vuelve a guardar el producto.'
       );
     }
 
     if (
       texto.includes(
-        'crear_categoria_si_no_existe'
+        'solo el administrador'
       )
     ) {
-      return 'Falta instalar la función para crear categorías.';
+      return (
+        'Solo el administrador puede realizar esta acción.'
+      );
     }
 
     if (
       texto.includes(
-        'crear_marca_si_no_existe'
+        'perfil activo'
       )
     ) {
-      return 'Falta instalar la función para crear marcas.';
+      return (
+        'El usuario autenticado no tiene un perfil activo.'
+      );
     }
 
-    return mensaje;
+    return mensaje ||
+      'Ocurrió un error al procesar el producto.';
   }
 }

@@ -747,7 +747,10 @@
           [disabled]="guardando"
           aria-label="Cerrar formulario"
         >
-          ×
+          <i
+            class="bi bi-x-lg"
+            aria-hidden="true"
+          ></i>
         </button>
       </header>
 
@@ -758,26 +761,71 @@
       >
         <div class="form-grid">
           <div
-            class="field"
+            class="field scanner-measure-field"
             *ngIf="usarFormularioCompleto"
           >
             <label for="codigoProducto">
-              Código de barras
+              Código de barras de la montura *
             </label>
 
-            <div class="input-with-button">
+            <div class="scanner-measure-input">
+              <i
+                class="bi bi-upc-scan"
+                aria-hidden="true"
+              ></i>
+
               <input
                 id="codigoProducto"
                 formControlName="codigoBarras"
-                placeholder="OPT-000001"
+                autocomplete="off"
+                placeholder="Escanea: 52-18-140"
+                (keydown.enter)="
+                  procesarLecturaEscaner(
+                    $event
+                  )
+                "
+                (blur)="
+                  procesarLecturaEscaner()
+                "
               />
+
               <button
                 type="button"
-                (click)="generarCodigo()"
+                (click)="
+                  procesarLecturaEscaner()
+                "
               >
-                Generar
+                <i
+                  class="bi bi-arrow-down-circle"
+                  aria-hidden="true"
+                ></i>
+
+                Cargar medida
               </button>
             </div>
+
+            <small>
+              Este es el código físico que trae la montura.
+              Puede repetirse en diferentes marcas. Al escanearlo,
+              también se completa automáticamente el campo Medida.
+            </small>
+
+            <small
+              class="scanner-measure-message"
+              *ngIf="mensajeLecturaEscaner"
+            >
+              {{ mensajeLecturaEscaner }}
+            </small>
+
+            <small
+              class="field-error"
+              *ngIf="
+                form.get('codigoBarras')?.touched &&
+                form.get('codigoBarras')?.invalid
+              "
+            >
+              Escanea o escribe el código de la montura.
+            </small>
           </div>
 
           <div class="field">
@@ -1093,6 +1141,7 @@
               "
             >
               La medida es obligatoria para esta categoría.
+              También puede cargarse usando el lector de la parte superior.
             </small>
           </div>
 
@@ -1156,7 +1205,7 @@
                 modoEdicion
                   ? 'El stock actual no se modifica desde Editar. Usa Movimientos de inventario para ajustes manuales.'
                   : usarFormularioCompleto
-                    ? 'Si la marca y el modelo ya existen, esta cantidad se suma automáticamente al stock.'
+                    ? 'Si coinciden marca, modelo, color y medida, esta cantidad se suma automáticamente al stock.'
                     : 'Cantidad inicial de este producto.'
               }}
             </small>
