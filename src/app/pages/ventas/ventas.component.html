@@ -726,15 +726,32 @@
           <section class="payment-panel">
             <div class="summary-label-row">
               <div>
-                <label for="aCuenta">Pago recibido</label>
-                <small>Monto que entrega el cliente hoy</small>
+                <label for="aCuenta">
+                  {{
+                    pagoPorSeguro
+                      ? 'Cobertura del seguro'
+                      : 'Pago recibido'
+                  }}
+                </label>
+
+                <small>
+                  {{
+                    pagoPorSeguro
+                      ? 'El seguro cubre automáticamente el total'
+                      : 'Monto que entrega el cliente hoy'
+                  }}
+                </small>
               </div>
 
               <button
                 type="button"
                 class="pay-all-btn"
                 (click)="aplicarPagoTotal()"
-                [disabled]="carrito.length === 0 || procesandoVenta"
+                [disabled]="
+                  carrito.length === 0 ||
+                  procesandoVenta ||
+                  pagoPorSeguro
+                "
               >
                 <i class="bi bi-cash-stack" aria-hidden="true"></i>
                 Pagar todo
@@ -751,7 +768,10 @@
                 [max]="totalFinal()"
                 [(ngModel)]="aCuenta"
                 (ngModelChange)="actualizarACuenta()"
-                [disabled]="procesandoVenta"
+                [disabled]="
+                  procesandoVenta ||
+                  pagoPorSeguro
+                "
               />
             </div>
 
@@ -785,6 +805,35 @@
               <button type="button" class="metodo-btn" [class.active]="metodoPago === 'TRANSFERENCIA'" (click)="seleccionarMetodo('TRANSFERENCIA')">
                 <span class="metodo-icon"><i class="bi bi-bank" aria-hidden="true"></i></span>
                 <span class="metodo-nombre">Transferencia</span>
+              </button>
+
+              <button
+                type="button"
+                class="metodo-btn metodo-seguro"
+                [class.active]="
+                  metodoPago === 'SEGURO'
+                "
+                (click)="
+                  seleccionarMetodo(
+                    'SEGURO'
+                  )
+                "
+                [disabled]="procesandoVenta"
+              >
+                <span class="metodo-icon">
+                  <i
+                    class="bi bi-shield-check"
+                    aria-hidden="true"
+                  ></i>
+                </span>
+
+                <span class="metodo-nombre">
+                  Seguro
+                </span>
+
+                <small class="metodo-ayuda">
+                  Cobertura total
+                </small>
               </button>
             </div>
           </section>

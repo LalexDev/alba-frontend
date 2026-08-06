@@ -181,12 +181,6 @@ export class ProductoService {
             request.nombre || ''
           ).trim();
 
-        if (!codigoBarras) {
-          throw new Error(
-            'Escanea o escribe el código de barras de la montura.'
-          );
-        }
-
         if (!nombre) {
           throw new Error(
             'El nombre del producto es obligatorio.'
@@ -213,9 +207,9 @@ export class ProductoService {
               'crear_producto',
               {
                 /*
-                 * Supabase genera el código interno OPT.
-                 * El código físico escaneado se guarda en
-                 * codigo_barras y puede repetirse.
+                 * Monturas y estuches envían el código físico
+                 * escaneado. Los productos simplificados pueden
+                 * enviar NULL y Supabase genera un código técnico.
                  */
                 p_codigo_interno:
                   request.codigoInterno

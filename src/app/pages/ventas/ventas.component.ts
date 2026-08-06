@@ -656,6 +656,11 @@ export class VentasComponent implements AfterViewInit {
       this.totalFinal();
   }
 
+  get pagoPorSeguro(): boolean {
+    return this.metodoPago ===
+      'SEGURO';
+  }
+
   actualizarDescuento(): void {
     const valor =
       Number(
@@ -671,6 +676,13 @@ export class VentasComponent implements AfterViewInit {
   }
 
   actualizarACuenta(): void {
+    if (this.pagoPorSeguro) {
+      this.aCuenta =
+        this.totalFinal();
+
+      return;
+    }
+
     const valor =
       Number(
         this.aCuenta || 0
@@ -724,6 +736,16 @@ export class VentasComponent implements AfterViewInit {
     }
 
     this.metodoPago = metodo;
+
+    if (
+      metodo === 'SEGURO'
+    ) {
+      this.aCuenta =
+        this.totalFinal();
+
+      this.mensaje =
+        'El seguro cubrirá la totalidad de la venta.';
+    }
   }
 
   /* =====================================================
@@ -1790,9 +1812,11 @@ export class VentasComponent implements AfterViewInit {
       );
 
     const adelanto =
-      Number(
-        this.aCuenta || 0
-      );
+      this.pagoPorSeguro
+        ? totalVenta
+        : Number(
+            this.aCuenta || 0
+          );
 
     if (
       !Number.isFinite(descuento) ||
@@ -2141,6 +2165,13 @@ export class VentasComponent implements AfterViewInit {
     ) {
       this.descuentoManual =
         this.maximoDescuentoManual();
+    }
+
+    if (this.pagoPorSeguro) {
+      this.aCuenta =
+        this.totalFinal();
+
+      return;
     }
 
     if (

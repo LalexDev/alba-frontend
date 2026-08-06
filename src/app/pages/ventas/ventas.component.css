@@ -363,7 +363,7 @@
 
 .metodos-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
 }
@@ -1719,5 +1719,58 @@
 
   .scanner-result-select {
     width: 100%;
+  }
+}
+
+
+/* =====================================================
+   MÉTODO DE PAGO: SEGURO
+   ===================================================== */
+
+.metodo-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.metodo-seguro {
+  position: relative;
+}
+
+.metodo-ayuda {
+  display: block;
+  color: #667085;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.metodo-seguro.active .metodo-ayuda {
+  color: #0e78a5;
+}
+
+.payment-input input:disabled {
+  color: #0e78a5;
+  background: #f4fbfe;
+  font-weight: 900;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+@media (max-width: 1050px) {
+  .metodos-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 500px) {
+  .metodos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metodo-ayuda {
+    margin-left: auto;
+    text-align: right;
   }
 }

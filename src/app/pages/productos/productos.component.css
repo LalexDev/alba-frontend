@@ -1926,3 +1926,16 @@ button:disabled {
     grid-column: auto;
   }
 }
+
+
+/* =====================================================
+   PRODUCTOS SIMPLIFICADOS
+   ===================================================== */
+
+.category-form-note small {
+  display: block;
+  margin-top: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+}

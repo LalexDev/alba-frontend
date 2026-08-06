@@ -104,10 +104,7 @@ export class ProductosComponent
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
-      codigoBarras: [
-        '',
-        Validators.required
-      ],
+      codigoBarras: [''],
 
       nombre: [
         '',
@@ -1151,8 +1148,29 @@ export class ProductosComponent
     if (this.form.invalid) {
       this.form.markAllAsTouched();
 
+      const camposInvalidos =
+        Object.entries(
+          this.form.controls
+        )
+          .filter(
+            ([, control]) =>
+              control.enabled &&
+              control.invalid
+          )
+          .map(
+            ([nombre]) =>
+              nombre
+          );
+
+      console.warn(
+        'Campos inválidos del producto:',
+        camposInvalidos
+      );
+
       this.error =
-        'Completa los campos obligatorios.';
+        this.usarFormularioCompleto
+          ? 'Completa los campos obligatorios de la montura.'
+          : 'Completa nombre, categoría, precio de compra, precio de venta y cantidad.';
 
       return;
     }
@@ -1414,103 +1432,803 @@ export class ProductosComponent
     }
 
     /*
-     * Se exporta this.productos para incluir
-     * todo el inventario, sin depender de filtros.
+     * Cada producto o variante se exporta en una fila.
+     * Las monturas se ordenan por:
+     *
+     * marca -> modelo -> color -> medida.
+     *
+     * La marca y su stock total se muestran como un
+     * bloque vertical, igual al formato proporcionado.
      */
-    const filasInventario =
-      this.inventarioPorMarca.map(
-        producto => ({
-          'Categoría':
-            producto.categoria?.nombre ||
-            'Sin categoría',
-
-          'Marca':
-            producto.marca?.nombre ||
-            producto.nombre ||
-            'Sin marca',
-
-          'Modelos registrados':
-            producto.modelosRegistrados.join(', ') ||
-            'Sin modelo',
-
-          'Cantidad de modelos':
-            producto.cantidadModelos,
-
-          'Características': [
-            producto.sexosRegistrados.length
-              ? `Sexo: ${producto.sexosRegistrados.join(', ')}`
-              : '',
-            producto.color
-              ? `Color: ${producto.color}`
-              : '',
-            producto.medida
-              ? `Medida: ${producto.medida}`
-              : '',
-            producto.material
-              ? `Material: ${producto.material}`
-              : ''
-          ]
-            .filter(Boolean)
-            .join(' | ') ||
-            'No aplica',
-
-          'Precio compra':
-            this.rangoPrecio(
-              producto.precioCompraMin,
-              producto.precioCompraMax
-            ),
-
-          'Precio venta':
-            this.rangoPrecio(
-              producto.precioVentaMin,
-              producto.precioVentaMax
-            ),
-
-          'Stock total de la marca':
-            Number(
-              producto.stockActual || 0
-            ),
-
-          'Stock mínimo de la marca':
-            Number(
-              producto.stockMinimo ?? 5
+    const productosOrdenados =
+      [...this.productos]
+        .filter(
+          producto =>
+            producto.estado
+        )
+        .sort(
+          (
+            a,
+            b
+          ) =>
+            this.compararProductosExcel(
+              a,
+              b
             )
-        })
-      );
+        );
 
-    const hoja =
-      utils.json_to_sheet(
-        filasInventario
-      );
-
-    hoja['!cols'] = [
-      { wch: 24 },
-      { wch: 22 },
-      { wch: 45 },
-      { wch: 18 },
-      { wch: 40 },
-      { wch: 20 },
-      { wch: 20 },
-      { wch: 22 },
-      { wch: 24 }
+    const gruposHojas = [
+      {
+        nombre:
+          'Monturas',
+        productos:
+          productosOrdenados.filter(
+            producto =>
+              this.tipoHojaInventario(
+                producto
+              ) ===
+                'MONTURAS'
+          )
+      },
+      {
+        nombre:
+          'Estuches',
+        productos:
+          productosOrdenados.filter(
+            producto =>
+              this.tipoHojaInventario(
+                producto
+              ) ===
+                'ESTUCHES'
+          )
+      },
+      {
+        nombre:
+          'Liquidos limpiadores',
+        productos:
+          productosOrdenados.filter(
+            producto =>
+              this.tipoHojaInventario(
+                producto
+              ) ===
+                'LIQUIDOS'
+          )
+      },
+      {
+        nombre:
+          'Otros',
+        productos:
+          productosOrdenados.filter(
+            producto =>
+              this.tipoHojaInventario(
+                producto
+              ) ===
+                'OTROS'
+          )
+      }
     ];
 
     const libro =
       utils.book_new();
 
-    utils.book_append_sheet(
-      libro,
-      hoja,
-      'Inventario'
-    );
+    for (
+      const grupo of
+      gruposHojas
+    ) {
+      const hoja =
+        this.crearHojaInventarioExcel(
+          grupo.productos
+        );
+
+      utils.book_append_sheet(
+        libro,
+        hoja,
+        grupo.nombre
+      );
+    }
 
     writeFileXLSX(
       libro,
-      `inventario-optica-alba-${this.fechaArchivo()}.xlsx`
+      `inventario-optica-alba-${this.fechaArchivo()}.xlsx`,
+      {
+        compression:
+          true,
+        cellStyles:
+          true
+      }
     );
 
     this.ok =
-      'Inventario descargado correctamente.';
+      'Inventario descargado por marca y con cada producto en una fila.';
+  }
+
+  private crearHojaInventarioExcel(
+    productos: Producto[]
+  ) {
+    const cabeceras = [
+      'categoria',
+      'marca',
+      'modelo',
+      'cantidad',
+      'caracteristicas/medidas',
+      'precio de compra',
+      'precio de venta',
+      'stock total de la marca',
+      'stock minimo'
+    ];
+
+    /*
+     * Se conserva una fila vacía debajo de la cabecera,
+     * igual al archivo de ejemplo proporcionado.
+     */
+    const filas:
+      (
+        string |
+        number |
+        null
+      )[][] = [
+        cabeceras,
+        Array(
+          cabeceras.length
+        ).fill(null)
+      ];
+
+    const combinaciones:
+      {
+        s: {
+          r: number;
+          c: number;
+        };
+        e: {
+          r: number;
+          c: number;
+        };
+      }[] = [];
+
+    const gruposMarca =
+      new Map<
+        string,
+        Producto[]
+      >();
+
+    for (
+      const producto of
+      productos
+    ) {
+      const categoria =
+        producto.categoria?.nombre ||
+        'Sin categoría';
+
+      const marca =
+        producto.marca?.nombre ||
+        '';
+
+      /*
+       * Los artículos sin marca se agrupan por su nombre,
+       * evitando sumar productos distintos bajo "Sin marca".
+       */
+      const claveMarca =
+        marca
+          ? [
+              this.normalizarTexto(
+                categoria
+              ),
+              this.normalizarTexto(
+                marca
+              )
+            ].join('|')
+          : [
+              this.normalizarTexto(
+                categoria
+              ),
+              'SIN-MARCA',
+              this.normalizarTexto(
+                producto.nombre
+              )
+            ].join('|');
+
+      const lista =
+        gruposMarca.get(
+          claveMarca
+        ) ?? [];
+
+      lista.push(
+        producto
+      );
+
+      gruposMarca.set(
+        claveMarca,
+        lista
+      );
+    }
+
+    const gruposOrdenados =
+      Array.from(
+        gruposMarca.values()
+      )
+        .map(
+          grupo =>
+            [...grupo].sort(
+              (
+                a,
+                b
+              ) =>
+                this.compararProductosExcel(
+                  a,
+                  b
+                )
+            )
+        )
+        .sort(
+          (
+            grupoA,
+            grupoB
+          ) => {
+            const primeroA =
+              grupoA[0];
+
+            const primeroB =
+              grupoB[0];
+
+            const marcaA =
+              primeroA?.marca?.nombre ||
+              primeroA?.nombre ||
+              '';
+
+            const marcaB =
+              primeroB?.marca?.nombre ||
+              primeroB?.nombre ||
+              '';
+
+            return marcaA.localeCompare(
+              marcaB,
+              'es',
+              {
+                sensitivity:
+                  'base',
+                numeric:
+                  true
+              }
+            );
+          }
+        );
+
+    for (
+      const grupo of
+      gruposOrdenados
+    ) {
+      const primero =
+        grupo[0];
+
+      if (!primero) {
+        continue;
+      }
+
+      const filaInicial =
+        filas.length;
+
+      const marca =
+        primero.marca?.nombre ||
+        'Sin marca';
+
+      const stockTotalMarca =
+        grupo.reduce(
+          (
+            total,
+            producto
+          ) =>
+            total +
+            Number(
+              producto.stockActual ||
+              0
+            ),
+          0
+        );
+
+      for (
+        const producto of
+        grupo
+      ) {
+        filas.push([
+          producto.categoria?.nombre ||
+            'Sin categoría',
+
+          marca,
+
+          producto.modelo ||
+            producto.nombre ||
+            'Sin modelo',
+
+          Number(
+            producto.stockActual ||
+            0
+          ),
+
+          this.caracteristicasProductoExcel(
+            producto
+          ),
+
+          Number(
+            producto.precioCompra ||
+            0
+          ),
+
+          Number(
+            producto.precioVenta ||
+            0
+          ),
+
+          stockTotalMarca,
+
+          Number(
+            producto.stockMinimo ??
+            5
+          )
+        ]);
+      }
+
+      const filaFinal =
+        filas.length - 1;
+
+      /*
+       * Si una marca tiene varias monturas:
+       * - se combina verticalmente la marca;
+       * - se combina verticalmente el stock total;
+       * - cada modelo permanece en su propia fila.
+       */
+      if (
+        filaFinal >
+        filaInicial
+      ) {
+        combinaciones.push(
+          {
+            s: {
+              r:
+                filaInicial,
+              c:
+                1
+            },
+            e: {
+              r:
+                filaFinal,
+              c:
+                1
+            }
+          },
+          {
+            s: {
+              r:
+                filaInicial,
+              c:
+                7
+            },
+            e: {
+              r:
+                filaFinal,
+              c:
+                7
+            }
+          }
+        );
+      }
+    }
+
+    const hoja =
+      utils.aoa_to_sheet(
+        filas
+      );
+
+    hoja['!merges'] =
+      combinaciones;
+
+    hoja['!cols'] = [
+      { wch: 20 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 12 },
+      { wch: 48 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 24 },
+      { wch: 16 }
+    ];
+
+    hoja['!rows'] = [
+      { hpt: 30 },
+      { hpt: 9 }
+    ];
+
+    hoja['!autofilter'] = {
+      ref:
+        'A1:I1'
+    };
+
+    hoja['!margins'] = {
+      left:
+        0.3,
+      right:
+        0.3,
+      top:
+        0.5,
+      bottom:
+        0.5,
+      header:
+        0.2,
+      footer:
+        0.2
+    };
+
+    /*
+     * Formato visual basado en el Excel enviado:
+     * cabecera amarilla, texto negro y filas separadas.
+     *
+     * Se utiliza "as any" para mantener compatibilidad
+     * con distintas versiones de SheetJS.
+     */
+    const rango =
+      utils.decode_range(
+        hoja['!ref'] ||
+        'A1:I2'
+      );
+
+    for (
+      let fila =
+        rango.s.r;
+      fila <=
+        rango.e.r;
+      fila += 1
+    ) {
+      for (
+        let columna =
+          rango.s.c;
+        columna <=
+          rango.e.c;
+        columna += 1
+      ) {
+        const referencia =
+          utils.encode_cell({
+            r:
+              fila,
+            c:
+              columna
+          });
+
+        const celda =
+          hoja[
+            referencia
+          ];
+
+        if (!celda) {
+          continue;
+        }
+
+        const estiloBase = {
+          font: {
+            name:
+              'Arial',
+            sz:
+              fila === 0
+                ? 12
+                : 10,
+            bold:
+              fila === 0
+          },
+          alignment: {
+            vertical:
+              'center',
+            horizontal:
+              fila === 0
+                ? 'center'
+                : (
+                    columna === 3 ||
+                    columna === 5 ||
+                    columna === 6 ||
+                    columna === 7 ||
+                    columna === 8
+                      ? 'center'
+                      : 'left'
+                  ),
+            wrapText:
+              true
+          },
+          border: {
+            top: {
+              style:
+                'thin',
+              color: {
+                rgb:
+                  'D9D9D9'
+              }
+            },
+            bottom: {
+              style:
+                'thin',
+              color: {
+                rgb:
+                  'D9D9D9'
+              }
+            },
+            left: {
+              style:
+                'thin',
+              color: {
+                rgb:
+                  'D9D9D9'
+              }
+            },
+            right: {
+              style:
+                'thin',
+              color: {
+                rgb:
+                  'D9D9D9'
+              }
+            }
+          }
+        };
+
+        (
+          celda as any
+        ).s = {
+          ...estiloBase,
+          fill:
+            fila === 0
+              ? {
+                  patternType:
+                    'solid',
+                  fgColor: {
+                    rgb:
+                      'FFF200'
+                  }
+                }
+              : {
+                  patternType:
+                    'solid',
+                  fgColor: {
+                    rgb:
+                      'FFFFFF'
+                  }
+                }
+        };
+
+        if (
+          fila >= 2 &&
+          (
+            columna === 5 ||
+            columna === 6
+          )
+        ) {
+          celda.z =
+            '"S/ " #,##0.00';
+        }
+
+        if (
+          fila >= 2 &&
+          (
+            columna === 3 ||
+            columna === 7 ||
+            columna === 8
+          )
+        ) {
+          celda.z =
+            '0';
+        }
+      }
+    }
+
+    return hoja;
+  }
+
+  private caracteristicasProductoExcel(
+    producto: Producto
+  ): string {
+    const caracteristicas = [
+      producto.sexo
+        ? (
+            producto.sexo === 'F'
+              ? 'Sexo: Femenino'
+              : 'Sexo: Masculino'
+          )
+        : '',
+
+      producto.color
+        ? `Color: ${producto.color}`
+        : '',
+
+      producto.medida
+        ? `Medida: ${producto.medida}`
+        : '',
+
+      producto.material
+        ? `Material: ${producto.material}`
+        : '',
+
+      producto.descripcion
+        ? `Descripción: ${producto.descripcion}`
+        : ''
+    ]
+      .filter(
+        Boolean
+      );
+
+    return caracteristicas.join(
+      ' | '
+    ) ||
+      'No aplica';
+  }
+
+  private tipoHojaInventario(
+    producto: Producto
+  ):
+    'MONTURAS' |
+    'ESTUCHES' |
+    'LIQUIDOS' |
+    'OTROS' {
+    const categoria =
+      this.normalizarTexto(
+        producto.categoria?.nombre ||
+        ''
+      );
+
+    if (
+      categoria.includes(
+        'montura'
+      )
+    ) {
+      return 'MONTURAS';
+    }
+
+    if (
+      categoria.includes(
+        'estuche'
+      )
+    ) {
+      return 'ESTUCHES';
+    }
+
+    if (
+      categoria.includes(
+        'liquid'
+      ) ||
+      categoria.includes(
+        'limpiador'
+      ) ||
+      categoria.includes(
+        'antiempan'
+      )
+    ) {
+      return 'LIQUIDOS';
+    }
+
+    return 'OTROS';
+  }
+
+  private compararProductosExcel(
+    a: Producto,
+    b: Producto
+  ): number {
+    const categoriaA =
+      a.categoria?.nombre ||
+      '';
+
+    const categoriaB =
+      b.categoria?.nombre ||
+      '';
+
+    const porCategoria =
+      categoriaA.localeCompare(
+        categoriaB,
+        'es',
+        {
+          sensitivity:
+            'base',
+          numeric:
+            true
+        }
+      );
+
+    if (
+      porCategoria !== 0
+    ) {
+      return porCategoria;
+    }
+
+    const marcaA =
+      a.marca?.nombre ||
+      a.nombre ||
+      '';
+
+    const marcaB =
+      b.marca?.nombre ||
+      b.nombre ||
+      '';
+
+    const porMarca =
+      marcaA.localeCompare(
+        marcaB,
+        'es',
+        {
+          sensitivity:
+            'base',
+          numeric:
+            true
+        }
+      );
+
+    if (
+      porMarca !== 0
+    ) {
+      return porMarca;
+    }
+
+    const modeloA =
+      a.modelo ||
+      a.nombre ||
+      '';
+
+    const modeloB =
+      b.modelo ||
+      b.nombre ||
+      '';
+
+    const porModelo =
+      modeloA.localeCompare(
+        modeloB,
+        'es',
+        {
+          sensitivity:
+            'base',
+          numeric:
+            true
+        }
+      );
+
+    if (
+      porModelo !== 0
+    ) {
+      return porModelo;
+    }
+
+    const porColor =
+      String(
+        a.color ||
+        ''
+      ).localeCompare(
+        String(
+          b.color ||
+          ''
+        ),
+        'es',
+        {
+          sensitivity:
+            'base',
+          numeric:
+            true
+        }
+      );
+
+    if (
+      porColor !== 0
+    ) {
+      return porColor;
+    }
+
+    return String(
+      a.medida ||
+      ''
+    ).localeCompare(
+      String(
+        b.medida ||
+        ''
+      ),
+      'es',
+      {
+        sensitivity:
+          'base',
+        numeric:
+          true
+      }
+    );
   }
 
   paginaAnterior(): void {
@@ -1734,6 +2452,16 @@ export class ProductosComponent
     void {
     const formularioCompleto =
       this.usarFormularioCompleto;
+
+    /*
+     * El código físico solo es obligatorio para categorías
+     * completas como Monturas y Estuches.
+     */
+    this.configurarControlCategoria(
+      'codigoBarras',
+      formularioCompleto,
+      formularioCompleto
+    );
 
     this.configurarControlCategoria(
       'marcaId',

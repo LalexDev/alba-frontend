@@ -805,7 +805,7 @@
             </div>
 
             <small>
-              Este es el código físico que trae la montura.
+              Este código solo se solicita para monturas y estuches.
               Puede repetirse en diferentes marcas. Al escanearlo,
               también se completa automáticamente el campo Medida.
             </small>
@@ -895,6 +895,13 @@
             <span>
               {{ mensajeCategoriaFormulario }}
             </span>
+
+            <small
+              *ngIf="usarFormularioSimplificado"
+            >
+              No necesita código de barras, marca, modelo,
+              color, medida, material ni proveedor.
+            </small>
           </div>
 
           <section

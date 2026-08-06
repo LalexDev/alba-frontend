@@ -12,7 +12,8 @@ import { SupabaseService } from './supabase.service';
 export type MetodoPago =
   | 'EFECTIVO'
   | 'YAPE'
-  | 'TRANSFERENCIA';
+  | 'TRANSFERENCIA'
+  | 'SEGURO';
 
 interface RegistrarVentaDb {
   id_venta: number;
@@ -105,7 +106,8 @@ export class VentaService {
     const metodosPermitidos: MetodoPago[] = [
       'EFECTIVO',
       'YAPE',
-      'TRANSFERENCIA'
+      'TRANSFERENCIA',
+      'SEGURO'
     ];
 
     if (!metodosPermitidos.includes(metodo)) {
@@ -259,7 +261,11 @@ export class VentaService {
     );
 
     const adelanto =
-      Number(aCuenta || 0);
+      metodo === 'SEGURO'
+        ? totalCarrito
+        : Number(
+            aCuenta || 0
+          );
 
     if (
       !Number.isFinite(adelanto) ||
