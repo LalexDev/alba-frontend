@@ -1,14 +1,20 @@
-<section class="login-page">
+<div class="login-page">
 
-  <!-- Oscurece la fotografía para mejorar la lectura -->
+  <!-- CAPA OSCURA SOBRE LA IMAGEN -->
   <div class="login-page__overlay"></div>
 
+  <!-- CONTENEDOR PRINCIPAL -->
   <div class="login-container">
 
-    <!-- INFORMACIÓN IZQUIERDA -->
+
+    <!-- =====================================================
+         INFORMACIÓN IZQUIERDA
+         ===================================================== -->
     <div class="login-information">
 
+      <!-- MARCA -->
       <div class="brand-badge">
+
         <div class="brand-icon brand-logo">
           <img
             src="/assets/logo-optica-alba.png"
@@ -18,68 +24,107 @@
 
         <div>
           <strong>Óptica alba</strong>
-          <span>Sistema de ventas e inventario</span>
+
+          <span>
+            Sistema de ventas e inventario
+          </span>
         </div>
+
       </div>
 
+
+      <!-- BADGE -->
       <div class="information-badge">
+
         <i class="bi bi-check-circle-fill"></i>
+
         Gestión rápida, segura y organizada
+
       </div>
 
+
+      <!-- TÍTULO -->
       <h1>
         Controla tus ventas,
-        <span>clientes e inventario.</span>
+        <span>
+          clientes e inventario.
+        </span>
       </h1>
 
+
+      <!-- DESCRIPCIÓN -->
       <p class="information-description">
         Administra monturas, lunas, accesorios, recetas ópticas,
         órdenes de trabajo y productos mediante lector de código
         de barras.
       </p>
 
+
+      <!-- CARACTERÍSTICAS -->
       <div class="information-features">
 
+
+        <!-- INVENTARIO -->
         <div class="feature-card">
+
           <div class="feature-icon">
             <i class="bi bi-box-seam"></i>
           </div>
 
-          <strong>Inventario actualizado</strong>
+          <strong>
+            Inventario actualizado
+          </strong>
 
           <span>
             Controla entradas, salidas y productos con stock bajo.
           </span>
+
         </div>
 
+
+        <!-- ESCÁNER -->
         <div class="feature-card">
+
           <div class="feature-icon">
             <i class="bi bi-upc-scan"></i>
           </div>
 
-          <strong>Ventas por escáner</strong>
+          <strong>
+            Ventas por escáner
+          </strong>
 
           <span>
             Registra productos rápidamente con el lector de barras.
           </span>
+
         </div>
 
+
+        <!-- CLIENTES -->
         <div class="feature-card">
+
           <div class="feature-icon">
             <i class="bi bi-person-vcard"></i>
           </div>
 
-          <strong>Clientes y recetas</strong>
+          <strong>
+            Clientes y recetas
+          </strong>
 
           <span>
             Consulta el historial de atención de cada cliente.
           </span>
+
         </div>
 
       </div>
+
     </div>
 
-    <!-- FORMULARIO DERECHO -->
+
+    <!-- =====================================================
+         FORMULARIO DERECHO
+         ===================================================== -->
     <div class="login-card-container">
 
       <form
@@ -88,24 +133,42 @@
         (ngSubmit)="submit()"
       >
 
+
+        <!-- LOGO -->
         <div class="login-card__icon login-card__logo">
+
           <img
             src="/assets/logo-optica-alba.png"
             alt="Logo Óptica Alba"
           />
+
         </div>
 
-        <h2>alba</h2>
+
+        <!-- NOMBRE -->
+        <h2>
+          alba
+        </h2>
+
 
         <p class="login-subtitle">
           Ingresa con un usuario autorizado
         </p>
 
+
+        <!-- =================================================
+             CORREO
+             ================================================= -->
         <div class="field">
+
           <label for="usernameOrCorreo">
+
             <i class="bi bi-envelope"></i>
+
             Correo electrónico
+
           </label>
+
 
           <input
             id="usernameOrCorreo"
@@ -115,6 +178,8 @@
             autocomplete="username"
           />
 
+
+          <!-- ERROR OBLIGATORIO -->
           <small
             class="field-error"
             *ngIf="
@@ -125,6 +190,8 @@
             El correo es obligatorio.
           </small>
 
+
+          <!-- ERROR EMAIL -->
           <small
             class="field-error"
             *ngIf="
@@ -134,22 +201,70 @@
           >
             Ingresa un correo electrónico válido.
           </small>
+
         </div>
 
+
+        <!-- =================================================
+             CONTRASEÑA
+             ================================================= -->
         <div class="field">
+
           <label for="password">
+
             <i class="bi bi-lock"></i>
+
             Contraseña
+
           </label>
 
-          <input
-            id="password"
-            type="password"
-            formControlName="password"
-            placeholder="Ingresa tu contraseña"
-            autocomplete="current-password"
-          />
 
+          <!-- CONTENEDOR CONTRASEÑA + OJO -->
+          <div class="password-wrapper">
+
+
+            <input
+              id="password"
+              [type]="mostrarPassword ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="Ingresa tu contraseña"
+              autocomplete="current-password"
+              class="password-input"
+            />
+
+
+            <!-- MOSTRAR / OCULTAR -->
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="togglePassword()"
+              [attr.aria-label]="
+                mostrarPassword
+                  ? 'Ocultar contraseña'
+                  : 'Mostrar contraseña'
+              "
+              [attr.title]="
+                mostrarPassword
+                  ? 'Ocultar contraseña'
+                  : 'Mostrar contraseña'
+              "
+            >
+
+              <i
+                class="bi"
+                [ngClass]="
+                  mostrarPassword
+                    ? 'bi-eye-slash'
+                    : 'bi-eye'
+                "
+              ></i>
+
+            </button>
+
+          </div>
+
+
+          <!-- CONTRASEÑA OBLIGATORIA -->
           <small
             class="field-error"
             *ngIf="
@@ -159,78 +274,162 @@
           >
             La contraseña es obligatoria.
           </small>
+
+
+          <!-- MÍNIMO DE CARACTERES -->
+          <small
+            class="field-error"
+            *ngIf="
+              form.get('password')?.touched &&
+              form.get('password')?.hasError('minlength')
+            "
+          >
+            La contraseña debe tener al menos 6 caracteres.
+          </small>
+
         </div>
 
+
+        <!-- =================================================
+             BOTÓN INGRESAR
+             ================================================= -->
         <button
           class="login-button"
           type="submit"
           [disabled]="loading || form.invalid"
         >
+
+
           <span class="button-icon">
             <i class="bi bi-box-arrow-in-right"></i>
           </span>
+
 
           <span>
             {{ loading ? 'Validando...' : 'Ingresar al sistema' }}
           </span>
 
+
           <i class="bi bi-chevron-right"></i>
+
+
         </button>
 
+
+        <!-- =================================================
+             ERROR GENERAL
+             ================================================= -->
         <p
           class="alert-text"
           *ngIf="error"
         >
+
           <i class="bi bi-exclamation-triangle-fill"></i>
+
           {{ error }}
+
         </p>
 
+
+        <!-- =================================================
+             OPCIONES
+             ================================================= -->
         <p class="question-title">
           ¿Qué deseas gestionar hoy?
         </p>
 
+
         <div class="login-options">
 
+
+          <!-- VENTA -->
           <div class="login-option">
+
             <span>
               <i class="bi bi-upc-scan"></i>
             </span>
-            <strong>Realizar venta</strong>
-            <small>Escanear productos</small>
+
+            <strong>
+              Realizar venta
+            </strong>
+
+            <small>
+              Escanear productos
+            </small>
+
           </div>
 
+
+          <!-- INVENTARIO -->
           <div class="login-option">
+
             <span>
               <i class="bi bi-box-seam"></i>
             </span>
-            <strong>Ver inventario</strong>
-            <small>Consultar existencias</small>
+
+            <strong>
+              Ver inventario
+            </strong>
+
+            <small>
+              Consultar existencias
+            </small>
+
           </div>
 
+
+          <!-- CLIENTES -->
           <div class="login-option">
+
             <span>
               <i class="bi bi-person-search"></i>
             </span>
-            <strong>Buscar cliente</strong>
-            <small>Historial y recetas</small>
+
+            <strong>
+              Buscar cliente
+            </strong>
+
+            <small>
+              Historial y recetas
+            </small>
+
           </div>
 
         </div>
 
+
+        <!-- =================================================
+             SEGURIDAD
+             ================================================= -->
         <div class="login-security">
-          <span>
-            <i class="bi bi-stopwatch"></i>
-            Atención rápida
-          </span>
+
 
           <span>
-            <i class="bi bi-shield-lock"></i>
-            Acceso seguro
+
+            <i class="bi bi-stopwatch"></i>
+
+            Atención rápida
+
           </span>
+
+
+          <span>
+
+            <i class="bi bi-shield-lock"></i>
+
+            Acceso seguro
+
+          </span>
+
+
         </div>
 
+
       </form>
+
     </div>
 
+
   </div>
-</section>
+
+</div>

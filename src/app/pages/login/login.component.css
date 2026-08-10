@@ -7,6 +7,7 @@
   box-sizing: border-box;
 }
 
+
 /* ======================================================
    PÁGINA PRINCIPAL
    ====================================================== */
@@ -23,6 +24,7 @@
   background-attachment: fixed;
 }
 
+
 .login-page__overlay {
   position: absolute;
   inset: 0;
@@ -38,6 +40,7 @@
     );
 }
 
+
 /* ======================================================
    CONTENEDOR PRINCIPAL
    ====================================================== */
@@ -50,12 +53,16 @@
   min-height: 100vh;
 
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(390px, 0.75fr);
+  grid-template-columns:
+    minmax(0, 1.25fr)
+    minmax(390px, 0.75fr);
+
   gap: 48px;
   align-items: center;
 
   padding: 46px 5%;
 }
+
 
 /* ======================================================
    INFORMACIÓN IZQUIERDA
@@ -64,15 +71,20 @@
 .login-information {
   width: 100%;
   max-width: 760px;
+
   color: #ffffff;
 }
+
 
 .brand-badge {
   display: inline-flex;
   align-items: center;
+
   gap: 14px;
+
   margin-bottom: 46px;
 }
+
 
 .brand-icon {
   width: 54px;
@@ -84,6 +96,7 @@
   border-radius: 16px;
 
   background: #ffffff;
+
   border: 1px solid rgba(255, 255, 255, 0.80);
 
   box-shadow:
@@ -93,84 +106,122 @@
   overflow: hidden;
 }
 
+
 .brand-logo {
   padding: 7px;
 }
 
+
 .brand-logo img {
   width: 100%;
   height: 100%;
+
   display: block;
+
   object-fit: contain;
 }
+
 
 .brand-badge strong,
 .brand-badge span {
   display: block;
 }
 
+
 .brand-badge strong {
   font-size: 25px;
   line-height: 1.1;
+
   font-weight: 900;
 }
 
+
 .brand-badge span {
   margin-top: 4px;
+
   font-size: 12px;
+
   color: rgba(255, 255, 255, 0.88);
 }
+
+
+/* ======================================================
+   BADGE INFORMACIÓN
+   ====================================================== */
 
 .information-badge {
   width: fit-content;
 
   display: flex;
   align-items: center;
+
   gap: 9px;
 
   margin-bottom: 24px;
+
   padding: 10px 17px;
 
   border-radius: 999px;
 
   color: #ffffff;
+
   background: rgba(21, 147, 199, 0.92);
+
   border: 1px solid rgba(82, 233, 239, 0.22);
 
   font-size: 14px;
   font-weight: 800;
 
-  box-shadow: 0 12px 24px rgba(21, 147, 199, 0.20);
+  box-shadow:
+    0 12px 24px rgba(21, 147, 199, 0.20);
 }
+
 
 .information-badge i {
   font-size: 16px;
+
   color: #ffffff;
 }
 
+
+/* ======================================================
+   TÍTULO PRINCIPAL
+   ====================================================== */
+
 .login-information h1 {
   max-width: 690px;
+
   margin: 0 0 22px;
 
   font-size: clamp(46px, 5vw, 78px);
+
   line-height: 0.98;
+
   letter-spacing: -2px;
+
   font-weight: 900;
 }
 
+
 .login-information h1 span {
   display: block;
+
   color: #29e5e8;
 }
 
+
 .information-description {
   max-width: 680px;
+
   margin: 0 0 32px;
 
   color: rgba(255, 255, 255, 0.92);
+
   font-size: 18px;
+
   line-height: 1.6;
 }
+
 
 /* ======================================================
    TARJETAS DE BENEFICIOS
@@ -180,26 +231,37 @@
   max-width: 760px;
 
   display: grid;
+
   grid-template-columns: repeat(3, 1fr);
 
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border:
+    1px solid rgba(255, 255, 255, 0.16);
+
   border-radius: 22px;
+
   overflow: hidden;
 
-  background: rgba(2, 22, 40, 0.66);
+  background:
+    rgba(2, 22, 40, 0.66);
+
   backdrop-filter: blur(12px);
 }
 
+
 .feature-card {
   min-height: 152px;
+
   padding: 22px 20px;
 
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  border-right:
+    1px solid rgba(255, 255, 255, 0.12);
 }
+
 
 .feature-card:last-child {
   border-right: 0;
 }
+
 
 .feature-icon {
   width: 42px;
@@ -209,34 +271,49 @@
   place-items: center;
 
   margin-bottom: 13px;
+
   border-radius: 13px;
 
   color: #2de3e7;
-  background: rgba(21, 147, 199, 0.25);
+
+  background:
+    rgba(21, 147, 199, 0.25);
 }
+
 
 .feature-icon i {
   font-size: 21px;
+
   color: #2de3e7;
 }
+
 
 .feature-card strong,
 .feature-card span {
   display: block;
 }
 
+
 .feature-card strong {
   margin-bottom: 7px;
+
   color: #ffffff;
+
   font-size: 14px;
+
   font-weight: 800;
 }
 
+
 .feature-card span {
-  color: rgba(255, 255, 255, 0.78);
+  color:
+    rgba(255, 255, 255, 0.78);
+
   font-size: 12px;
+
   line-height: 1.45;
 }
+
 
 /* ======================================================
    PANEL DEL LOGIN
@@ -244,18 +321,24 @@
 
 .login-card-container {
   display: flex;
+
   justify-content: flex-end;
+
   align-items: center;
 }
 
+
 .login-card {
   width: 100%;
+
   max-width: 530px;
 
   padding: 36px 34px 28px;
 
   border-radius: 30px;
-  background: rgba(255, 255, 255, 0.98);
+
+  background:
+    rgba(255, 255, 255, 0.98);
 
   box-shadow:
     0 30px 80px rgba(0, 13, 30, 0.30),
@@ -264,6 +347,11 @@
   text-align: center;
 }
 
+
+/* ======================================================
+   LOGO LOGIN
+   ====================================================== */
+
 .login-card__icon {
   width: 74px;
   height: 74px;
@@ -271,12 +359,15 @@
   display: grid;
   place-items: center;
 
-  margin: 0 auto 18px;
+  margin:
+    0 auto 18px;
 
   border-radius: 22px;
 
   background: #ffffff;
-  border: 1px solid rgba(21, 147, 199, 0.25);
+
+  border:
+    1px solid rgba(21, 147, 199, 0.25);
 
   box-shadow:
     0 14px 32px rgba(21, 147, 199, 0.20),
@@ -285,32 +376,51 @@
   overflow: hidden;
 }
 
+
 .login-card__logo {
   padding: 9px;
 }
 
+
 .login-card__logo img {
   width: 100%;
   height: 100%;
+
   display: block;
+
   object-fit: contain;
 }
 
+
+/* ======================================================
+   TÍTULO LOGIN
+   ====================================================== */
+
 .login-card h2 {
   max-width: 410px;
-  margin: 0 auto 5px;
+
+  margin:
+    0 auto 5px;
 
   color: #0b3348;
+
   font-size: 35px;
+
   line-height: 1.08;
+
   font-weight: 900;
 }
 
+
 .login-subtitle {
-  margin: 0 0 25px;
+  margin:
+    0 0 25px;
+
   color: #526879;
+
   font-size: 14px;
 }
+
 
 /* ======================================================
    FORMULARIO
@@ -318,37 +428,52 @@
 
 .field {
   margin-bottom: 17px;
+
   text-align: left;
 }
 
+
 .field label {
   display: flex;
+
   align-items: center;
+
   gap: 8px;
 
   margin-bottom: 7px;
 
   color: #172d3b;
+
   font-size: 13px;
+
   font-weight: 800;
 }
 
+
 .field label i {
   color: #1593c7;
+
   font-size: 15px;
 }
 
+
 .field input {
   width: 100%;
+
   height: 53px;
 
-  padding: 0 16px;
+  padding:
+    0 16px;
 
-  border: 1px solid #d4dee5;
+  border:
+    1px solid #d4dee5;
+
   border-radius: 14px;
+
   outline: none;
 
   color: #152b38;
+
   background: #f4f8fa;
 
   font: inherit;
@@ -359,49 +484,192 @@
     background 0.2s ease;
 }
 
+
 .field input:focus {
   border-color: #1593c7;
+
   background: #ffffff;
 
-  box-shadow: 0 0 0 4px rgba(21, 147, 199, 0.13);
+  box-shadow:
+    0 0 0 4px rgba(21, 147, 199, 0.13);
 }
+
+
+/* ======================================================
+   ERRORES CAMPOS
+   ====================================================== */
 
 .field-error {
   display: block;
+
   margin-top: 6px;
 
   color: #b91c1c;
+
   font-size: 12px;
+
   font-weight: 700;
 }
 
+
 /* ======================================================
-   BOTÓN
+   MOSTRAR / OCULTAR CONTRASEÑA
+   ====================================================== */
+
+.password-wrapper {
+  position: relative;
+
+  width: 100%;
+}
+
+
+/* Input de contraseña */
+
+.password-wrapper .password-input {
+  width: 100%;
+
+  padding-right: 60px;
+}
+
+
+/* Botón ojo */
+
+.password-toggle {
+  position: absolute;
+
+  top: 50%;
+
+  right: 11px;
+
+  transform:
+    translateY(-50%);
+
+  width: 42px;
+
+  height: 42px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 0;
+
+  margin: 0;
+
+  border: 0;
+
+  border-radius: 10px;
+
+  outline: none;
+
+  background: transparent;
+
+  color: #1593c7;
+
+  font-size: 20px;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  z-index: 5;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+
+/* Hover */
+
+.password-toggle:hover {
+  color: #0e78a5;
+
+  background:
+    rgba(21, 147, 199, 0.08);
+}
+
+
+/* Click */
+
+.password-toggle:active {
+  transform:
+    translateY(-50%)
+    scale(0.92);
+}
+
+
+/* Focus */
+
+.password-toggle:focus,
+.password-toggle:focus-visible {
+  outline: none;
+
+  box-shadow:
+    0 0 0 3px rgba(21, 147, 199, 0.12);
+}
+
+
+/* Icono */
+
+.password-toggle i {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 20px;
+
+  pointer-events: none;
+}
+
+
+/* ======================================================
+   BOTÓN LOGIN
    ====================================================== */
 
 .login-button {
   width: 100%;
+
   min-height: 58px;
 
   display: grid;
-  grid-template-columns: 30px 1fr 30px;
+
+  grid-template-columns:
+    30px 1fr 30px;
+
   align-items: center;
 
   margin-top: 8px;
-  padding: 0 18px;
+
+  padding:
+    0 18px;
 
   border: 0;
+
   border-radius: 15px;
 
   color: #ffffff;
-  background: linear-gradient(90deg, #1593c7, #0e78a5);
+
+  background:
+    linear-gradient(
+      90deg,
+      #1593c7,
+      #0e78a5
+    );
 
   font-size: 17px;
+
   font-weight: 800;
 
   cursor: pointer;
 
-  box-shadow: 0 13px 26px rgba(21, 147, 199, 0.28);
+  box-shadow:
+    0 13px 26px rgba(21, 147, 199, 0.28);
 
   transition:
     transform 0.18s ease,
@@ -409,79 +677,116 @@
     opacity 0.18s ease;
 }
 
+
 .login-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 16px 30px rgba(21, 147, 199, 0.34);
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    0 16px 30px rgba(21, 147, 199, 0.34);
 }
+
 
 .login-button:disabled {
   opacity: 0.65;
+
   cursor: not-allowed;
 }
 
+
 .button-icon {
   display: grid;
+
   place-items: center;
 }
+
 
 .button-icon i {
   font-size: 22px;
 }
 
+
 .login-button i {
   font-size: 18px;
 }
 
+
 /* ======================================================
-   ALERTA
+   ALERTA LOGIN
    ====================================================== */
 
 .alert-text {
   display: flex;
+
   align-items: center;
+
   justify-content: center;
+
   gap: 8px;
 
-  margin: 14px 0 0;
-  padding: 11px 13px;
+  margin:
+    14px 0 0;
 
-  border: 1px solid #fecaca;
+  padding:
+    11px 13px;
+
+  border:
+    1px solid #fecaca;
+
   border-radius: 12px;
 
   color: #b91c1c;
+
   background: #fff1f2;
 
   font-size: 13px;
+
   font-weight: 700;
 }
 
+
 .alert-text i {
   color: #dc2626;
+
   font-size: 15px;
 }
+
 
 /* ======================================================
    OPCIONES INFERIORES
    ====================================================== */
 
 .question-title {
-  margin: 21px 0 13px;
+  margin:
+    21px 0 13px;
+
   color: #526879;
+
   font-size: 13px;
+
   font-weight: 700;
 }
 
+
 .login-options {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
   gap: 11px;
 }
 
+
 .login-option {
   min-height: 112px;
-  padding: 14px 8px;
 
-  border: 1px solid #e1e8ed;
+  padding:
+    14px 8px;
+
+  border:
+    1px solid #e1e8ed;
+
   border-radius: 16px;
 
   background: #ffffff;
@@ -492,48 +797,69 @@
     box-shadow 0.18s ease;
 }
 
+
 .login-option:hover {
-  transform: translateY(-2px);
-  border-color: rgba(21, 147, 199, 0.40);
-  box-shadow: 0 12px 24px rgba(21, 147, 199, 0.12);
+  transform:
+    translateY(-2px);
+
+  border-color:
+    rgba(21, 147, 199, 0.40);
+
+  box-shadow:
+    0 12px 24px rgba(21, 147, 199, 0.12);
 }
+
 
 .login-option > span {
   width: 38px;
+
   height: 38px;
 
   display: grid;
+
   place-items: center;
 
-  margin: 0 auto 8px;
+  margin:
+    0 auto 8px;
 
   border-radius: 11px;
 
   color: #1593c7;
+
   background: #ecf9fb;
 }
 
+
 .login-option > span i {
   font-size: 20px;
+
   color: #1593c7;
 }
+
 
 .login-option strong,
 .login-option small {
   display: block;
 }
 
+
 .login-option strong {
   margin-bottom: 4px;
+
   color: #173b50;
+
   font-size: 12px;
+
   font-weight: 800;
 }
 
+
 .login-option small {
   color: #748692;
+
   font-size: 10px;
 }
+
 
 /* ======================================================
    SEGURIDAD
@@ -541,77 +867,106 @@
 
 .login-security {
   display: flex;
+
   justify-content: space-around;
+
   gap: 12px;
 
   margin-top: 18px;
+
   padding-top: 17px;
 
-  border-top: 1px solid #dfe7ec;
+  border-top:
+    1px solid #dfe7ec;
 
   color: #456273;
+
   font-size: 11px;
+
   font-weight: 700;
 }
 
+
 .login-security span {
   display: flex;
+
   align-items: center;
+
   justify-content: center;
+
   gap: 6px;
 }
 
+
 .login-security i {
   color: #1593c7;
+
   font-size: 14px;
 }
+
 
 /* ======================================================
    RESPONSIVE TABLET
    ====================================================== */
 
 @media (max-width: 1100px) {
+
   .login-page {
     background-attachment: scroll;
   }
 
+
   .login-container {
     grid-template-columns: 1fr;
+
     gap: 34px;
-    padding: 34px 24px;
+
+    padding:
+      34px 24px;
   }
+
 
   .login-information {
     max-width: 850px;
   }
 
+
   .login-card-container {
     justify-content: center;
   }
 
+
   .brand-logo img {
     width: 100%;
+
     height: 100%;
   }
 
+
   .login-card__logo img {
     width: 100%;
+
     height: 100%;
   }
+
 
   .feature-icon i {
     font-size: 20px;
   }
+
 }
+
 
 /* ======================================================
    RESPONSIVE CELULAR
    ====================================================== */
 
 @media (max-width: 700px) {
+
   .login-page {
     background-position: center;
   }
+
 
   .login-page__overlay {
     background:
@@ -623,184 +978,305 @@
       );
   }
 
+
   .login-container {
-    padding: 24px 14px;
+    padding:
+      24px 14px;
+
     gap: 28px;
   }
 
+
   .brand-badge {
     margin-bottom: 30px;
+
     gap: 11px;
   }
 
+
   .brand-icon {
     width: 48px;
+
     height: 48px;
+
     border-radius: 14px;
   }
+
 
   .brand-logo {
     padding: 6px;
   }
 
+
   .brand-badge strong {
     font-size: 22px;
   }
+
 
   .brand-badge span {
     font-size: 11px;
   }
 
+
   .information-badge {
     font-size: 12px;
-    padding: 9px 14px;
+
+    padding:
+      9px 14px;
   }
+
 
   .information-badge i {
     font-size: 14px;
   }
 
+
   .login-information h1 {
     font-size: 44px;
+
     letter-spacing: -1.2px;
   }
 
+
   .information-description {
     font-size: 15px;
+
     line-height: 1.55;
   }
+
 
   .information-features {
     grid-template-columns: 1fr;
   }
 
+
   .feature-card {
     min-height: auto;
-    padding: 18px 18px;
+
+    padding:
+      18px 18px;
 
     border-right: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+
+    border-bottom:
+      1px solid rgba(255, 255, 255, 0.12);
   }
+
 
   .feature-card:last-child {
     border-bottom: 0;
   }
 
+
   .feature-icon {
     width: 38px;
+
     height: 38px;
   }
+
 
   .feature-icon i {
     font-size: 19px;
   }
 
+
   .login-card {
-    padding: 28px 19px 24px;
+    padding:
+      28px 19px 24px;
+
     border-radius: 23px;
   }
 
+
   .login-card__icon {
     width: 66px;
+
     height: 66px;
+
     border-radius: 18px;
   }
+
 
   .login-card__logo {
     padding: 8px;
   }
 
+
   .login-card h2 {
     font-size: 28px;
   }
+
 
   .field label {
     font-size: 12px;
   }
 
+
   .field label i {
     font-size: 14px;
   }
 
+
   .field input {
     height: 50px;
+
     border-radius: 13px;
   }
 
+
+  .password-wrapper .password-input {
+    padding-right: 54px;
+  }
+
+
+  .password-toggle {
+    right: 8px;
+
+    width: 38px;
+
+    height: 38px;
+  }
+
+
+  .password-toggle i {
+    font-size: 18px;
+  }
+
+
   .login-button {
-    grid-template-columns: 28px 1fr 28px;
+    grid-template-columns:
+      28px 1fr 28px;
+
     min-height: 54px;
+
     font-size: 15px;
   }
+
 
   .button-icon i {
     font-size: 20px;
   }
 
+
   .login-options {
     grid-template-columns: 1fr;
   }
 
+
   .login-option {
     min-height: auto;
-    padding: 14px 12px;
+
+    padding:
+      14px 12px;
   }
+
 
   .login-option > span i {
     font-size: 19px;
   }
 
+
   .login-security {
     flex-direction: column;
+
     align-items: center;
+
     gap: 8px;
   }
+
 }
+
 
 /* ======================================================
    RESPONSIVE CELULAR PEQUEÑO
    ====================================================== */
 
 @media (max-width: 420px) {
+
   .login-container {
-    padding: 20px 12px;
+    padding:
+      20px 12px;
   }
+
 
   .brand-badge {
     gap: 10px;
   }
 
+
   .brand-icon {
     width: 44px;
+
     height: 44px;
   }
+
 
   .brand-badge strong {
     font-size: 20px;
   }
 
+
   .brand-badge span {
     font-size: 10.5px;
   }
+
 
   .login-information h1 {
     font-size: 38px;
   }
 
+
   .information-description {
     font-size: 14px;
   }
 
+
+  .login-card {
+    padding:
+      25px 16px 22px;
+  }
+
+
   .login-card__icon {
     width: 60px;
+
     height: 60px;
   }
+
 
   .login-card h2 {
     font-size: 26px;
   }
 
+
+  .field input {
+    height: 49px;
+
+    padding-left: 14px;
+  }
+
+
+  .password-wrapper .password-input {
+    padding-right: 52px;
+  }
+
+
+  .password-toggle {
+    right: 7px;
+
+    width: 36px;
+
+    height: 36px;
+  }
+
+
+  .password-toggle i {
+    font-size: 18px;
+  }
+
+
   .login-button {
     font-size: 14px;
   }
+
 }

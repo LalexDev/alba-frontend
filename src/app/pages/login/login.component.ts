@@ -4,11 +4,13 @@ import {
   FormGroup,
   Validators
 } from '@angular/forms';
+
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
+
 
 @Component({
   selector: 'app-login',
@@ -19,7 +21,11 @@ export class LoginComponent {
 
   error = '';
   loading = false;
+
+  mostrarPassword = false;
+
   form: FormGroup;
+
 
   constructor(
     private fb: FormBuilder,
@@ -27,7 +33,9 @@ export class LoginComponent {
     private tokenService: TokenService,
     private router: Router
   ) {
+
     this.form = this.fb.group({
+
       usernameOrCorreo: [
         '',
         [
@@ -35,6 +43,7 @@ export class LoginComponent {
           Validators.email
         ]
       ],
+
       password: [
         '',
         [
@@ -42,17 +51,36 @@ export class LoginComponent {
           Validators.minLength(6)
         ]
       ]
+
     });
+
   }
 
+
+  /**
+   * Mostrar / ocultar contraseña.
+   */
+  togglePassword(): void {
+    this.mostrarPassword = !this.mostrarPassword;
+  }
+
+
+  /**
+   * Iniciar sesión.
+   */
   submit(): void {
+
     if (this.form.invalid || this.loading) {
+
       this.form.markAllAsTouched();
+
       return;
     }
 
+
     this.error = '';
     this.loading = true;
+
 
     const email = String(
       this.form.get('usernameOrCorreo')?.value || ''
@@ -60,37 +88,63 @@ export class LoginComponent {
       .trim()
       .toLowerCase();
 
+
     const password = String(
       this.form.get('password')?.value || ''
     );
 
+
     this.authService
       .login(email, password)
       .pipe(
+
         finalize(() => {
           this.loading = false;
         })
+
       )
       .subscribe({
+
         next: () => {
+
           const role = this.tokenService.getRole();
 
+
           if (role === 'ADMINISTRADOR') {
-            this.router.navigateByUrl('/admin/dashboard');
+
+            this.router.navigateByUrl(
+              '/admin/dashboard'
+            );
+
             return;
           }
+
 
           if (role === 'VENDEDOR') {
-            this.router.navigateByUrl('/vendedor/ventas');
+
+            this.router.navigateByUrl(
+              '/vendedor/ventas'
+            );
+
             return;
           }
 
-          this.error = 'El usuario no tiene un rol autorizado.';
+
+          this.error =
+            'El usuario no tiene un rol autorizado.';
+
           this.authService.logout();
+
         },
 
+
         error: (error) => {
-          console.error('Error de inicio de sesión:', error);
+
+          console.error(
+            'Error de inicio de sesión:',
+            error
+          );
+
 
           const message = String(
             error?.message ||
@@ -98,28 +152,70 @@ export class LoginComponent {
             ''
           ).toLowerCase();
 
-          if (message.includes('invalid login credentials')) {
-            this.error = 'Correo o contraseña incorrectos.';
-          } else if (message.includes('email not confirmed')) {
-            this.error = 'El correo todavía no ha sido confirmado.';
-          } else if (
+
+          if (
+            message.includes(
+              'invalid login credentials'
+            )
+          ) {
+
+            this.error =
+              'Correo o contraseña incorrectos.';
+
+          }
+
+          else if (
+            message.includes(
+              'email not confirmed'
+            )
+          ) {
+
+            this.error =
+              'El correo todavía no ha sido confirmado.';
+
+          }
+
+          else if (
             message.includes('failed to fetch') ||
             message.includes('network')
           ) {
+
             this.error =
               'No se pudo conectar con Supabase. Revisa tu conexión.';
-          } else if (message.includes('usuario inactivo')) {
-            this.error = 'El usuario se encuentra desactivado.';
-          } else if (message.includes('perfil')) {
+
+          }
+
+          else if (
+            message.includes('usuario inactivo')
+          ) {
+
+            this.error =
+              'El usuario se encuentra desactivado.';
+
+          }
+
+          else if (
+            message.includes('perfil')
+          ) {
+
             this.error =
               'El usuario existe, pero no tiene un perfil configurado.';
-          } else {
+
+          }
+
+          else {
+
             this.error =
               error?.message ||
               error?.error?.message ||
               'No se pudo iniciar sesión.';
+
           }
+
         }
+
       });
+
   }
+
 }
