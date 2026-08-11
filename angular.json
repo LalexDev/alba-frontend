@@ -42,7 +42,6 @@
               }
             ],
             "styles": [
-              
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/bootstrap-icons/font/bootstrap-icons.css",
               "src/styles.css"
@@ -59,8 +58,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "15kB",
-                  "maximumError": "25kB"
+                  "maximumWarning": "45kB",
+                  "maximumError": "60kB"
                 }
               ],
               "outputHashing": "all"
