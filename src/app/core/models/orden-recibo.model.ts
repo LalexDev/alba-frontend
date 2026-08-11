@@ -10,7 +10,8 @@ export type TipoDocumentoInterno =
 export type MetodoPagoOrden =
   | 'EFECTIVO'
   | 'YAPE'
-  | 'TRANSFERENCIA';
+  | 'TRANSFERENCIA'
+  | 'SEGURO';
 
 export interface OrdenRecibo {
   idVenta: number;

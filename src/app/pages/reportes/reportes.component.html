@@ -3,7 +3,7 @@
   <header class="reports-header">
     <div class="header-title">
       <span class="header-icon" aria-hidden="true">
-        <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+        <i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i>
       </span>
 
       <div>
@@ -129,16 +129,18 @@
   </section>
 
   <p class="message success" *ngIf="mensaje">
-    {{ mensaje }}
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>{{ mensaje }}</span>
   </p>
 
   <p class="message error" *ngIf="error">
-    {{ error }}
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+    <span>{{ error }}</span>
   </p>
 
   <div class="loading-panel" *ngIf="cargando">
-    <span class="spinner"></span>
-    Consultando ventas, productos y proveedores...
+    <i class="bi bi-arrow-repeat spin-icon loading-icon" aria-hidden="true"></i>
+    <span>Consultando ventas, productos y proveedores...</span>
   </div>
 
   <ng-container *ngIf="!cargando">
@@ -150,7 +152,7 @@
         <div>
           <small>Ventas registradas</small>
           <strong>{{ resumen.cantidadVentas }}</strong>
-          <span>Órdenes en el rango</span>
+          <span class="stat-description">Órdenes en el rango</span>
         </div>
       </article>
 
@@ -163,7 +165,7 @@
           <strong>
             S/ {{ resumen.totalVentas | number:'1.2-2' }}
           </strong>
-          <span>En el rango seleccionado</span>
+          <span class="stat-description">En el rango seleccionado</span>
         </div>
       </article>
 
@@ -176,7 +178,7 @@
           <strong>
             S/ {{ resumen.gananciaEstimada | number:'1.2-2' }}
           </strong>
-          <span>Venta menos costo registrado</span>
+          <span class="stat-description">Venta menos costo registrado</span>
         </div>
       </article>
 
@@ -187,7 +189,7 @@
         <div>
           <small>Bajo stock</small>
           <strong>{{ resumen.bajoStock }}</strong>
-          <span>Productos por reponer</span>
+          <span class="stat-description">Productos por reponer</span>
         </div>
       </article>
     </section>
@@ -208,6 +210,15 @@
             (click)="alternarProductos()"
             *ngIf="productosMasVendidos.length > 5"
           >
+            <i
+              class="bi"
+              [ngClass]="
+                mostrarTodosProductos
+                  ? 'bi-chevron-up'
+                  : 'bi-list-ul'
+              "
+              aria-hidden="true"
+            ></i>
             {{ mostrarTodosProductos ? 'Ver menos' : 'Ver detalle' }}
           </button>
         </header>
@@ -250,7 +261,9 @@
 
         <ng-template #sinProductos>
           <div class="empty-state">
-            No hay productos vendidos en el rango seleccionado.
+            <i class="bi bi-cart-x" aria-hidden="true"></i>
+            <strong>Sin productos vendidos</strong>
+            <span>No hay productos vendidos en el rango seleccionado.</span>
           </div>
         </ng-template>
       </article>
@@ -258,7 +271,7 @@
       <article class="report-card">
         <header class="report-card-header">
           <div class="report-title">
-            <span class="mini-icon purple">
+            <span class="mini-icon seller">
               <i class="bi bi-person-badge" aria-hidden="true"></i>
             </span>
             <h2>Ventas por vendedor</h2>
@@ -270,6 +283,15 @@
             (click)="alternarVendedores()"
             *ngIf="ventasPorVendedor.length > 5"
           >
+            <i
+              class="bi"
+              [ngClass]="
+                mostrarTodosVendedores
+                  ? 'bi-chevron-up'
+                  : 'bi-list-ul'
+              "
+              aria-hidden="true"
+            ></i>
             {{ mostrarTodosVendedores ? 'Ver menos' : 'Ver detalle' }}
           </button>
         </header>
@@ -311,7 +333,9 @@
 
         <ng-template #sinVendedores>
           <div class="empty-state">
-            No hay ventas por vendedor para mostrar.
+            <i class="bi bi-person-x" aria-hidden="true"></i>
+            <strong>Sin ventas por vendedor</strong>
+            <span>No hay ventas por vendedor para mostrar.</span>
           </div>
         </ng-template>
       </article>
@@ -332,6 +356,15 @@
           (click)="alternarProveedores()"
           *ngIf="ventasPorProveedor.length > 5"
         >
+          <i
+            class="bi"
+            [ngClass]="
+              mostrarTodosProveedores
+                ? 'bi-chevron-up'
+                : 'bi-list-ul'
+            "
+            aria-hidden="true"
+          ></i>
           {{ mostrarTodosProveedores ? 'Ver menos' : 'Ver detalle' }}
         </button>
       </header>
@@ -370,7 +403,9 @@
 
       <ng-template #sinProveedores>
         <div class="empty-state">
-          No existen compras o ventas asociadas a proveedores en el rango.
+          <i class="bi bi-truck" aria-hidden="true"></i>
+          <strong>Sin movimientos de proveedores</strong>
+          <span>No existen compras o ventas asociadas a proveedores en el rango.</span>
         </div>
       </ng-template>
     </article>
@@ -390,6 +425,15 @@
           (click)="alternarBajoStock()"
           *ngIf="bajoStock.length > 6"
         >
+          <i
+            class="bi"
+            [ngClass]="
+              mostrarTodoBajoStock
+                ? 'bi-chevron-up'
+                : 'bi-list-ul'
+            "
+            aria-hidden="true"
+          ></i>
           {{ mostrarTodoBajoStock ? 'Ver menos' : 'Ver detalle' }}
         </button>
       </header>
@@ -430,7 +474,9 @@
 
       <ng-template #sinStock>
         <div class="empty-state success-empty">
-          No hay productos con bajo stock para el filtro seleccionado.
+          <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+          <strong>Stock en buen estado</strong>
+          <span>No hay productos con bajo stock para el filtro seleccionado.</span>
         </div>
       </ng-template>
     </article>

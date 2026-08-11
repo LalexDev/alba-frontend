@@ -322,7 +322,9 @@ export class OrdenesRecibosService {
       metodoPago:
         fila.metodo_pago === 'YAPE' ||
         fila.metodo_pago ===
-          'TRANSFERENCIA'
+          'TRANSFERENCIA' ||
+        fila.metodo_pago ===
+          'SEGURO'
           ? fila.metodo_pago
           : 'EFECTIVO',
       estado,

@@ -178,38 +178,46 @@ export class VentasComponent implements AfterViewInit {
             resultado:
               ResultadoBusquedaEscanerProducto
           ) => {
-            if (
-              resultado.tipo ===
-                'CODIGO_UNICO'
-            ) {
-              const producto =
-                resultado.productos[0];
+            const productos =
+              resultado.productos || [];
 
-              if (!producto) {
-                this.mensaje =
-                  'Producto no encontrado.';
-
-                this.limpiarCodigoYEnfocar();
-                return;
-              }
-
-              this.agregarProductoAlCarrito(
-                producto
-              );
+            if (!productos.length) {
+              this.mensaje =
+                'Producto no encontrado.';
 
               this.limpiarCodigoYEnfocar();
               return;
             }
 
             /*
-             * Una medida puede pertenecer a distintas marcas.
-             * Por eso siempre se abre el selector.
+             * Flujo rápido:
+             * - código único: se agrega directamente;
+             * - una sola coincidencia por medida: también se agrega directamente;
+             * - varias coincidencias: recién se abre el selector.
              */
+            if (
+              resultado.tipo === 'CODIGO_UNICO' ||
+              productos.length === 1
+            ) {
+              const agregado =
+                this.agregarProductoAlCarrito(
+                  productos[0]
+                );
+
+              if (agregado) {
+                this.mensaje =
+                  'Producto agregado. Listo para escanear el siguiente.';
+              }
+
+              this.limpiarCodigoYEnfocar();
+              return;
+            }
+
             this.lecturaMonturaPendiente =
               resultado.valorEscaneado;
 
             this.coincidenciasMontura =
-              resultado.productos;
+              productos;
 
             this.mostrarSelectorMontura =
               true;
@@ -217,7 +225,7 @@ export class VentasComponent implements AfterViewInit {
             this.codigo = '';
 
             this.mensaje =
-              'Selecciona la montura que tienes físicamente.';
+              'Hay varias monturas con esa medida. Selecciona la que tienes físicamente.';
           },
 
         error:
@@ -254,16 +262,34 @@ export class VentasComponent implements AfterViewInit {
       true;
 
     try {
-      this.agregarProductoAlCarrito(
-        producto
-      );
+      const agregado =
+        this.agregarProductoAlCarrito(
+          producto
+        );
+
+      if (!agregado) {
+        return;
+      }
+
+      /*
+       * IMPORTANTE:
+       * se cierra inmediatamente el selector después de elegir
+       * la montura. Antes no se cerraba porque cerrarSelectorMontura()
+       * retornaba cuando seleccionandoMontura era true.
+       */
+      this.mostrarSelectorMontura =
+        false;
+
+      this.coincidenciasMontura =
+        [];
+
+      this.lecturaMonturaPendiente =
+        '';
+
+      this.codigo = '';
 
       this.mensaje =
-        'Montura seleccionada y agregada a la compra.';
-
-      this.cerrarSelectorMontura(
-        false
-      );
+        'Montura agregada. Listo para escanear el siguiente producto.';
     } finally {
       this.seleccionandoMontura =
         false;
@@ -276,10 +302,6 @@ export class VentasComponent implements AfterViewInit {
     enfocar:
       boolean = true
   ): void {
-    if (this.seleccionandoMontura) {
-      return;
-    }
-
     this.mostrarSelectorMontura =
       false;
 
@@ -288,6 +310,8 @@ export class VentasComponent implements AfterViewInit {
 
     this.lecturaMonturaPendiente =
       '';
+
+    this.codigo = '';
 
     if (enfocar) {
       this.focusInput();
@@ -925,6 +949,103 @@ export class VentasComponent implements AfterViewInit {
         item.tipoObsequio ===
           tipo
     );
+  }
+
+  /**
+   * El líquido promocional se maneja como obsequio genérico
+   * para no obligar a cambiar TipoObsequioVenta si actualmente
+   * el modelo solo contiene MICROFIBRA y ESTUCHE.
+   */
+  liquidoGratisSeleccionado(): boolean {
+    return this.carrito.some(
+      item =>
+        Boolean(item.esObsequio) &&
+        !item.tipoObsequio &&
+        this.esLiquido(
+          item.producto
+        )
+    );
+  }
+
+  async cambiarLiquidoGratis(
+    event: Event
+  ): Promise<void> {
+    const checkbox =
+      event.target as
+        HTMLInputElement;
+
+    if (!checkbox.checked) {
+      this.carrito =
+        this.carrito.filter(
+          item =>
+            !(
+              item.esObsequio &&
+              !item.tipoObsequio &&
+              this.esLiquido(
+                item.producto
+              )
+            )
+        );
+
+      this.ajustarMontosAlTotal();
+
+      this.mensaje =
+        'Líquido gratuito retirado.';
+
+      this.focusInput();
+      return;
+    }
+
+    if (
+      !this.hayMonturaEnCarrito()
+    ) {
+      checkbox.checked = false;
+
+      this.mensaje =
+        'Primero agrega una montura a la venta.';
+
+      this.focusInput();
+      return;
+    }
+
+    try {
+      const producto =
+        await this.buscarProductoEspecial(
+          'LIQUIDO'
+        );
+
+      if (!producto) {
+        checkbox.checked = false;
+
+        this.mensaje =
+          'No se encontró un líquido o limpiador activo con stock.';
+
+        return;
+      }
+
+      const agregado =
+        this.agregarProductoAlCarrito(
+          producto,
+          true
+        );
+
+      if (!agregado) {
+        checkbox.checked = false;
+        return;
+      }
+
+      this.mensaje =
+        'Líquido agregado gratis con la montura.';
+    } catch (error) {
+      checkbox.checked = false;
+
+      this.mensaje =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo agregar el líquido gratuito.';
+    } finally {
+      this.focusInput();
+    }
   }
 
   async cambiarObsequio(
@@ -2181,6 +2302,27 @@ export class VentasComponent implements AfterViewInit {
       this.aCuenta =
         this.totalFinal();
     }
+  }
+
+  private esLiquido(
+    producto: Producto
+  ): boolean {
+    const texto =
+      this.normalizarTexto(
+        [
+          producto.nombre,
+          producto.descripcion,
+          producto.categoria?.nombre
+        ]
+          .filter(Boolean)
+          .join(' ')
+      );
+
+    return (
+      texto.includes('liquido') ||
+      texto.includes('limpiador') ||
+      texto.includes('spray')
+    );
   }
 
   private esMontura(

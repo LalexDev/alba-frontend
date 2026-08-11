@@ -83,6 +83,15 @@ export class AdminLayoutComponent implements OnInit {
         roles: ['ADMINISTRADOR', 'VENDEDOR']
       },
       {
+        label: 'Caja / Cierre de caja',
+        icon: 'bi bi-cash-stack',
+        path:
+          this.role === 'VENDEDOR'
+            ? '/vendedor/caja'
+            : '/admin/caja',
+        roles: ['ADMINISTRADOR', 'VENDEDOR']
+      },
+      {
         label: 'Proveedores',
         icon: 'bi bi-truck',
         path: '/admin/proveedores',

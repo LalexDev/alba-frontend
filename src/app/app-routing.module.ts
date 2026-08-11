@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+
 import { LoginComponent } from './pages/login/login.component';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
 import { VentasComponent } from './pages/ventas/ventas.component';
@@ -10,49 +11,130 @@ import { ReportesComponent } from './pages/reportes/reportes.component';
 import { MovimientosInventarioComponent } from './pages/movimientos-inventario/movimientos-inventario.component';
 import { OrdenesRecibosComponent } from './pages/ordenes-recibos/ordenes-recibos.component';
 import { UsuariosRolesComponent } from './pages/usuarios-roles/usuarios-roles.component';
+import { CajaComponent } from './pages/caja/caja.component';
+
 import { AdminLayoutComponent } from './layout/admin-layout/admin-layout.component';
 import { AuthGuard } from './core/guards/auth.guard';
 import { RoleGuard } from './core/guards/role.guard';
 
 const routes: Routes = [
-  { path: 'login', component: LoginComponent },
+  {
+    path: 'login',
+    component: LoginComponent
+  },
   {
     path: 'admin',
     component: AdminLayoutComponent,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['ADMINISTRADOR'] },
+    canActivate: [
+      AuthGuard,
+      RoleGuard
+    ],
+    data: {
+      roles: ['ADMINISTRADOR']
+    },
     children: [
-      { path: 'dashboard', component: AdminDashboardComponent },
-      { path: 'ventas', component: VentasComponent },
-      { path: 'productos', component: ProductosComponent },
-      { path: 'clientes', component: ClientesRecetasComponent },
-      { path: 'ordenes', component: OrdenesRecibosComponent },
-      { path: 'proveedores', component: ProveedoresComponent },
-      { path: 'movimientos', component: MovimientosInventarioComponent },
-      { path: 'reportes', component: ReportesComponent },
-      { path: 'usuarios', component: UsuariosRolesComponent },
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
+      {
+        path: 'dashboard',
+        component: AdminDashboardComponent
+      },
+      {
+        path: 'ventas',
+        component: VentasComponent
+      },
+      {
+        path: 'productos',
+        component: ProductosComponent
+      },
+      {
+        path: 'clientes',
+        component: ClientesRecetasComponent
+      },
+      {
+        path: 'ordenes',
+        component: OrdenesRecibosComponent
+      },
+      {
+        path: 'caja',
+        component: CajaComponent
+      },
+      {
+        path: 'proveedores',
+        component: ProveedoresComponent
+      },
+      {
+        path: 'movimientos',
+        component: MovimientosInventarioComponent
+      },
+      {
+        path: 'reportes',
+        component: ReportesComponent
+      },
+      {
+        path: 'usuarios',
+        component: UsuariosRolesComponent
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      }
     ]
   },
   {
     path: 'vendedor',
     component: AdminLayoutComponent,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['VENDEDOR'] },
+    canActivate: [
+      AuthGuard,
+      RoleGuard
+    ],
+    data: {
+      roles: ['VENDEDOR']
+    },
     children: [
-      { path: 'ventas', component: VentasComponent },
-      { path: 'productos', component: ProductosComponent },
-      { path: 'clientes', component: ClientesRecetasComponent },
-      { path: 'ordenes', component: OrdenesRecibosComponent },
-      { path: '', redirectTo: 'ventas', pathMatch: 'full' }
+      {
+        path: 'ventas',
+        component: VentasComponent
+      },
+      {
+        path: 'productos',
+        component: ProductosComponent
+      },
+      {
+        path: 'clientes',
+        component: ClientesRecetasComponent
+      },
+      {
+        path: 'ordenes',
+        component: OrdenesRecibosComponent
+      },
+      {
+        path: 'caja',
+        component: CajaComponent
+      },
+      {
+        path: '',
+        redirectTo: 'ventas',
+        pathMatch: 'full'
+      }
     ]
   },
-  { path: '', redirectTo: '/login', pathMatch: 'full' },
-  { path: '**', redirectTo: '/login' }
+  {
+    path: '',
+    redirectTo: '/login',
+    pathMatch: 'full'
+  },
+  {
+    path: '**',
+    redirectTo: '/login'
+  }
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  imports: [
+    RouterModule.forRoot(routes)
+  ],
+  exports: [
+    RouterModule
+  ]
 })
 export class AppRoutingModule {}

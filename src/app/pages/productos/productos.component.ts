@@ -23,6 +23,7 @@ import {
   Categoria,
   Marca,
   Producto,
+  ProductoEdicionVendedorRequest,
   ProductoRequest,
   Proveedor,
   ResultadoRegistroProducto
@@ -31,6 +32,10 @@ import {
 import {
   ProductoService
 } from '../../core/services/producto.service';
+
+import {
+  TokenService
+} from '../../core/services/token.service';
 
 interface ProductoInventario extends Producto {
   claveInventario: string;
@@ -101,6 +106,8 @@ export class ProductosComponent
   constructor(
     private productoService:
       ProductoService,
+    private tokenService:
+      TokenService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -184,6 +191,24 @@ export class ProductosComponent
     this.cargarTodo();
   }
 
+  get esAdministrador(): boolean {
+    return this.tokenService.getRole() ===
+      'ADMINISTRADOR';
+  }
+
+  get esVendedor(): boolean {
+    return this.tokenService.getRole() ===
+      'VENDEDOR';
+  }
+
+  get edicionLimitadaVendedor(): boolean {
+    return (
+      this.esVendedor &&
+      this.modoEdicion &&
+      Boolean(this.productoEditando)
+    );
+  }
+
   get inventarioPorMarca(): ProductoInventario[] {
     const grupos = new Map<
       string,
@@ -263,6 +288,10 @@ export class ProductosComponent
   }
 
   get valorizacionInventario(): number {
+    if (!this.esAdministrador) {
+      return 0;
+    }
+
     return this.productos.reduce(
       (total, producto) =>
         total +
@@ -656,6 +685,14 @@ export class ProductosComponent
   }
 
   abrirFormulario(): void {
+    if (!this.esAdministrador) {
+      this.error =
+        'Solo el administrador puede registrar productos.';
+      return;
+    }
+
+    this.habilitarControlesAdministrador();
+
     this.error = '';
     this.ok = '';
     this.modoEdicion = false;
@@ -707,6 +744,8 @@ export class ProductosComponent
     this.mostrarFormulario = false;
     this.modoEdicion = false;
     this.productoEditando = null;
+
+    this.habilitarControlesAdministrador();
 
     this.form.get(
       'stockActual'
@@ -823,6 +862,11 @@ export class ProductosComponent
 
     this.actualizarValidacionesCampos();
 
+    if (this.esVendedor) {
+      this.configurarControlesVendedor();
+      return;
+    }
+
     this.form.get(
       'stockActual'
     )?.disable({
@@ -833,6 +877,12 @@ export class ProductosComponent
   solicitarEliminarProducto(
     producto: Producto
   ): void {
+    if (!this.esAdministrador) {
+      this.error =
+        'Solo el administrador puede eliminar o desactivar productos.';
+      return;
+    }
+
     this.productoPorEliminar =
       producto;
     this.mostrarConfirmacionEliminar =
@@ -852,6 +902,12 @@ export class ProductosComponent
   }
 
   eliminarProducto(): void {
+    if (!this.esAdministrador) {
+      this.error =
+        'Solo el administrador puede eliminar o desactivar productos.';
+      return;
+    }
+
     if (
       !this.productoPorEliminar ||
       this.eliminando
@@ -906,6 +962,12 @@ export class ProductosComponent
   }
 
   alternarNuevaMarca(): void {
+    if (!this.esAdministrador) {
+      this.error =
+        'Solo el administrador puede registrar marcas.';
+      return;
+    }
+
     this.mostrarNuevaMarca =
       !this.mostrarNuevaMarca;
 
@@ -920,6 +982,12 @@ export class ProductosComponent
   }
 
   guardarNuevaMarca(): void {
+    if (!this.esAdministrador) {
+      this.errorMarca =
+        'Solo el administrador puede registrar marcas.';
+      return;
+    }
+
     if (this.guardandoMarca) {
       return;
     }
@@ -1127,6 +1195,17 @@ export class ProductosComponent
   }
 
   guardar(): void {
+    if (this.edicionLimitadaVendedor) {
+      this.guardarEdicionVendedor();
+      return;
+    }
+
+    if (!this.esAdministrador) {
+      this.error =
+        'Tu rol no puede registrar ni modificar la ficha completa del producto.';
+      return;
+    }
+
     const lecturaPendiente =
       String(
         this.form.get(
@@ -1405,6 +1484,174 @@ export class ProductosComponent
       });
   }
 
+  private guardarEdicionVendedor(): void {
+    if (
+      !this.productoEditando ||
+      this.guardando
+    ) {
+      return;
+    }
+
+    const precioVenta =
+      Number(
+        this.form.get(
+          'precioVenta'
+        )?.value
+      );
+
+    const descripcion =
+      String(
+        this.form.get(
+          'descripcion'
+        )?.value || ''
+      ).trim();
+
+    if (
+      !Number.isFinite(
+        precioVenta
+      ) ||
+      precioVenta <= 0
+    ) {
+      this.error =
+        'Ingresa un precio de venta válido.';
+      this.form.get(
+        'precioVenta'
+      )?.markAsTouched();
+      return;
+    }
+
+    const request:
+      ProductoEdicionVendedorRequest = {
+        precioVenta,
+        descripcion
+      };
+
+    this.guardando = true;
+    this.error = '';
+    this.ok = '';
+
+    this.productoService
+      .actualizarDatosVenta(
+        this.productoEditando.id,
+        request
+      )
+      .pipe(
+        finalize(() => {
+          this.guardando = false;
+        })
+      )
+      .subscribe({
+        next: (
+          resultado:
+            ResultadoRegistroProducto
+        ) => {
+          const producto =
+            resultado.producto;
+
+          this.ok =
+            `Precio de venta de ${producto.modelo || producto.nombre} actualizado correctamente.`;
+
+          this.mostrarFormulario =
+            false;
+          this.modoEdicion =
+            false;
+          this.productoEditando =
+            null;
+
+          this.habilitarControlesAdministrador();
+
+          this.productoSeleccionado =
+            producto;
+          this.mostrarDetalle =
+            true;
+
+          this.cargarTodo();
+        },
+
+        error: (
+          error: unknown
+        ) => {
+          console.error(
+            'Error al actualizar precio de venta:',
+            error
+          );
+
+          this.error =
+            error instanceof Error
+              ? error.message
+              : 'No se pudo actualizar el precio de venta.';
+        }
+      });
+  }
+
+  private configurarControlesVendedor(): void {
+    const editables =
+      new Set([
+        'precioVenta',
+        'descripcion'
+      ]);
+
+    Object.entries(
+      this.form.controls
+    ).forEach(
+      ([
+        nombre,
+        control
+      ]) => {
+        if (
+          editables.has(
+            nombre
+          )
+        ) {
+          control.enable({
+            emitEvent: false
+          });
+        } else {
+          control.disable({
+            emitEvent: false
+          });
+        }
+      }
+    );
+
+    this.form.get(
+      'precioVenta'
+    )?.setValidators([
+      Validators.required,
+      Validators.min(0.01)
+    ]);
+
+    this.form.get(
+      'precioVenta'
+    )?.updateValueAndValidity({
+      emitEvent: false
+    });
+
+    this.form.get(
+      'descripcion'
+    )?.clearValidators();
+
+    this.form.get(
+      'descripcion'
+    )?.updateValueAndValidity({
+      emitEvent: false
+    });
+  }
+
+  private habilitarControlesAdministrador(): void {
+    Object.values(
+      this.form.controls
+    ).forEach(
+      control => {
+        control.enable({
+          emitEvent: false
+        });
+      }
+    );
+
+    this.actualizarValidacionesCampos();
+  }
+
   cambiarFiltroStock(): void {
     this.mostrarSoloBajoStock =
       !this.mostrarSoloBajoStock;
@@ -1421,6 +1668,12 @@ export class ProductosComponent
   }
 
   exportarInventarioExcel(): void {
+    if (!this.esAdministrador) {
+      this.error =
+        'La descarga administrativa del inventario está disponible solo para el administrador.';
+      return;
+    }
+
     this.error = '';
     this.ok = '';
 

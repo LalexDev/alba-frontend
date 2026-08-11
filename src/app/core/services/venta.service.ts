@@ -630,6 +630,17 @@ export class VentaService {
 
     if (
       mensajeNormalizado.includes(
+        'debes abrir caja'
+      ) ||
+      mensajeNormalizado.includes(
+        'caja abierta'
+      )
+    ) {
+      return 'Debes abrir caja antes de registrar una venta.';
+    }
+
+    if (
+      mensajeNormalizado.includes(
         'producto no encontrado'
       )
     ) {

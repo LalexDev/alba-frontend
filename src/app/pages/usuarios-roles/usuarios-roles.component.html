@@ -3,7 +3,7 @@
   <header class="users-header">
     <div class="header-title">
       <span class="header-icon" aria-hidden="true">
-        <i class="bi bi-person-plus"></i>
+        <i class="bi bi-people-fill"></i>
       </span>
 
       <div>
@@ -24,7 +24,7 @@
       class="primary-button"
       (click)="abrirNuevoUsuario()"
     >
-      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <i class="bi bi-person-plus-fill" aria-hidden="true"></i>
       Nuevo usuario
     </button>
   </header>
@@ -32,13 +32,13 @@
   <section class="stats-grid">
     <article class="stat-card">
       <span class="stat-icon total" aria-hidden="true">
-        <i class="bi bi-people"></i>
+        <i class="bi bi-people-fill"></i>
       </span>
 
       <div>
         <small>Usuarios registrados</small>
         <strong>{{ totalUsuarios }}</strong>
-        <span>Total de usuarios</span>
+        <span class="stat-description">Total de usuarios</span>
       </div>
     </article>
 
@@ -50,31 +50,31 @@
       <div>
         <small>Administradores</small>
         <strong>{{ totalAdministradores }}</strong>
-        <span>Con acceso completo</span>
+        <span class="stat-description">Con acceso completo</span>
       </div>
     </article>
 
     <article class="stat-card">
       <span class="stat-icon seller" aria-hidden="true">
-        <i class="bi bi-cart3"></i>
+        <i class="bi bi-cart-check-fill"></i>
       </span>
 
       <div>
         <small>Vendedores</small>
         <strong>{{ totalVendedores }}</strong>
-        <span>Acceso operativo</span>
+        <span class="stat-description">Acceso operativo</span>
       </div>
     </article>
 
     <article class="stat-card">
       <span class="stat-icon active" aria-hidden="true">
-        <i class="bi bi-person-check"></i>
+        <i class="bi bi-person-check-fill"></i>
       </span>
 
       <div>
         <small>Usuarios activos</small>
         <strong>{{ totalActivos }}</strong>
-        <span>Actualmente habilitados</span>
+        <span class="stat-description">Actualmente habilitados</span>
       </div>
     </article>
   </section>
@@ -128,7 +128,7 @@
       "
     >
       <i
-        class="bi bi-funnel"
+        class="bi bi-funnel-fill"
         aria-hidden="true"
       ></i>
 
@@ -137,7 +137,8 @@
   </section>
 
   <p class="message success" *ngIf="mensaje">
-    {{ mensaje }}
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>{{ mensaje }}</span>
   </p>
 
   <p
@@ -147,12 +148,13 @@
       !mostrarFormulario
     "
   >
-    {{ error }}
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+    <span>{{ error }}</span>
   </p>
 
   <div class="loading-panel" *ngIf="cargando">
-    <span class="spinner"></span>
-    Cargando usuarios y roles...
+    <i class="bi bi-arrow-repeat spin-icon loading-icon" aria-hidden="true"></i>
+    <span>Cargando usuarios y roles...</span>
   </div>
 
   <section
@@ -226,7 +228,16 @@
                     'ADMINISTRADOR'
                   "
                 >
-                  {{ usuario.rol }}
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      usuario.rol === 'ADMINISTRADOR'
+                        ? 'bi-shield-check'
+                        : 'bi-cart3'
+                    "
+                    aria-hidden="true"
+                  ></i>
+                  {{ textoRol(usuario.rol) }}
                 </span>
               </td>
 
@@ -237,6 +248,15 @@
                     !usuario.activo
                   "
                 >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      usuario.activo
+                        ? 'bi-check-circle-fill'
+                        : 'bi-x-circle-fill'
+                    "
+                    aria-hidden="true"
+                  ></i>
                   {{
                     usuario.activo
                       ? 'Activo'
@@ -432,7 +452,16 @@
               'ADMINISTRADOR'
             "
           >
-            {{ usuarioSeleccionado.rol }}
+            <i
+              class="bi"
+              [ngClass]="
+                usuarioSeleccionado.rol === 'ADMINISTRADOR'
+                  ? 'bi-shield-check'
+                  : 'bi-cart3'
+              "
+              aria-hidden="true"
+            ></i>
+            {{ textoRol(usuarioSeleccionado.rol) }}
           </span>
         </div>
 
@@ -1291,6 +1320,8 @@
                 "
               />
 
+              <i class="bi bi-person-check-fill" aria-hidden="true"></i>
+
               <span>
                 Usuario activo y habilitado para iniciar sesión
               </span>
@@ -1299,7 +1330,8 @@
         </section>
 
         <p class="modal-error" *ngIf="error">
-          {{ error }}
+          <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+          <span>{{ error }}</span>
         </p>
 
         <footer class="modal-actions">

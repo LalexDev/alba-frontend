@@ -514,6 +514,7 @@ export class UsuarioService {
         'Productos e inventario',
         'Clientes y recetas',
         'Órdenes y recibos',
+        'Caja y cierre diario',
         'Proveedores',
         'Movimientos de inventario',
         'Usuarios y roles'
@@ -524,7 +525,8 @@ export class UsuarioService {
       'Ventas y escáner',
       'Productos e inventario',
       'Clientes y recetas',
-      'Órdenes y recibos'
+      'Órdenes y recibos',
+      'Caja y cierre diario'
     ];
   }
 

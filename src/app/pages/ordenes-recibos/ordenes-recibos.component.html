@@ -24,7 +24,7 @@
       class="new-order-button"
       (click)="nuevaOrden()"
     >
-      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <i class="bi bi-receipt" aria-hidden="true"></i>
       Nueva orden
     </button>
   </header>
@@ -48,7 +48,7 @@
           (click)="filtros.buscar = ''; aplicarFiltros()"
           aria-label="Limpiar búsqueda"
         >
-          ×
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
       </div>
 
@@ -149,41 +149,43 @@
   </section>
 
   <p class="message success" *ngIf="mensaje">
-    {{ mensaje }}
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>{{ mensaje }}</span>
   </p>
 
   <p class="message error" *ngIf="error">
-    {{ error }}
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+    <span>{{ error }}</span>
   </p>
 
   <div class="loading-panel" *ngIf="cargando">
-    <span class="spinner"></span>
-    Cargando órdenes y recibos...
+    <i class="bi bi-arrow-repeat spin-icon loading-icon" aria-hidden="true"></i>
+    <span>Cargando órdenes y recibos...</span>
   </div>
 
   <ng-container *ngIf="!cargando">
     <section class="stats-grid">
       <article class="stat-card">
         <span class="stat-icon total">
-          <i class="bi bi-collection" aria-hidden="true"></i>
+          <i class="bi bi-collection-fill" aria-hidden="true"></i>
         </span>
 
         <div>
           <small>Total órdenes</small>
           <strong>{{ resumen.total }}</strong>
-          <span>En el rango seleccionado</span>
+          <span class="stat-description">En el rango seleccionado</span>
         </div>
       </article>
 
       <article class="stat-card">
         <span class="stat-icon completed">
-          <i class="bi bi-check-circle" aria-hidden="true"></i>
+          <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
         </span>
 
         <div>
           <small>Completadas</small>
           <strong>{{ resumen.completadas }}</strong>
-          <span>{{ porcentajeCompletadas }}% del total</span>
+          <span class="stat-description">{{ porcentajeCompletadas }}% del total</span>
         </div>
       </article>
 
@@ -195,19 +197,19 @@
         <div>
           <small>Pendientes</small>
           <strong>{{ resumen.pendientes }}</strong>
-          <span>{{ porcentajePendientes }}% del total</span>
+          <span class="stat-description">{{ porcentajePendientes }}% del total</span>
         </div>
       </article>
 
       <article class="stat-card">
         <span class="stat-icon cancelled">
-          <i class="bi bi-x-circle" aria-hidden="true"></i>
+          <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
         </span>
 
         <div>
           <small>Canceladas</small>
           <strong>{{ resumen.canceladas }}</strong>
-          <span>{{ porcentajeCanceladas }}% del total</span>
+          <span class="stat-description">{{ porcentajeCanceladas }}% del total</span>
         </div>
       </article>
     </section>
@@ -295,6 +297,15 @@
                   class="type-badge"
                   [class.receipt]="orden.tipo === 'RECIBO'"
                 >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      orden.tipo === 'RECIBO'
+                        ? 'bi-receipt'
+                        : 'bi-clipboard-check'
+                    "
+                    aria-hidden="true"
+                  ></i>
                   {{ textoTipo(orden.tipo) }}
                 </span>
               </td>
@@ -316,6 +327,17 @@
                   class="status-badge"
                   [ngClass]="claseEstado(orden.estado)"
                 >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      orden.estado === 'COMPLETADA'
+                        ? 'bi-check-circle-fill'
+                        : orden.estado === 'CANCELADA'
+                          ? 'bi-x-circle-fill'
+                          : 'bi-hourglass-split'
+                    "
+                    aria-hidden="true"
+                  ></i>
                   {{ textoEstado(orden.estado) }}
                 </span>
               </td>
@@ -386,7 +408,7 @@
             [disabled]="paginaActual === 1"
             aria-label="Página anterior"
           >
-            ‹
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
           </button>
 
           <button
@@ -404,7 +426,7 @@
             [disabled]="paginaActual === totalPaginas"
             aria-label="Página siguiente"
           >
-            ›
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
           </button>
         </div>
 
@@ -454,7 +476,7 @@
           [disabled]="cargandoDetalle"
           aria-label="Cerrar"
         >
-          ×
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
       </header>
 
@@ -462,27 +484,27 @@
         class="modal-loading"
         *ngIf="cargandoDetalle"
       >
-        <span class="spinner"></span>
-        Cargando detalle...
+        <i class="bi bi-arrow-repeat spin-icon loading-icon" aria-hidden="true"></i>
+        <span>Cargando detalle...</span>
       </div>
 
       <ng-container *ngIf="ordenSeleccionada">
         <div class="detail-content">
           <section class="detail-summary">
             <div>
-              <span>Cliente</span>
+              <span><i class="bi bi-person"></i> Cliente</span>
               <strong>
                 {{ ordenSeleccionada.cliente }}
               </strong>
             </div>
             <div>
-              <span>Teléfono</span>
+              <span><i class="bi bi-telephone"></i> Teléfono</span>
               <strong>
                 {{ ordenSeleccionada.telefono || '—' }}
               </strong>
             </div>
             <div>
-              <span>Fecha</span>
+              <span><i class="bi bi-calendar3"></i> Fecha</span>
               <strong>
                 {{
                   ordenSeleccionada.fechaVenta
@@ -491,19 +513,19 @@
               </strong>
             </div>
             <div>
-              <span>Tipo</span>
+              <span><i class="bi bi-file-earmark-text"></i> Tipo</span>
               <strong>
                 {{ textoTipo(ordenSeleccionada.tipo) }}
               </strong>
             </div>
             <div>
-              <span>Método</span>
+              <span><i class="bi bi-wallet2"></i> Método</span>
               <strong>
                 {{ ordenSeleccionada.metodoPago }}
               </strong>
             </div>
             <div>
-              <span>Estado</span>
+              <span><i class="bi bi-activity"></i> Estado</span>
               <strong>
                 {{ textoEstado(ordenSeleccionada.estado) }}
               </strong>
@@ -562,7 +584,7 @@
 
           <section class="detail-bottom">
             <div class="observations">
-              <span>Observaciones</span>
+              <span><i class="bi bi-chat-left-text"></i> Observaciones</span>
               <p>
                 {{
                   ordenSeleccionada.observaciones ||
@@ -612,6 +634,7 @@
             class="secondary-action"
             (click)="cerrarDetalle()"
           >
+            <i class="bi bi-x-circle" aria-hidden="true"></i>
             Cerrar
           </button>
 
@@ -658,7 +681,7 @@
           [disabled]="actualizando"
           aria-label="Cerrar"
         >
-          ×
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
       </header>
 
@@ -669,6 +692,7 @@
           (click)="cambiarEstado('COMPLETADA')"
           [disabled]="actualizando"
         >
+          <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
           Marcar como completada
         </button>
 
@@ -678,6 +702,7 @@
           (click)="cambiarEstado('PENDIENTE')"
           [disabled]="actualizando"
         >
+          <i class="bi bi-hourglass-split" aria-hidden="true"></i>
           Marcar como pendiente
         </button>
 
@@ -687,6 +712,7 @@
           (click)="cambiarEstado('CANCELADA')"
           [disabled]="actualizando"
         >
+          <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
           Marcar como cancelada
         </button>
       </div>

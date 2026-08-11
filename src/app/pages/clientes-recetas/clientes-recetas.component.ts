@@ -3,6 +3,7 @@ import {
   OnInit
 } from '@angular/core';
 import {
+  defer,
   finalize,
   Observable
 } from 'rxjs';
@@ -25,10 +26,15 @@ import {
   ClienteService
 } from '../../core/services/cliente.service';
 
+import {
+  SupabaseService
+} from '../../core/services/supabase.service';
+
 type ModoFormulario =
   | 'NUEVO_CLIENTE'
   | 'EDITAR_CLIENTE'
-  | 'NUEVA_RECETA';
+  | 'NUEVA_RECETA'
+  | 'EDITAR_RECETA';
 
 type FiltroCliente =
   | 'TODOS'
@@ -64,6 +70,9 @@ export class ClientesRecetasComponent
   modoFormulario: ModoFormulario =
     'NUEVO_CLIENTE';
 
+  recetaEditandoId: number | null =
+    null;
+
   paginaActual = 1;
   readonly tamanioPagina = 8;
 
@@ -80,7 +89,8 @@ export class ClientesRecetasComponent
     ];
 
   constructor(
-    private clienteService: ClienteService
+    private clienteService: ClienteService,
+    private supabaseService: SupabaseService
   ) {}
 
   ngOnInit(): void {
@@ -266,6 +276,9 @@ export class ClientesRecetasComponent
   }
 
   abrirNuevoCliente(): void {
+    this.recetaEditandoId =
+      null;
+
     this.modoFormulario =
       'NUEVO_CLIENTE';
 
@@ -280,6 +293,9 @@ export class ClientesRecetasComponent
   abrirEditarCliente(
     cliente: Cliente
   ): void {
+    this.recetaEditandoId =
+      null;
+
     this.modoFormulario =
       'EDITAR_CLIENTE';
 
@@ -293,9 +309,10 @@ export class ClientesRecetasComponent
       nombres: cliente.nombreCompleto,
       apellidos: '',
       telefono: cliente.telefono || '',
-      correo: '',
+      correo: cliente.correo || '',
       direccion: cliente.direccion || '',
-      fechaNacimiento: '',
+      fechaNacimiento:
+        cliente.fechaNacimiento || '',
       observaciones:
         cliente.observaciones || '',
       incluirReceta: false,
@@ -323,6 +340,9 @@ export class ClientesRecetasComponent
     this.clienteSeleccionado =
       seleccionado;
 
+    this.recetaEditandoId =
+      null;
+
     this.modoFormulario =
       'NUEVA_RECETA';
 
@@ -334,9 +354,10 @@ export class ClientesRecetasComponent
       nombres: seleccionado.nombreCompleto,
       apellidos: '',
       telefono: seleccionado.telefono || '',
-      correo: '',
+      correo: seleccionado.correo || '',
       direccion: seleccionado.direccion || '',
-      fechaNacimiento: '',
+      fechaNacimiento:
+        seleccionado.fechaNacimiento || '',
       observaciones:
         seleccionado.observaciones || '',
       incluirReceta: true,
@@ -344,9 +365,95 @@ export class ClientesRecetasComponent
         this.crearRecetaVacia()
     };
 
+    this.form.receta.numeroOrden =
+      this.generarNumeroOrdenAutomatico();
+
+    this.actualizarProximoControlDesdeEntrada();
+
     this.mostrarFormulario = true;
     this.error = '';
     this.ok = '';
+  }
+
+  abrirEditarReceta(
+    cliente: Cliente
+  ): void {
+    if (this.cargandoFicha) {
+      return;
+    }
+
+    if (!cliente.ultimaReceta) {
+      this.abrirNuevaReceta(
+        cliente
+      );
+      return;
+    }
+
+    this.cargandoFicha = true;
+    this.error = '';
+    this.ok = '';
+
+    /*
+     * Se consulta nuevamente Supabase antes de editar.
+     * Así el formulario siempre se abre con la última
+     * información realmente guardada.
+     */
+    this.clienteService
+      .obtenerPorId(
+        cliente.id
+      )
+      .pipe(
+        finalize(() => {
+          this.cargandoFicha =
+            false;
+        })
+      )
+      .subscribe({
+        next: (
+          actualizado: Cliente
+        ) => {
+          const receta =
+            actualizado.ultimaReceta;
+
+          if (!receta) {
+            this.error =
+              'El cliente no tiene una receta para editar.';
+            return;
+          }
+
+          this.clienteSeleccionado =
+            actualizado;
+
+          this.recetaEditandoId =
+            receta.id;
+
+          this.modoFormulario =
+            'EDITAR_RECETA';
+
+          this.form =
+            this.crearFormularioEdicionReceta(
+              actualizado,
+              receta
+            );
+
+          this.mostrarFormulario =
+            true;
+        },
+
+        error: (
+          error: unknown
+        ) => {
+          console.error(
+            'Error al cargar receta para editar:',
+            error
+          );
+
+          this.error =
+            error instanceof Error
+              ? error.message
+              : 'No se pudo cargar la receta para editar.';
+        }
+      });
   }
 
   abrirFicha(
@@ -1185,6 +1292,8 @@ export class ClientesRecetasComponent
     }
 
     this.mostrarFormulario = false;
+    this.recetaEditandoId =
+      null;
     this.error = '';
   }
 
@@ -1212,13 +1321,29 @@ export class ClientesRecetasComponent
     // El formulario usa un solo campo de nombres completos.
     this.form.tipoDocumento = 'DNI';
     this.form.apellidos = '';
-    this.form.correo = '';
-    this.form.fechaNacimiento = '';
 
     // La fecha principal de la receta es la fecha de entrada.
     this.form.receta.fechaReceta =
       this.form.receta.fechaEntrada ||
       this.fechaActual();
+
+    if (
+      this.modoFormulario ===
+        'NUEVA_RECETA' &&
+      !this.form.receta
+        .numeroOrden
+        .trim()
+    ) {
+      this.form.receta.numeroOrden =
+        this.generarNumeroOrdenAutomatico();
+    }
+
+    if (
+      this.modoFormulario ===
+        'NUEVA_RECETA'
+    ) {
+      this.actualizarProximoControlDesdeEntrada();
+    }
 
     // Campos eliminados de la receta.
     this.form.receta.profesional = '';
@@ -1274,8 +1399,12 @@ export class ClientesRecetasComponent
     }
 
     if (
-      this.modoFormulario ===
-        'NUEVA_RECETA' &&
+      (
+        this.modoFormulario ===
+          'NUEVA_RECETA' ||
+        this.modoFormulario ===
+          'EDITAR_RECETA'
+      ) &&
       !this.clienteSeleccionado
     ) {
       this.error =
@@ -1285,6 +1414,7 @@ export class ClientesRecetasComponent
 
     if (
       this.modoFormulario === 'NUEVA_RECETA' ||
+      this.modoFormulario === 'EDITAR_RECETA' ||
       (
         this.modoFormulario === 'NUEVO_CLIENTE' &&
         this.form.incluirReceta
@@ -1327,7 +1457,11 @@ export class ClientesRecetasComponent
       this.modoFormulario;
 
     const operacion:
-      Observable<Cliente | RecetaOptica> =
+      Observable<
+        Cliente |
+        RecetaOptica |
+        void
+      > =
       modoEjecutado ===
         'NUEVO_CLIENTE'
         ? this.clienteService
@@ -1341,11 +1475,14 @@ export class ClientesRecetasComponent
                 this.clienteSeleccionado!.id,
                 this.form
               )
-          : this.clienteService
-              .crearReceta(
-                this.clienteSeleccionado!.id,
-                this.form.receta
-              );
+          : modoEjecutado ===
+              'EDITAR_RECETA'
+            ? this.actualizarRecetaActual()
+            : this.clienteService
+                .crearReceta(
+                  this.clienteSeleccionado!.id,
+                  this.form.receta
+                );
 
     operacion
       .pipe(
@@ -1355,7 +1492,10 @@ export class ClientesRecetasComponent
       )
       .subscribe({
         next: (
-          resultado: Cliente | RecetaOptica
+          resultado:
+            Cliente |
+            RecetaOptica |
+            void
         ) => {
           this.ok =
             modoEjecutado ===
@@ -1363,12 +1503,18 @@ export class ClientesRecetasComponent
               ? 'Cliente registrado correctamente.'
               : modoEjecutado ===
                   'EDITAR_CLIENTE'
-                ? 'Cliente actualizado correctamente.'
-                : 'Receta registrada correctamente.';
+                ? 'Datos del cliente actualizados correctamente.'
+                : modoEjecutado ===
+                    'EDITAR_RECETA'
+                  ? 'Receta actualizada correctamente.'
+                  : 'Receta registrada correctamente.';
 
           if (
+            resultado &&
             modoEjecutado !==
               'NUEVA_RECETA' &&
+            modoEjecutado !==
+              'EDITAR_RECETA' &&
             this.esCliente(resultado)
           ) {
             this.clienteSeleccionado =
@@ -1376,6 +1522,8 @@ export class ClientesRecetasComponent
           }
 
           this.mostrarFormulario = false;
+          this.recetaEditandoId =
+            null;
           this.cargar();
         },
 
@@ -2120,6 +2268,134 @@ export class ClientesRecetasComponent
     return partes.join(' | ');
   }
 
+  actualizarProximoControlDesdeEntrada():
+    void {
+    const fechaEntrada =
+      this.form.receta
+        .fechaEntrada ||
+      this.fechaActual();
+
+    this.form.receta.proximoControl =
+      this.fechaUnAnioDespues(
+        fechaEntrada
+      );
+  }
+
+  private generarNumeroOrdenAutomatico():
+    string {
+    let maximo = 0;
+
+    this.clientes.forEach(
+      cliente => {
+        cliente.recetas.forEach(
+          receta => {
+            const coincidencia =
+              String(
+                receta.numeroOrden ||
+                ''
+              )
+                .trim()
+                .toUpperCase()
+                .match(
+                  /^OT-(\d+)$/
+                );
+
+            if (!coincidencia) {
+              return;
+            }
+
+            const numero =
+              Number(
+                coincidencia[1]
+              );
+
+            if (
+              Number.isInteger(
+                numero
+              ) &&
+              numero > maximo
+            ) {
+              maximo = numero;
+            }
+          }
+        );
+      }
+    );
+
+    return (
+      'OT-' +
+      String(
+        maximo + 1
+      ).padStart(
+        6,
+        '0'
+      )
+    );
+  }
+
+  private fechaUnAnioDespues(
+    fechaIso: string
+  ): string {
+    const partes =
+      String(
+        fechaIso || ''
+      )
+        .split('-')
+        .map(
+          valor =>
+            Number(valor)
+        );
+
+    if (
+      partes.length !== 3 ||
+      !partes[0] ||
+      !partes[1] ||
+      !partes[2]
+    ) {
+      return '';
+    }
+
+    const [
+      anio,
+      mes,
+      dia
+    ] = partes;
+
+    const nuevoAnio =
+      anio + 1;
+
+    /*
+     * Si la fecha fuera 29/02 y el siguiente año no es bisiesto,
+     * se usa 28/02 para mantener el control al cierre de febrero.
+     */
+    const ultimoDiaMes =
+      new Date(
+        nuevoAnio,
+        mes,
+        0
+      ).getDate();
+
+    const diaSeguro =
+      Math.min(
+        dia,
+        ultimoDiaMes
+      );
+
+    return [
+      nuevoAnio,
+      String(mes)
+        .padStart(
+          2,
+          '0'
+        ),
+      String(diaSeguro)
+        .padStart(
+          2,
+          '0'
+        )
+    ].join('-');
+  }
+
   private crearFormularioVacio():
     ClienteForm {
     return {
@@ -2140,10 +2416,13 @@ export class ClientesRecetasComponent
 
   private crearRecetaVacia():
     RecetaForm {
+    const fechaEntrada =
+      this.fechaActual();
+
     return {
-      numeroOrden: '',
-      fechaEntrada:
-        this.fechaActual(),
+      numeroOrden:
+        this.generarNumeroOrdenAutomatico(),
+      fechaEntrada,
       montoCancelado: 0,
       montoDebe: 0,
       montoTotal: 0,
@@ -2178,9 +2457,360 @@ export class ClientesRecetasComponent
       tipoMontura: '',
       diagnostico: '',
       observaciones: '',
-      proximoControl: '',
+      proximoControl:
+        this.fechaUnAnioDespues(
+          fechaEntrada
+        ),
       vigente: true
     };
+  }
+
+  private crearFormularioEdicionReceta(
+    cliente: Cliente,
+    receta: RecetaOptica
+  ): ClienteForm {
+    return {
+      tipoDocumento:
+        cliente.tipoDocumento,
+      numeroDocumento:
+        cliente.numeroDocumento || '',
+      nombres:
+        cliente.nombreCompleto,
+      apellidos: '',
+      telefono:
+        cliente.telefono || '',
+      correo:
+        cliente.correo || '',
+      direccion:
+        cliente.direccion || '',
+      fechaNacimiento:
+        cliente.fechaNacimiento || '',
+      observaciones:
+        cliente.observaciones || '',
+      incluirReceta: true,
+      receta: {
+        numeroOrden:
+          receta.numeroOrden || '',
+        fechaEntrada:
+          receta.fechaEntrada ||
+          receta.fechaReceta ||
+          this.fechaActual(),
+        montoCancelado:
+          receta.montoCancelado ?? 0,
+        montoDebe:
+          receta.montoDebe ?? 0,
+        montoTotal:
+          receta.montoTotal ?? 0,
+        medida:
+          receta.medida || '',
+        marca:
+          receta.marca || '',
+
+        fechaReceta:
+          receta.fechaReceta ||
+          receta.fechaEntrada ||
+          this.fechaActual(),
+        profesional:
+          receta.profesional || '',
+
+        lejosOdEsfera:
+          receta.lejosOdEsfera ?? null,
+        lejosOdCilindro:
+          receta.lejosOdCilindro ?? null,
+        lejosOdEje:
+          receta.lejosOdEje ?? null,
+        lejosOiEsfera:
+          receta.lejosOiEsfera ?? null,
+        lejosOiCilindro:
+          receta.lejosOiCilindro ?? null,
+        lejosOiEje:
+          receta.lejosOiEje ?? null,
+        lejosDip:
+          receta.lejosDip ?? null,
+
+        cercaOdEsfera:
+          receta.cercaOdEsfera ?? null,
+        cercaOdCilindro:
+          receta.cercaOdCilindro ?? null,
+        cercaOdEje:
+          receta.cercaOdEje ?? null,
+        cercaOiEsfera:
+          receta.cercaOiEsfera ?? null,
+        cercaOiCilindro:
+          receta.cercaOiCilindro ?? null,
+        cercaOiEje:
+          receta.cercaOiEje ?? null,
+        cercaDip:
+          receta.cercaDip ?? null,
+
+        adicionOd:
+          receta.adicionOd ?? null,
+        adicionOi:
+          receta.adicionOi ?? null,
+        agudezaVisualOd:
+          receta.agudezaVisualOd || '',
+        agudezaVisualOi:
+          receta.agudezaVisualOi || '',
+        tipoLente:
+          receta.tipoLente || '',
+        tipoMontura:
+          receta.tipoMontura || '',
+        diagnostico:
+          receta.diagnostico || '',
+        observaciones:
+          receta.observaciones || '',
+        proximoControl:
+          receta.proximoControl ||
+          this.fechaUnAnioDespues(
+            receta.fechaEntrada ||
+            receta.fechaReceta ||
+            this.fechaActual()
+          ),
+        vigente:
+          receta.vigente
+      }
+    };
+  }
+
+  private actualizarRecetaActual():
+    Observable<void> {
+    return defer(async () => {
+      if (
+        !this.recetaEditandoId ||
+        !this.clienteSeleccionado
+      ) {
+        throw new Error(
+          'No hay una receta seleccionada para actualizar.'
+        );
+      }
+
+      const receta =
+        this.form.receta;
+
+      const total =
+        Math.max(
+          this.numeroFormulario(
+            receta.montoTotal
+          ),
+          0
+        );
+
+      const cancelado =
+        Math.min(
+          Math.max(
+            this.numeroFormulario(
+              receta.montoCancelado
+            ),
+            0
+          ),
+          total
+        );
+
+      const debe =
+        Number(
+          (
+            total -
+            cancelado
+          ).toFixed(2)
+        );
+
+      const {
+        error
+      } =
+        await this.supabaseService.client
+          .from(
+            'recetas_opticas'
+          )
+          .update({
+            numero_orden:
+              receta.numeroOrden
+                .trim() ||
+              null,
+            fecha_entrada:
+              receta.fechaEntrada ||
+              receta.fechaReceta ||
+              this.fechaActual(),
+            monto_cancelado:
+              cancelado,
+            monto_debe:
+              debe,
+            monto_total:
+              total,
+            medida:
+              receta.medida
+                .trim() ||
+              null,
+            marca:
+              receta.marca
+                .trim() ||
+              null,
+            fecha_receta:
+              receta.fechaReceta ||
+              receta.fechaEntrada ||
+              this.fechaActual(),
+            profesional:
+              receta.profesional
+                .trim() ||
+              null,
+
+            lejos_od_esfera:
+              this.numeroNullableFormulario(
+                receta.lejosOdEsfera
+              ),
+            lejos_od_cilindro:
+              this.numeroNullableFormulario(
+                receta.lejosOdCilindro
+              ),
+            lejos_od_eje:
+              this.numeroNullableFormulario(
+                receta.lejosOdEje
+              ),
+            lejos_oi_esfera:
+              this.numeroNullableFormulario(
+                receta.lejosOiEsfera
+              ),
+            lejos_oi_cilindro:
+              this.numeroNullableFormulario(
+                receta.lejosOiCilindro
+              ),
+            lejos_oi_eje:
+              this.numeroNullableFormulario(
+                receta.lejosOiEje
+              ),
+            lejos_dip:
+              this.numeroNullableFormulario(
+                receta.lejosDip
+              ),
+
+            cerca_od_esfera:
+              this.numeroNullableFormulario(
+                receta.cercaOdEsfera
+              ),
+            cerca_od_cilindro:
+              this.numeroNullableFormulario(
+                receta.cercaOdCilindro
+              ),
+            cerca_od_eje:
+              this.numeroNullableFormulario(
+                receta.cercaOdEje
+              ),
+            cerca_oi_esfera:
+              this.numeroNullableFormulario(
+                receta.cercaOiEsfera
+              ),
+            cerca_oi_cilindro:
+              this.numeroNullableFormulario(
+                receta.cercaOiCilindro
+              ),
+            cerca_oi_eje:
+              this.numeroNullableFormulario(
+                receta.cercaOiEje
+              ),
+            cerca_dip:
+              this.numeroNullableFormulario(
+                receta.cercaDip
+              ),
+
+            adicion_od:
+              this.numeroNullableFormulario(
+                receta.adicionOd
+              ),
+            adicion_oi:
+              this.numeroNullableFormulario(
+                receta.adicionOi
+              ),
+
+            agudeza_visual_od:
+              receta.agudezaVisualOd
+                .trim() ||
+              null,
+            agudeza_visual_oi:
+              receta.agudezaVisualOi
+                .trim() ||
+              null,
+            tipo_lente:
+              receta.tipoLente
+                .trim() ||
+              null,
+            tipo_montura:
+              receta.tipoMontura
+                .trim() ||
+              null,
+            diagnostico:
+              receta.diagnostico
+                .trim() ||
+              null,
+            observaciones:
+              receta.observaciones
+                .trim() ||
+              null,
+            proximo_control:
+              receta.proximoControl ||
+              null,
+            vigente:
+              Boolean(
+                receta.vigente
+              )
+          })
+          .eq(
+            'id_receta',
+            this.recetaEditandoId
+          )
+          .eq(
+            'id_cliente',
+            this.clienteSeleccionado.id
+          );
+
+      if (error) {
+        if (
+          String(
+            error.message ||
+            ''
+          )
+            .toLowerCase()
+            .includes(
+              'numero_orden'
+            )
+        ) {
+          throw new Error(
+            'Ya existe otra receta con ese número de orden.'
+          );
+        }
+
+        throw new Error(
+          error.message
+        );
+      }
+    });
+  }
+
+  private numeroNullableFormulario(
+    valor:
+      string |
+      number |
+      null |
+      undefined
+  ): number | null {
+    if (
+      valor === null ||
+      valor === undefined ||
+      String(valor).trim() ===
+        ''
+    ) {
+      return null;
+    }
+
+    const numero =
+      Number(
+        String(valor)
+          .replace(',', '.')
+      );
+
+    return Number.isFinite(
+      numero
+    )
+      ? numero
+      : null;
   }
 
   private esCliente(

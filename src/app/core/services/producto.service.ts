@@ -8,6 +8,7 @@ import {
   Categoria,
   Marca,
   Producto,
+  ProductoEdicionVendedorRequest,
   ProductoRequest,
   Proveedor,
   ResultadoBusquedaEscanerProducto,
@@ -18,6 +19,10 @@ import {
 import {
   SupabaseService
 } from './supabase.service';
+
+import {
+  TokenService
+} from './token.service';
 
 interface CategoriaDb {
   id_categoria: number;
@@ -53,7 +58,7 @@ interface ProductoDb {
   medida?: string | null;
   material?: string | null;
   sexo?: string | null;
-  precio_compra: number | string;
+  precio_compra?: number | string | null;
   precio_venta: number | string;
   stock_actual: number;
   stock_minimo: number;
@@ -81,7 +86,13 @@ interface ProductoDb {
 })
 export class ProductoService {
 
-  private readonly columnasProducto = `
+  private get columnasProducto(): string {
+    const precioCompra =
+      this.esAdministrador
+        ? 'precio_compra,'
+        : '';
+
+    return `
     id_producto,
     codigo_interno,
     codigo_barras,
@@ -92,7 +103,7 @@ export class ProductoService {
     medida,
     material,
     sexo,
-    precio_compra,
+    ${precioCompra}
     precio_venta,
     stock_actual,
     stock_minimo,
@@ -122,11 +133,52 @@ export class ProductoService {
       activo
     )
   `;
+  }
+
 
   constructor(
     private supabaseService:
-      SupabaseService
+      SupabaseService,
+    private tokenService:
+      TokenService
   ) {}
+
+  private get rolActual(): string {
+    return String(
+      this.tokenService.getRole() || ''
+    )
+      .trim()
+      .toUpperCase();
+  }
+
+  private get esAdministrador(): boolean {
+    return this.rolActual ===
+      'ADMINISTRADOR';
+  }
+
+  private get esVendedor(): boolean {
+    return this.rolActual ===
+      'VENDEDOR';
+  }
+
+  private exigirAdministrador(): void {
+    if (!this.esAdministrador) {
+      throw new Error(
+        'Solo el administrador puede realizar esta acción.'
+      );
+    }
+  }
+
+  private exigirUsuarioProductos(): void {
+    if (
+      !this.esAdministrador &&
+      !this.esVendedor
+    ) {
+      throw new Error(
+        'El usuario no tiene permisos sobre productos.'
+      );
+    }
+  }
 
   listar(): Observable<Producto[]> {
     return defer(async () => {
@@ -171,6 +223,8 @@ export class ProductoService {
   ): Observable<ResultadoRegistroProducto> {
     return defer(
       async (): Promise<ResultadoRegistroProducto> => {
+        this.exigirAdministrador();
+
         const codigoBarras =
           this.normalizarCodigoEscaneado(
             request.codigoBarras
@@ -369,6 +423,8 @@ export class ProductoService {
   ): Observable<ResultadoRegistroProducto> {
     return defer(
       async (): Promise<ResultadoRegistroProducto> => {
+        this.exigirAdministrador();
+
         if (
           !Number.isInteger(
             idProducto
@@ -514,11 +570,96 @@ export class ProductoService {
     );
   }
 
+  actualizarDatosVenta(
+    idProducto: number,
+    request:
+      ProductoEdicionVendedorRequest
+  ): Observable<ResultadoRegistroProducto> {
+    return defer(
+      async (): Promise<ResultadoRegistroProducto> => {
+        this.exigirUsuarioProductos();
+
+        if (
+          !Number.isInteger(
+            idProducto
+          ) ||
+          idProducto <= 0
+        ) {
+          throw new Error(
+            'El producto seleccionado no es válido.'
+          );
+        }
+
+        const precioVenta =
+          Number(
+            request.precioVenta
+          );
+
+        if (
+          !Number.isFinite(
+            precioVenta
+          ) ||
+          precioVenta <= 0
+        ) {
+          throw new Error(
+            'El precio de venta debe ser mayor que cero.'
+          );
+        }
+
+        const {
+          error
+        } =
+          await this.supabaseService.client
+            .rpc(
+              'actualizar_producto_vendedor',
+              {
+                p_id_producto:
+                  idProducto,
+                p_precio_venta:
+                  precioVenta,
+                p_descripcion:
+                  String(
+                    request.descripcion || ''
+                  ).trim() ||
+                  null
+              }
+            );
+
+        if (error) {
+          throw new Error(
+            this.traducirError(
+              error.message
+            )
+          );
+        }
+
+        const producto =
+          await this.obtenerPorId(
+            idProducto
+          );
+
+        return {
+          producto,
+          accion:
+            'ACTUALIZADO',
+          cantidadAgregada:
+            0,
+          stockAnterior:
+            producto.stockActual,
+          stockNuevo:
+            producto.stockActual
+        };
+      }
+    );
+  }
+
   eliminar(
     idProducto: number
   ): Observable<ResultadoEliminacionProducto> {
     return defer(
       async (): Promise<ResultadoEliminacionProducto> => {
+        this.exigirAdministrador();
+
         if (
           !Number.isInteger(
             idProducto
@@ -920,6 +1061,8 @@ export class ProductoService {
     nombre: string
   ): Observable<Categoria> {
     return defer(async () => {
+      this.exigirAdministrador();
+
       const nombreLimpio =
         this.normalizarNombre(
           nombre
@@ -1068,6 +1211,8 @@ export class ProductoService {
     nombre: string
   ): Observable<Marca> {
     return defer(async () => {
+      this.exigirAdministrador();
+
       const nombreLimpio =
         this.normalizarNombre(
           nombre

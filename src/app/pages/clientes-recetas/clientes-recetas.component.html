@@ -2,7 +2,7 @@
 
   <header class="clients-header">
     <div class="header-title">
-      <span class="title-icon">♙</span>
+      <span class="title-icon" aria-hidden="true"><i class="bi bi-people-fill"></i></span>
 
       <div>
         <span class="page-kicker">
@@ -32,7 +32,16 @@
         (click)="archivoRecetas.click()"
         [disabled]="procesandoExcel"
       >
-        {{ procesandoExcel ? 'Procesando...' : '↑ Cargar recetas' }}
+        <i
+          class="bi"
+          [ngClass]="
+            procesandoExcel
+              ? 'bi-arrow-repeat spin-icon'
+              : 'bi-cloud-arrow-up-fill'
+          "
+          aria-hidden="true"
+        ></i>
+        {{ procesandoExcel ? 'Procesando...' : 'Cargar recetas' }}
       </button>
 
       <button
@@ -41,7 +50,8 @@
         (click)="descargarRecetasExcel()"
         [disabled]="totalRecetas === 0"
       >
-        ↓ Descargar Excel
+        <i class="bi bi-file-earmark-excel-fill" aria-hidden="true"></i>
+        Descargar Excel
       </button>
 
       <button
@@ -49,6 +59,7 @@
         class="secondary-button template-button"
         (click)="descargarPlantillaExcel()"
       >
+        <i class="bi bi-file-earmark-arrow-down-fill" aria-hidden="true"></i>
         Plantilla Excel
       </button>
 
@@ -58,7 +69,8 @@
         (click)="abrirNuevaReceta()"
         [disabled]="!clienteSeleccionado"
       >
-        ＋ Nueva receta
+        <i class="bi bi-file-earmark-medical-fill" aria-hidden="true"></i>
+        Nueva receta
       </button>
 
       <button
@@ -66,27 +78,28 @@
         class="primary-button"
         (click)="abrirNuevoCliente()"
       >
-        ＋ Registrar cliente
+        <i class="bi bi-person-plus-fill" aria-hidden="true"></i>
+        Registrar cliente
       </button>
     </div>
   </header>
 
   <section class="stats-grid">
     <article class="stat-card">
-      <span class="stat-icon">♙</span>
+      <span class="stat-icon clients" aria-hidden="true"><i class="bi bi-people-fill"></i></span>
       <div>
         <small>Clientes registrados</small>
         <strong>{{ totalClientes }}</strong>
-        <span>Total de clientes</span>
+        <span class="stat-description">Total de clientes</span>
       </div>
     </article>
 
     <article class="stat-card">
-      <span class="stat-icon">▤</span>
+      <span class="stat-icon recipes" aria-hidden="true"><i class="bi bi-file-earmark-medical-fill"></i></span>
       <div>
         <small>Recetas activas</small>
         <strong>{{ recetasActivas }}</strong>
-        <span>{{ totalRecetas }} receta(s) registradas</span>
+        <span class="stat-description">{{ totalRecetas }} receta(s) registradas</span>
       </div>
     </article>
 
@@ -94,27 +107,27 @@
       class="stat-card warning"
       [class.has-alert]="controlesPendientes > 0"
     >
-      <span class="stat-icon">◷</span>
+      <span class="stat-icon controls" aria-hidden="true"><i class="bi bi-clock-history"></i></span>
       <div>
         <small>Controles pendientes</small>
         <strong>{{ controlesPendientes }}</strong>
-        <span>Por realizar</span>
+        <span class="stat-description">Por realizar</span>
       </div>
     </article>
 
     <article class="stat-card">
-      <span class="stat-icon">⊕</span>
+      <span class="stat-icon new" aria-hidden="true"><i class="bi bi-person-plus-fill"></i></span>
       <div>
         <small>Nuevos este mes</small>
         <strong>{{ nuevosEsteMes }}</strong>
-        <span>Nuevos registros</span>
+        <span class="stat-description">Nuevos registros</span>
       </div>
     </article>
   </section>
 
   <section class="search-controls">
     <div class="search-box">
-      <span aria-hidden="true">⌕</span>
+      <i class="bi bi-search" aria-hidden="true"></i>
 
       <input
         type="search"
@@ -130,7 +143,7 @@
         (click)="search = ''; paginaActual = 1"
         aria-label="Limpiar búsqueda"
       >
-        ×
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
     </div>
 
@@ -153,25 +166,29 @@
       (click)="limpiarFiltros()"
       *ngIf="search || filtro !== 'TODOS'"
     >
+      <i class="bi bi-funnel-x-fill" aria-hidden="true"></i>
       Limpiar filtros
     </button>
   </section>
 
   <p class="message success" *ngIf="ok">
-    {{ ok }}
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>{{ ok }}</span>
   </p>
 
   <p
     class="message error"
     *ngIf="error && !mostrarFormulario"
   >
-    {{ error }}
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+    <span>{{ error }}</span>
   </p>
 
   <section class="clients-content-grid">
     <article class="table-card">
       <div class="loading" *ngIf="cargando">
-        Cargando clientes y recetas...
+        <i class="bi bi-arrow-repeat spin-icon loading-icon" aria-hidden="true"></i>
+        <span>Cargando clientes y recetas...</span>
       </div>
 
       <div
@@ -274,24 +291,57 @@
                     type="button"
                     class="view-button"
                     (click)="abrirFicha(cliente)"
+                    [disabled]="!cliente.ultimaReceta"
+                    [title]="
+                      cliente.ultimaReceta
+                        ? 'Ver ficha completa'
+                        : 'El cliente todavía no tiene receta'
+                    "
                   >
-                    Ver ficha
+                    <i class="bi bi-eye" aria-hidden="true"></i>
+                    <span>Ver ficha</span>
                   </button>
 
                   <button
                     type="button"
                     class="recipe-button"
-                    (click)="abrirNuevaReceta(cliente)"
+                    (click)="
+                      cliente.ultimaReceta
+                        ? abrirEditarReceta(cliente)
+                        : abrirNuevaReceta(cliente)
+                    "
+                    [title]="
+                      cliente.ultimaReceta
+                        ? 'Editar la última receta óptica'
+                        : 'Registrar una nueva receta óptica'
+                    "
                   >
-                    Receta
+                    <i
+                      class="bi"
+                      [ngClass]="
+                        cliente.ultimaReceta
+                          ? 'bi-file-earmark-medical-fill'
+                          : 'bi-file-earmark-plus'
+                      "
+                      aria-hidden="true"
+                    ></i>
+                    <span>
+                      {{
+                        cliente.ultimaReceta
+                          ? 'Editar receta'
+                          : 'Nueva receta'
+                      }}
+                    </span>
                   </button>
 
                   <button
                     type="button"
                     class="edit-button"
                     (click)="abrirEditarCliente(cliente)"
+                    title="Editar únicamente los datos personales del cliente"
                   >
-                    Editar
+                    <i class="bi bi-person-gear" aria-hidden="true"></i>
+                    <span>Editar cliente</span>
                   </button>
 
                   <button
@@ -309,7 +359,15 @@
                         : 'Activar cliente'
                     "
                   >
-                    {{ cliente.activo ? '●' : '○' }}
+                    <i
+                      class="bi"
+                      [ngClass]="
+                        cliente.activo
+                          ? 'bi-toggle-on'
+                          : 'bi-toggle-off'
+                      "
+                      aria-hidden="true"
+                    ></i>
                   </button>
                 </div>
               </td>
@@ -342,6 +400,7 @@
             (click)="paginaAnterior()"
             [disabled]="paginaActual === 1"
           >
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
             Anterior
           </button>
 
@@ -355,6 +414,7 @@
             [disabled]="paginaActual === totalPaginas"
           >
             Siguiente
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
           </button>
         </div>
       </footer>
@@ -365,7 +425,7 @@
         *ngIf="clienteSeleccionado; else sinSeleccion"
       >
         <header class="quick-header">
-          <span class="quick-icon">▣</span>
+          <span class="quick-icon" aria-hidden="true"><i class="bi bi-person-vcard-fill"></i></span>
           <h2>Ficha rápida</h2>
         </header>
 
@@ -488,6 +548,7 @@
             (click)="abrirFicha(clienteSeleccionado)"
             [disabled]="!clienteSeleccionado.ultimaReceta"
           >
+            <i class="bi bi-card-list" aria-hidden="true"></i>
             Ver ficha completa
           </button>
 
@@ -495,23 +556,44 @@
             type="button"
             class="secondary-button"
             (click)="abrirEditarCliente(clienteSeleccionado)"
+            title="Editar únicamente los datos personales del cliente"
           >
-            Editar cliente
+            <i class="bi bi-person-gear" aria-hidden="true"></i>
+            Datos del cliente
           </button>
 
           <button
             type="button"
             class="primary-button"
-            (click)="abrirNuevaReceta(clienteSeleccionado)"
+            (click)="
+              clienteSeleccionado.ultimaReceta
+                ? abrirEditarReceta(clienteSeleccionado)
+                : abrirNuevaReceta(clienteSeleccionado)
+            "
           >
-            Nueva receta
+            <i
+              class="bi"
+              [ngClass]="
+                clienteSeleccionado.ultimaReceta
+                  ? 'bi-file-earmark-medical-fill'
+                  : 'bi-file-earmark-plus-fill'
+              "
+              aria-hidden="true"
+            ></i>
+            {{
+              clienteSeleccionado.ultimaReceta
+                ? 'Editar receta'
+                : 'Nueva receta'
+            }}
           </button>
         </div>
       </ng-container>
 
       <ng-template #sinSeleccion>
         <div class="empty-quick">
-          Selecciona un cliente para consultar su ficha.
+          <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
+          <strong>Selecciona un cliente</strong>
+          <span>Consulta su información, receta y próximos controles.</span>
         </div>
       </ng-template>
     </aside>
@@ -816,8 +898,10 @@
               modoFormulario === 'NUEVO_CLIENTE'
                 ? 'NUEVO REGISTRO'
                 : modoFormulario === 'EDITAR_CLIENTE'
-                  ? 'DATOS DEL CLIENTE'
-                  : 'NUEVA RECETA ÓPTICA'
+                  ? 'DATOS PERSONALES DEL CLIENTE'
+                  : modoFormulario === 'EDITAR_RECETA'
+                    ? 'EDITAR RECETA ÓPTICA'
+                    : 'NUEVA RECETA ÓPTICA'
             }}
           </span>
 
@@ -826,8 +910,10 @@
               modoFormulario === 'NUEVO_CLIENTE'
                 ? 'Registrar cliente'
                 : modoFormulario === 'EDITAR_CLIENTE'
-                  ? 'Editar cliente'
-                  : 'Registrar receta'
+                  ? 'Editar datos del cliente'
+                  : modoFormulario === 'EDITAR_RECETA'
+                    ? 'Editar receta'
+                    : 'Registrar receta'
             }}
           </h2>
         </div>
@@ -839,7 +925,7 @@
           [disabled]="guardando"
           aria-label="Cerrar formulario"
         >
-          ×
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
       </header>
 
@@ -849,7 +935,7 @@
       >
         <section class="form-section">
           <div class="section-heading">
-            <span>1</span>
+            <span aria-hidden="true"><i class="bi bi-person-vcard-fill"></i></span>
             <div>
               <h3>Datos del cliente</h3>
               <p>Información personal y de contacto.</p>
@@ -868,7 +954,10 @@
                 type="text"
                 required
                 [(ngModel)]="form.nombres"
-                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                [readonly]="
+                  modoFormulario === 'NUEVA_RECETA' ||
+                  modoFormulario === 'EDITAR_RECETA'
+                "
                 placeholder="Ej. Juan Carlos Pérez Díaz"
               />
             </div>
@@ -886,7 +975,10 @@
                 maxlength="8"
                 required
                 [(ngModel)]="form.numeroDocumento"
-                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                [readonly]="
+                  modoFormulario === 'NUEVA_RECETA' ||
+                  modoFormulario === 'EDITAR_RECETA'
+                "
                 placeholder="Ej. 76543210"
               />
             </div>
@@ -903,7 +995,10 @@
                 inputmode="numeric"
                 maxlength="9"
                 [(ngModel)]="form.telefono"
-                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                [readonly]="
+                  modoFormulario === 'NUEVA_RECETA' ||
+                  modoFormulario === 'EDITAR_RECETA'
+                "
                 placeholder="Ej. 987654321"
               />
             </div>
@@ -919,7 +1014,10 @@
                 name="direccion"
                 type="text"
                 [(ngModel)]="form.direccion"
-                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                [readonly]="
+                  modoFormulario === 'NUEVA_RECETA' ||
+                  modoFormulario === 'EDITAR_RECETA'
+                "
                 placeholder="Dirección del cliente"
               />
             </div>
@@ -935,7 +1033,10 @@
                 name="observacionesCliente"
                 rows="2"
                 [(ngModel)]="form.observaciones"
-                [readonly]="modoFormulario === 'NUEVA_RECETA'"
+                [readonly]="
+                  modoFormulario === 'NUEVA_RECETA' ||
+                  modoFormulario === 'EDITAR_RECETA'
+                "
                 placeholder="Información adicional del cliente"
               ></textarea>
             </div>
@@ -958,27 +1059,44 @@
           class="form-section recipe-section"
           *ngIf="
             modoFormulario === 'NUEVA_RECETA' ||
+            modoFormulario === 'EDITAR_RECETA' ||
             (modoFormulario === 'NUEVO_CLIENTE' && form.incluirReceta)
           "
         >
           <div class="section-heading">
-            <span>2</span>
+            <span aria-hidden="true"><i class="bi bi-eyeglasses"></i></span>
             <div>
               <h3>Orden y receta óptica</h3>
-              <p>Datos económicos, montura, marca y graduación de lejos.</p>
+              <p>Orden automática, montura, marca y graduación de lejos.</p>
             </div>
           </div>
 
           <div class="work-order-grid">
             <div class="field">
-              <label for="numeroOrden">Orden de trabajo</label>
-              <input
-                id="numeroOrden"
-                name="numeroOrden"
-                type="text"
-                [(ngModel)]="form.receta.numeroOrden"
-                placeholder="Automática si se deja vacía"
-              />
+              <label for="numeroOrden">
+                Orden de trabajo
+                <small>(automática)</small>
+              </label>
+
+              <div class="automatic-order-field">
+                <i class="bi bi-hash" aria-hidden="true"></i>
+
+                <input
+                  id="numeroOrden"
+                  name="numeroOrden"
+                  type="text"
+                  [(ngModel)]="form.receta.numeroOrden"
+                  readonly
+                  tabindex="-1"
+                />
+
+                <span
+                  class="automatic-badge"
+                  *ngIf="modoFormulario !== 'EDITAR_RECETA'"
+                >
+                  Generada por el sistema
+                </span>
+              </div>
             </div>
 
             <div class="field">
@@ -988,44 +1106,7 @@
                 name="fechaEntrada"
                 type="date"
                 [(ngModel)]="form.receta.fechaEntrada"
-              />
-            </div>
-
-            <div class="field">
-              <label for="montoTotal">Total</label>
-              <input
-                id="montoTotal"
-                name="montoTotal"
-                type="number"
-                min="0"
-                step="0.01"
-                [(ngModel)]="form.receta.montoTotal"
-                (ngModelChange)="recalcularDebe()"
-              />
-            </div>
-
-            <div class="field">
-              <label for="montoCancelado">Cancelado</label>
-              <input
-                id="montoCancelado"
-                name="montoCancelado"
-                type="number"
-                min="0"
-                step="0.01"
-                [(ngModel)]="form.receta.montoCancelado"
-                (ngModelChange)="recalcularDebe()"
-              />
-            </div>
-
-            <div class="field">
-              <label for="montoDebe">Debe</label>
-              <input
-                id="montoDebe"
-                name="montoDebe"
-                type="number"
-                step="0.01"
-                [(ngModel)]="form.receta.montoDebe"
-                readonly
+                (ngModelChange)="actualizarProximoControlDesdeEntrada()"
               />
             </div>
 
@@ -1053,13 +1134,27 @@
 
 
             <div class="field">
-              <label for="proximoControl">Próximo control</label>
-              <input
-                id="proximoControl"
-                name="proximoControl"
-                type="date"
-                [(ngModel)]="form.receta.proximoControl"
-              />
+              <label for="proximoControl">
+                Próximo control
+                <small>(1 año después)</small>
+              </label>
+
+              <div class="next-control-field">
+                <i class="bi bi-calendar-check-fill" aria-hidden="true"></i>
+
+                <input
+                  id="proximoControl"
+                  name="proximoControl"
+                  type="date"
+                  [(ngModel)]="form.receta.proximoControl"
+                  readonly
+                  tabindex="-1"
+                />
+              </div>
+
+              <small class="field-help">
+                Se calcula automáticamente a partir de la fecha de entrada.
+              </small>
             </div>
 
           </div>
@@ -1211,7 +1306,8 @@
         </section>
 
         <p class="modal-error" *ngIf="error">
-          {{ error }}
+          <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+          <span>{{ error }}</span>
         </p>
 
         <footer class="modal-actions">
@@ -1221,6 +1317,7 @@
             (click)="cerrarFormulario()"
             [disabled]="guardando"
           >
+            <i class="bi bi-x-circle" aria-hidden="true"></i>
             Cancelar
           </button>
 
@@ -1229,7 +1326,26 @@
             class="primary-button"
             [disabled]="guardando"
           >
-            {{ guardando ? 'Guardando...' : 'Guardar' }}
+            <i
+              class="bi"
+              [ngClass]="
+                guardando
+                  ? 'bi-arrow-repeat spin-icon'
+                  : 'bi-floppy-fill'
+              "
+              aria-hidden="true"
+            ></i>
+            {{
+              guardando
+                ? 'Guardando...'
+                : modoFormulario === 'EDITAR_RECETA'
+                  ? 'Actualizar receta'
+                  : modoFormulario === 'NUEVA_RECETA'
+                    ? 'Guardar receta'
+                    : modoFormulario === 'EDITAR_CLIENTE'
+                      ? 'Guardar datos del cliente'
+                      : 'Registrar cliente'
+            }}
           </button>
         </footer>
       </form>

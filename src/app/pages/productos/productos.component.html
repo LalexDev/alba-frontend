@@ -11,19 +11,20 @@
     </div>
 
     <button
+      *ngIf="esAdministrador"
       class="primary-button"
       type="button"
       (click)="abrirFormulario()"
     >
       <i
-        class="bi bi-plus-lg"
+        class="bi bi-box-seam-fill"
         aria-hidden="true"
       ></i>
       Registrar producto
     </button>
   </header>
 
-  <section class="stats-grid">
+  <section class="stats-grid" [class.seller-view]="esVendedor">
     <article class="stat-card">
       <span class="stat-icon">
         <i
@@ -34,7 +35,7 @@
       <div>
         <small>Marcas en inventario</small>
         <strong>{{ totalProductos }}</strong>
-        <span>
+        <span class="stat-description">
           {{ totalModelosRegistrados }}
           modelo(s) registrados
         </span>
@@ -47,32 +48,32 @@
     >
       <span class="stat-icon">
         <i
-          class="bi bi-exclamation-triangle"
+          class="bi bi-exclamation-triangle-fill"
           aria-hidden="true"
         ></i>
       </span>
       <div>
         <small>Stock bajo</small>
         <strong>{{ totalBajoStock }}</strong>
-        <span>Stock mínimo: 5 por defecto</span>
+        <span class="stat-description">Stock mínimo: 5 por defecto</span>
       </div>
     </article>
 
     <article class="stat-card">
       <span class="stat-icon">
         <i
-          class="bi bi-tags"
+          class="bi bi-tags-fill"
           aria-hidden="true"
         ></i>
       </span>
       <div>
         <small>Categorías</small>
         <strong>{{ totalCategorias }}</strong>
-        <span>Categorías activas</span>
+        <span class="stat-description">Categorías activas</span>
       </div>
     </article>
 
-    <article class="stat-card value-card">
+    <article class="stat-card value-card" *ngIf="esAdministrador">
       <span class="stat-icon">
         <i
           class="bi bi-cash-stack"
@@ -88,7 +89,7 @@
               | number:'1.2-2'
           }}
         </strong>
-        <span>Valor de compra del stock</span>
+        <span class="stat-description">Valor de compra del stock</span>
       </div>
     </article>
   </section>
@@ -97,15 +98,21 @@
     class="stock-alert"
     *ngIf="totalBajoStock > 0"
   >
-    <div>
-      <strong>
-        Hay {{ totalBajoStock }}
-        marca(s) con stock bajo.
-      </strong>
-      <span>
-        Revisa los productos resaltados y contacta
-        al proveedor para solicitar reposición.
+    <div class="stock-alert-content">
+      <span class="stock-alert-icon" aria-hidden="true">
+        <i class="bi bi-exclamation-triangle-fill"></i>
       </span>
+
+      <div>
+        <strong>
+          Hay {{ totalBajoStock }}
+          marca(s) con stock bajo.
+        </strong>
+        <span>
+          Revisa los productos resaltados y contacta
+          al proveedor para solicitar reposición.
+        </span>
+      </div>
     </div>
 
     <button
@@ -120,10 +127,10 @@
     </button>
   </section>
 
-  <section class="inventory-controls">
+  <section class="inventory-controls" [class.seller-view]="esVendedor">
 
     <div class="search-box">
-      <span aria-hidden="true">⌕</span>
+      <i class="bi bi-search" aria-hidden="true"></i>
 
       <input
         type="search"
@@ -139,7 +146,7 @@
         (click)="search = ''; paginaActual = 1"
         aria-label="Limpiar texto de búsqueda"
       >
-        ×
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
     </div>
 
@@ -195,7 +202,7 @@
       [class.active]="mostrarSoloBajoStock"
       (click)="cambiarFiltroStock()"
     >
-      ⚠
+      <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
       {{
         mostrarSoloBajoStock
           ? 'Mostrando stock bajo'
@@ -204,19 +211,13 @@
     </button>
 
     <button
+      *ngIf="esAdministrador"
       class="excel-button"
       type="button"
       (click)="exportarInventarioExcel()"
       [disabled]="cargando || productos.length === 0"
     >
-      <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path d="M12 3v12"></path>
-        <path d="m7 10 5 5 5-5"></path>
-        <path d="M5 21h14"></path>
-      </svg>
+      <i class="bi bi-file-earmark-excel-fill" aria-hidden="true"></i>
 
       Descargar inventario
     </button>
@@ -232,6 +233,7 @@
         mostrarSoloBajoStock
       "
     >
+      <i class="bi bi-funnel-x-fill" aria-hidden="true"></i>
       Limpiar filtros
     </button>
 
@@ -241,14 +243,16 @@
     class="message success"
     *ngIf="ok"
   >
-    {{ ok }}
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>{{ ok }}</span>
   </p>
 
   <p
     class="message error"
     *ngIf="error"
   >
-    {{ error }}
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+    <span>{{ error }}</span>
   </p>
 
   <section class="inventory-card">
@@ -256,7 +260,8 @@
       class="loading"
       *ngIf="cargando"
     >
-      Cargando inventario...
+      <i class="bi bi-arrow-repeat spin-icon loading-icon" aria-hidden="true"></i>
+      <span>Cargando inventario...</span>
     </div>
 
     <div
@@ -434,6 +439,7 @@
 
                 <ng-template #stockCorrecto>
                   <span class="stock-ok">
+                    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
                     Correcto
                   </span>
                 </ng-template>
@@ -510,7 +516,7 @@
                       </div>
 
                       <div>
-                        <span>Código</span>
+                        <span><i class="bi bi-upc-scan"></i> Código</span>
                         <strong>
                           {{
                             modelo.codigoBarras ||
@@ -520,34 +526,34 @@
                       </div>
 
                       <div *ngIf="modelo.sexo">
-                        <span>Sexo</span>
+                        <span><i class="bi bi-person"></i> Sexo</span>
                         <strong>
                           {{ modelo.sexo }}
                         </strong>
                       </div>
 
                       <div *ngIf="modelo.color">
-                        <span>Color</span>
+                        <span><i class="bi bi-palette"></i> Color</span>
                         <strong>
                           {{ modelo.color }}
                         </strong>
                       </div>
 
                       <div *ngIf="modelo.medida">
-                        <span>Medida</span>
+                        <span><i class="bi bi-rulers"></i> Medida</span>
                         <strong>
                           {{ modelo.medida }}
                         </strong>
                       </div>
 
                       <div *ngIf="modelo.material">
-                        <span>Material</span>
+                        <span><i class="bi bi-layers"></i> Material</span>
                         <strong>
                           {{ modelo.material }}
                         </strong>
                       </div>
 
-                      <div>
+                      <div *ngIf="esAdministrador">
                         <span>Compra</span>
                         <strong>
                           S/
@@ -629,10 +635,15 @@
                             aria-hidden="true"
                           ></i>
 
-                          Editar
+                          {{
+                            esVendedor
+                              ? 'Editar precio'
+                              : 'Editar'
+                          }}
                         </button>
 
                         <button
+                          *ngIf="esAdministrador"
                           type="button"
                           class="delete-model-button"
                           (click)="
@@ -665,6 +676,9 @@
         class="empty-state"
         *ngIf="!cargando"
       >
+        <span class="empty-state-icon" aria-hidden="true">
+          <i class="bi bi-box-seam"></i>
+        </span>
         <strong>No se encontraron productos.</strong>
         <span>
           Registra un producto o modifica
@@ -691,6 +705,7 @@
           (click)="paginaAnterior()"
           [disabled]="paginaActual === 1"
         >
+          <i class="bi bi-chevron-left" aria-hidden="true"></i>
           Anterior
         </button>
 
@@ -704,6 +719,7 @@
           [disabled]="paginaActual === totalPaginas"
         >
           Siguiente
+          <i class="bi bi-chevron-right" aria-hidden="true"></i>
         </button>
       </div>
     </footer>
@@ -725,17 +741,21 @@
         <div>
           <span class="modal-kicker">
             {{
-              modoEdicion
-                ? 'EDITAR PRODUCTO'
-                : 'NUEVO PRODUCTO'
+              edicionLimitadaVendedor
+                ? 'EDITAR PRECIO DE VENTA'
+                : modoEdicion
+                  ? 'EDITAR PRODUCTO'
+                  : 'NUEVO PRODUCTO'
             }}
           </span>
 
           <h2 id="tituloRegistroProducto">
             {{
-              modoEdicion
-                ? 'Actualizar producto'
-                : 'Registrar producto'
+              edicionLimitadaVendedor
+                ? 'Actualizar precio'
+                : modoEdicion
+                  ? 'Actualizar producto'
+                  : 'Registrar producto'
             }}
           </h2>
         </div>
@@ -759,6 +779,7 @@
         [formGroup]="form"
         (ngSubmit)="guardar()"
       >
+        <ng-container *ngIf="!edicionLimitadaVendedor; else formularioVendedor">
         <div class="form-grid">
           <div
             class="field scanner-measure-field"
@@ -924,6 +945,15 @@
                 class="toggle-brand-button"
                 (click)="alternarNuevaMarca()"
               >
+                <i
+                  class="bi"
+                  [ngClass]="
+                    mostrarNuevaMarca
+                      ? 'bi-x-circle'
+                      : 'bi-plus-circle-fill'
+                  "
+                  aria-hidden="true"
+                ></i>
                 {{
                   mostrarNuevaMarca
                     ? 'Cancelar nueva marca'
@@ -1035,6 +1065,15 @@
                 (click)="guardarNuevaMarca()"
                 [disabled]="guardandoMarca"
               >
+                <i
+                  class="bi"
+                  [ngClass]="
+                    guardandoMarca
+                      ? 'bi-arrow-repeat spin-icon'
+                      : 'bi-check2-circle'
+                  "
+                  aria-hidden="true"
+                ></i>
                 {{
                   guardandoMarca
                     ? 'Guardando marca...'
@@ -1047,14 +1086,16 @@
               class="brand-message success"
               *ngIf="mensajeMarca"
             >
-              {{ mensajeMarca }}
+              <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+              <span>{{ mensajeMarca }}</span>
             </p>
 
             <p
               class="brand-message error"
               *ngIf="errorMarca"
             >
-              {{ errorMarca }}
+              <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+              <span>{{ errorMarca }}</span>
             </p>
           </section>
 
@@ -1302,12 +1343,91 @@
             ></textarea>
           </div>
         </div>
+        </ng-container>
+
+        <ng-template #formularioVendedor>
+          <section class="seller-edit-panel">
+            <div class="seller-product-summary">
+              <span class="seller-product-icon" aria-hidden="true">
+                <i class="bi bi-tag-fill"></i>
+              </span>
+
+              <div>
+                <small>PRODUCTO</small>
+                <strong>
+                  {{
+                    productoEditando?.marca?.nombre ||
+                    productoEditando?.nombre ||
+                    'Producto'
+                  }}
+                  {{
+                    productoEditando?.modelo
+                      ? ' · ' + productoEditando?.modelo
+                      : ''
+                  }}
+                </strong>
+
+                <span>
+                  Stock actual:
+                  <b>{{ productoEditando?.stockActual || 0 }}</b>
+                  unidad(es)
+                </span>
+              </div>
+            </div>
+
+            <div class="seller-edit-grid">
+              <div class="field">
+                <label for="precioVentaVendedor">
+                  Precio de venta
+                </label>
+
+                <div class="price-input-wrapper">
+                  <span>S/</span>
+                  <input
+                    id="precioVentaVendedor"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    formControlName="precioVenta"
+                  />
+                </div>
+
+                <small>
+                  Puedes actualizar únicamente el precio de venta.
+                </small>
+              </div>
+
+              <div class="field full-width">
+                <label for="descripcionVendedor">
+                  Descripción
+                  <small>(opcional)</small>
+                </label>
+
+                <textarea
+                  id="descripcionVendedor"
+                  rows="4"
+                  formControlName="descripcion"
+                  placeholder="Observaciones o características visibles para la venta"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="seller-permission-note">
+              <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+              <span>
+                Como vendedor no puedes registrar, eliminar ni modificar
+                código, marca, modelo, medida, stock, proveedor o precio de compra.
+              </span>
+            </div>
+          </section>
+        </ng-template>
 
         <p
           class="modal-error"
           *ngIf="error"
         >
-          {{ error }}
+          <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+          <span>{{ error }}</span>
         </p>
 
         <footer class="modal-actions">
@@ -1317,6 +1437,7 @@
             (click)="cerrarFormulario()"
             [disabled]="guardando"
           >
+            <i class="bi bi-x-circle" aria-hidden="true"></i>
             Cancelar
           </button>
 
@@ -1341,9 +1462,11 @@
             {{
               guardando
                 ? 'Guardando...'
-                : modoEdicion
-                  ? 'Actualizar producto'
-                  : 'Guardar producto'
+                : edicionLimitadaVendedor
+                  ? 'Guardar precio'
+                  : modoEdicion
+                    ? 'Actualizar producto'
+                    : 'Guardar producto'
             }}
           </button>
         </footer>
@@ -1436,7 +1559,7 @@
 
       <div class="product-detail-grid">
         <div>
-          <span>Nombre</span>
+          <span><i class="bi bi-box-seam"></i> Nombre</span>
           <strong>
             {{ productoSeleccionado.nombre }}
           </strong>
@@ -1453,7 +1576,7 @@
         </div>
 
         <div>
-          <span>Categoría</span>
+          <span><i class="bi bi-tag"></i> Categoría</span>
           <strong>
             {{
               productoSeleccionado.categoria?.nombre ||
@@ -1463,7 +1586,7 @@
         </div>
 
         <div>
-          <span>Marca</span>
+          <span><i class="bi bi-bookmark-star"></i> Marca</span>
           <strong>
             {{
               productoSeleccionado.marca?.nombre ||
@@ -1473,7 +1596,7 @@
         </div>
 
         <div>
-          <span>Modelo</span>
+          <span><i class="bi bi-grid"></i> Modelo</span>
           <strong>
             {{
               productoSeleccionado.modelo ||
@@ -1522,8 +1645,8 @@
           </strong>
         </div>
 
-        <div>
-          <span>Precio de compra</span>
+        <div *ngIf="esAdministrador">
+          <span><i class="bi bi-cash-coin"></i> Precio de compra</span>
           <strong>
             S/
             {{
@@ -1535,7 +1658,7 @@
         </div>
 
         <div>
-          <span>Precio de venta</span>
+          <span><i class="bi bi-currency-dollar"></i> Precio de venta</span>
           <strong>
             S/
             {{
@@ -1546,7 +1669,7 @@
         </div>
 
         <div>
-          <span>Stock mínimo</span>
+          <span><i class="bi bi-exclamation-diamond"></i> Stock mínimo</span>
           <strong>
             {{
               productoSeleccionado.stockMinimo ??
@@ -1556,7 +1679,7 @@
         </div>
 
         <div class="detail-full-width">
-          <span>Proveedor</span>
+          <span><i class="bi bi-truck"></i> Proveedor</span>
           <strong>
             {{
               productoSeleccionado.proveedor?.razonSocial ||
@@ -1567,7 +1690,7 @@
         </div>
 
         <div class="detail-full-width">
-          <span>Descripción</span>
+          <span><i class="bi bi-card-text"></i> Descripción</span>
           <strong>
             {{
               productoSeleccionado.descripcion ||
@@ -1593,10 +1716,15 @@
             aria-hidden="true"
           ></i>
 
-          Editar producto
+          {{
+            esVendedor
+              ? 'Editar precio'
+              : 'Editar producto'
+          }}
         </button>
 
         <button
+          *ngIf="esAdministrador"
           type="button"
           class="delete-model-button"
           (click)="
@@ -1619,6 +1747,7 @@
           class="close-detail-button"
           (click)="cerrarDetalle()"
         >
+          <i class="bi bi-x-circle" aria-hidden="true"></i>
           Cerrar
         </button>
       </footer>
@@ -1631,6 +1760,7 @@
   <div
     class="modal-backdrop"
     *ngIf="
+      esAdministrador &&
       mostrarConfirmacionEliminar &&
       productoPorEliminar
     "
@@ -1675,6 +1805,7 @@
           (click)="cancelarEliminarProducto()"
           [disabled]="eliminando"
         >
+          <i class="bi bi-x-circle" aria-hidden="true"></i>
           Cancelar
         </button>
 

@@ -2,14 +2,20 @@
 
   <!-- CABECERA -->
   <section class="ventas-header">
-    <div>
-      <h1>Escanear producto</h1>
+    <div class="ventas-header-title">
+      <span class="ventas-header-icon" aria-hidden="true">
+        <i class="bi bi-upc-scan"></i>
+      </span>
 
-      <p>
-        El lector funciona como teclado. Coloca el cursor en el campo
-        y escanea la etiqueta. También puedes escribir el código y
-        presionar <strong>Enter</strong>.
-      </p>
+      <div>
+        <h1>Escanear producto</h1>
+
+        <p>
+          El lector funciona como teclado. Coloca el cursor en el campo
+          y escanea la etiqueta. También puedes escribir el código y
+          presionar <strong>Enter</strong>.
+        </p>
+      </div>
     </div>
   </section>
 
@@ -411,6 +417,18 @@
 
             <i class="bi bi-gift" aria-hidden="true"></i>
             Estuche gratis
+          </label>
+
+          <label>
+            <input
+              type="checkbox"
+              [checked]="liquidoGratisSeleccionado()"
+              (change)="cambiarLiquidoGratis($event)"
+              [disabled]="procesandoVenta"
+            />
+
+            <i class="bi bi-droplet-half" aria-hidden="true"></i>
+            Líquido gratis
           </label>
         </section>
 
@@ -916,6 +934,7 @@
       <header class="scanner-results-header">
         <div>
           <span class="scanner-results-kicker">
+            <i class="bi bi-search" aria-hidden="true"></i>
             PRODUCTOS ENCONTRADOS
           </span>
 

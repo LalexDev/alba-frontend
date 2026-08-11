@@ -1,0 +1,657 @@
+<div class="caja-page">
+
+  <header class="caja-header">
+    <div class="header-title">
+      <span class="header-icon" aria-hidden="true">
+        <i class="bi bi-cash-stack"></i>
+      </span>
+
+      <div>
+        <span class="page-kicker">CONTROL DIARIO</span>
+        <h1>Caja y cierre diario</h1>
+        <p>
+          Controla apertura, ventas cobradas, efectivo físico
+          y diferencias al finalizar la jornada.
+        </p>
+      </div>
+    </div>
+
+    <span
+      class="cash-status"
+      [class.open]="cajaAbierta"
+      [class.closed]="!cajaAbierta"
+    >
+      <i
+        class="bi"
+        [ngClass]="
+          cajaAbierta
+            ? 'bi-unlock-fill'
+            : 'bi-lock-fill'
+        "
+        aria-hidden="true"
+      ></i>
+
+      {{ cajaAbierta ? 'Caja abierta' : 'Caja cerrada' }}
+    </span>
+  </header>
+
+  <p class="message success" *ngIf="ok">
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>{{ ok }}</span>
+  </p>
+
+  <p class="message error" *ngIf="error">
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+    <span>{{ error }}</span>
+  </p>
+
+  <div class="loading-panel" *ngIf="cargando">
+    <i class="bi bi-arrow-repeat spin-icon" aria-hidden="true"></i>
+    <span>Consultando caja...</span>
+  </div>
+
+  <!-- APERTURA -->
+  <section
+    class="opening-card"
+    *ngIf="!cargando && !cajaAbierta"
+  >
+    <div class="opening-copy">
+      <span class="opening-icon" aria-hidden="true">
+        <i class="bi bi-door-open-fill"></i>
+      </span>
+
+      <div>
+        <span class="section-kicker">INICIO DE JORNADA</span>
+        <h2>Abre tu caja antes de vender</h2>
+        <p>
+          Indica el efectivo con el que inicia la jornada.
+          Este monto se usará para calcular el efectivo esperado
+          al momento del cierre.
+        </p>
+      </div>
+    </div>
+
+    <div class="opening-form">
+      <label for="montoApertura">
+        Monto inicial en efectivo
+      </label>
+
+      <div class="money-input">
+        <span>S/</span>
+        <input
+          id="montoApertura"
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="montoApertura"
+          [disabled]="abriendo"
+        />
+      </div>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="abrirCaja()"
+        [disabled]="abriendo"
+      >
+        <i
+          class="bi"
+          [ngClass]="
+            abriendo
+              ? 'bi-arrow-repeat spin-icon'
+              : 'bi-unlock-fill'
+          "
+          aria-hidden="true"
+        ></i>
+
+        {{ abriendo ? 'Abriendo...' : 'Abrir caja' }}
+      </button>
+    </div>
+  </section>
+
+  <!-- CAJA ABIERTA -->
+  <ng-container *ngIf="!cargando && cajaAbierta && caja">
+
+    <section class="active-cash-header">
+      <div>
+        <span class="section-kicker">CAJA ACTUAL</span>
+        <h2>{{ caja.usuario }}</h2>
+        <p>
+          Apertura:
+          <strong>{{ fechaTexto(caja.fechaApertura) }}</strong>
+        </p>
+      </div>
+
+      <div class="opening-money">
+        <small>Monto inicial</small>
+        <strong>
+          S/ {{ caja.montoApertura | number:'1.2-2' }}
+        </strong>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span class="stat-icon" aria-hidden="true">
+          <i class="bi bi-receipt-cutoff"></i>
+        </span>
+
+        <div>
+          <small>Ventas realizadas</small>
+          <strong>{{ caja.resumen.cantidadVentas }}</strong>
+          <span>
+            S/ {{ caja.resumen.totalVendido | number:'1.2-2' }}
+            en órdenes
+          </span>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon success" aria-hidden="true">
+          <i class="bi bi-wallet2"></i>
+        </span>
+
+        <div>
+          <small>Total cobrado</small>
+          <strong>
+            S/ {{ caja.resumen.totalCobrado | number:'1.2-2' }}
+          </strong>
+          <span>Dinero/cobertura registrada</span>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon warning" aria-hidden="true">
+          <i class="bi bi-hourglass-split"></i>
+        </span>
+
+        <div>
+          <small>Saldo pendiente</small>
+          <strong>
+            S/ {{ caja.resumen.saldoPendiente | number:'1.2-2' }}
+          </strong>
+          <span>Pendiente de clientes</span>
+        </div>
+      </article>
+
+      <article class="stat-card emphasized">
+        <span class="stat-icon" aria-hidden="true">
+          <i class="bi bi-cash-coin"></i>
+        </span>
+
+        <div>
+          <small>Efectivo esperado</small>
+          <strong>
+            S/ {{ caja.resumen.efectivoEsperado | number:'1.2-2' }}
+          </strong>
+          <span>Apertura + ingresos - egresos</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="payment-grid">
+      <article class="payment-card">
+        <span class="payment-icon cash" aria-hidden="true">
+          <i class="bi bi-cash"></i>
+        </span>
+        <div>
+          <small>Efectivo cobrado</small>
+          <strong>
+            S/ {{ caja.resumen.efectivo | number:'1.2-2' }}
+          </strong>
+        </div>
+      </article>
+
+      <article class="payment-card">
+        <span class="payment-icon" aria-hidden="true">
+          <i class="bi bi-phone-fill"></i>
+        </span>
+        <div>
+          <small>Yape</small>
+          <strong>
+            S/ {{ caja.resumen.yape | number:'1.2-2' }}
+          </strong>
+        </div>
+      </article>
+
+      <article class="payment-card">
+        <span class="payment-icon" aria-hidden="true">
+          <i class="bi bi-bank"></i>
+        </span>
+        <div>
+          <small>Transferencia</small>
+          <strong>
+            S/ {{ caja.resumen.transferencia | number:'1.2-2' }}
+          </strong>
+        </div>
+      </article>
+
+      <article class="payment-card">
+        <span class="payment-icon" aria-hidden="true">
+          <i class="bi bi-shield-check"></i>
+        </span>
+        <div>
+          <small>Seguro</small>
+          <strong>
+            S/ {{ caja.resumen.seguro | number:'1.2-2' }}
+          </strong>
+        </div>
+      </article>
+    </section>
+
+    <section class="cash-main-grid">
+
+      <article class="panel-card">
+        <header class="panel-header">
+          <div>
+            <span class="section-kicker">MOVIMIENTOS</span>
+            <h2>Ingresos y egresos</h2>
+          </div>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="alternarMovimiento()"
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                mostrarMovimiento
+                  ? 'bi-x-lg'
+                  : 'bi-plus-circle-fill'
+              "
+              aria-hidden="true"
+            ></i>
+            {{ mostrarMovimiento ? 'Cancelar' : 'Nuevo movimiento' }}
+          </button>
+        </header>
+
+        <div class="movement-form" *ngIf="mostrarMovimiento">
+          <div class="field">
+            <label for="tipoMovimiento">Tipo</label>
+            <select
+              id="tipoMovimiento"
+              [(ngModel)]="tipoMovimiento"
+            >
+              <option value="INGRESO">Ingreso</option>
+              <option value="EGRESO">Egreso / gasto</option>
+            </select>
+          </div>
+
+          <div class="field movement-concept">
+            <label for="conceptoMovimiento">Motivo</label>
+            <input
+              id="conceptoMovimiento"
+              type="text"
+              [(ngModel)]="conceptoMovimiento"
+              placeholder="Ej. compra de bolsas, movilidad..."
+            />
+          </div>
+
+          <div class="field">
+            <label for="montoMovimiento">Monto</label>
+            <input
+              id="montoMovimiento"
+              type="number"
+              min="0.01"
+              step="0.01"
+              [(ngModel)]="montoMovimiento"
+            />
+          </div>
+
+          <button
+            type="button"
+            class="primary-button movement-save"
+            (click)="registrarMovimiento()"
+            [disabled]="guardandoMovimiento"
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                guardandoMovimiento
+                  ? 'bi-arrow-repeat spin-icon'
+                  : 'bi-floppy-fill'
+              "
+              aria-hidden="true"
+            ></i>
+            Guardar
+          </button>
+        </div>
+
+        <div class="movement-summary">
+          <span>
+            Ingresos manuales:
+            <strong>
+              S/ {{ caja.resumen.ingresosManuales | number:'1.2-2' }}
+            </strong>
+          </span>
+
+          <span>
+            Egresos:
+            <strong>
+              S/ {{ caja.resumen.egresosManuales | number:'1.2-2' }}
+            </strong>
+          </span>
+        </div>
+
+        <div
+          class="movements-empty"
+          *ngIf="movimientos.length === 0"
+        >
+          <i class="bi bi-journal-text" aria-hidden="true"></i>
+          <span>Aún no hay movimientos de caja.</span>
+        </div>
+
+        <div
+          class="table-wrapper"
+          *ngIf="movimientos.length > 0"
+        >
+          <table class="movements-table">
+            <thead>
+              <tr>
+                <th>Fecha / hora</th>
+                <th>Concepto</th>
+                <th>Origen</th>
+                <th>Tipo</th>
+                <th>Monto</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let movimiento of movimientos">
+                <td>{{ fechaTexto(movimiento.fecha) }}</td>
+
+                <td>{{ movimiento.concepto }}</td>
+
+                <td>
+                  <span
+                    class="origin-badge"
+                    [class.auto]="movimiento.automatico"
+                  >
+                    {{ movimiento.automatico ? 'Venta' : 'Manual' }}
+                  </span>
+                </td>
+
+                <td>
+                  <span
+                    class="movement-badge"
+                    [class.expense]="movimiento.tipo === 'EGRESO'"
+                  >
+                    {{ movimiento.tipo }}
+                  </span>
+                </td>
+
+                <td>
+                  <strong
+                    [class.expense-money]="movimiento.tipo === 'EGRESO'"
+                  >
+                    {{ movimiento.tipo === 'EGRESO' ? '- ' : '+ ' }}
+                    S/ {{ movimiento.monto | number:'1.2-2' }}
+                  </strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel-card close-card">
+        <header class="panel-header">
+          <div>
+            <span class="section-kicker">FIN DE JORNADA</span>
+            <h2>Cierre de caja</h2>
+          </div>
+
+          <span class="lock-icon" aria-hidden="true">
+            <i class="bi bi-lock-fill"></i>
+          </span>
+        </header>
+
+        <div class="expected-box">
+          <span>Efectivo esperado</span>
+          <strong>
+            S/ {{ caja.resumen.efectivoEsperado | number:'1.2-2' }}
+          </strong>
+          <small>
+            Incluye monto inicial, efectivo de ventas,
+            ingresos y egresos manuales.
+          </small>
+        </div>
+
+        <div class="field">
+          <label for="montoContado">
+            Efectivo físico contado *
+          </label>
+
+          <div class="money-input large">
+            <span>S/</span>
+            <input
+              id="montoContado"
+              type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="montoContado"
+            />
+          </div>
+        </div>
+
+        <div
+          class="difference-box"
+          *ngIf="montoContado !== null"
+          [ngClass]="estadoDiferencia.toLowerCase()"
+        >
+          <div>
+            <span>Diferencia</span>
+            <strong>
+              {{ diferenciaPrevia >= 0 ? '+ ' : '- ' }}
+              S/
+              {{
+                (
+                  diferenciaPrevia >= 0
+                    ? diferenciaPrevia
+                    : -diferenciaPrevia
+                )
+                  | number:'1.2-2'
+              }}
+            </strong>
+          </div>
+
+          <p>
+            {{
+              estadoDiferencia === 'CUADRADA'
+                ? 'Caja cuadrada.'
+                : estadoDiferencia === 'FALTANTE'
+                  ? 'Existe un faltante de efectivo.'
+                  : 'Existe un sobrante de efectivo.'
+            }}
+          </p>
+        </div>
+
+        <div class="field">
+          <label for="observacionesCierre">
+            Observaciones
+          </label>
+          <textarea
+            id="observacionesCierre"
+            rows="4"
+            [(ngModel)]="observacionesCierre"
+            placeholder="Explica cualquier diferencia o incidencia del turno"
+          ></textarea>
+        </div>
+
+        <button
+          type="button"
+          class="close-cash-button"
+          (click)="cerrarCaja()"
+          [disabled]="cerrando || montoContado === null"
+        >
+          <i
+            class="bi"
+            [ngClass]="
+              cerrando
+                ? 'bi-arrow-repeat spin-icon'
+                : 'bi-lock-fill'
+            "
+            aria-hidden="true"
+          ></i>
+
+          {{ cerrando ? 'Cerrando...' : 'Cerrar caja' }}
+        </button>
+      </article>
+
+    </section>
+  </ng-container>
+
+  <!-- HISTORIAL -->
+  <section class="history-card" *ngIf="!cargando">
+    <header class="history-header">
+      <div>
+        <span class="section-kicker">HISTORIAL</span>
+        <h2>
+          {{
+            esAdministrador
+              ? 'Cierres de todos los vendedores'
+              : 'Mis cierres de caja'
+          }}
+        </h2>
+      </div>
+
+      <div class="history-actions" *ngIf="esAdministrador">
+        <button
+          type="button"
+          class="excel-button"
+          (click)="exportarExcel()"
+          [disabled]="historial.length === 0"
+        >
+          <i class="bi bi-file-earmark-excel-fill" aria-hidden="true"></i>
+          Excel
+        </button>
+
+        <button
+          type="button"
+          class="pdf-button"
+          (click)="exportarPdf()"
+          [disabled]="historial.length === 0"
+        >
+          <i class="bi bi-file-earmark-pdf-fill" aria-hidden="true"></i>
+          PDF
+        </button>
+      </div>
+    </header>
+
+    <div class="history-filters">
+      <div class="field">
+        <label for="filtroDesde">Desde</label>
+        <input
+          id="filtroDesde"
+          type="date"
+          [(ngModel)]="filtroDesde"
+        />
+      </div>
+
+      <div class="field">
+        <label for="filtroHasta">Hasta</label>
+        <input
+          id="filtroHasta"
+          type="date"
+          [(ngModel)]="filtroHasta"
+        />
+      </div>
+
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="aplicarFiltros()"
+      >
+        <i class="bi bi-funnel-fill" aria-hidden="true"></i>
+        Aplicar
+      </button>
+    </div>
+
+    <div
+      class="history-empty"
+      *ngIf="historial.length === 0"
+    >
+      <i class="bi bi-clock-history" aria-hidden="true"></i>
+      <strong>No hay cierres en el periodo.</strong>
+    </div>
+
+    <div
+      class="table-wrapper"
+      *ngIf="historial.length > 0"
+    >
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th *ngIf="esAdministrador">Vendedor</th>
+            <th>Ventas</th>
+            <th>Total cobrado</th>
+            <th>Efectivo</th>
+            <th>Esperado</th>
+            <th>Contado</th>
+            <th>Diferencia</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let item of historial">
+            <td>{{ fechaTexto(item.fechaApertura) }}</td>
+
+            <td *ngIf="esAdministrador">
+              <strong>{{ item.usuario }}</strong>
+            </td>
+
+            <td>{{ item.cantidadVentas }}</td>
+
+            <td>
+              S/ {{ item.totalCobrado | number:'1.2-2' }}
+            </td>
+
+            <td>
+              S/ {{ item.efectivo | number:'1.2-2' }}
+            </td>
+
+            <td>
+              S/ {{ item.montoEsperado | number:'1.2-2' }}
+            </td>
+
+            <td>
+              <ng-container *ngIf="item.montoCierreReal !== null; else sinContado">
+                S/ {{ item.montoCierreReal | number:'1.2-2' }}
+              </ng-container>
+              <ng-template #sinContado>—</ng-template>
+            </td>
+
+            <td>
+              <span
+                class="difference-badge"
+                [ngClass]="classDiferencia(item.diferencia)"
+                *ngIf="item.diferencia !== null; else sinDiferencia"
+              >
+                {{ signoDiferencia(item.diferencia) }}
+                S/
+                {{
+                  diferenciaAbsoluta(item.diferencia)
+                    | number:'1.2-2'
+                }}
+              </span>
+              <ng-template #sinDiferencia>—</ng-template>
+            </td>
+
+            <td>
+              <span
+                class="status-badge"
+                [class.open]="item.estado === 'ABIERTA'"
+              >
+                {{ item.estado }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>

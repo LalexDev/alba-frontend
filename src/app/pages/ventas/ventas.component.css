@@ -35,6 +35,28 @@
   line-height: 1.6;
 }
 
+.ventas-header-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.ventas-header-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  color: #ffffff;
+  background: #1593c7;
+  box-shadow: 0 10px 22px rgba(21, 147, 199, 0.18);
+}
+
+.ventas-header-icon .bi {
+  font-size: 25px;
+}
+
 /* SCANNER */
 .scanner-card {
   padding: 24px;
@@ -344,7 +366,7 @@
 
 
 /* =====================================================
-   MÉTODOS DE PAGO CON ÍCONOS SVG
+   MÉTODOS DE PAGO CON BOOTSTRAP ICONS
    ===================================================== */
 
 .metodo-section {
@@ -792,9 +814,8 @@
 .gift-options {
   display: grid;
   grid-template-columns:
-    minmax(180px, 1fr)
-    auto
-    auto;
+    minmax(190px, 1fr)
+    repeat(3, minmax(145px, auto));
   align-items: center;
   gap: 12px;
   margin-top: 16px;
@@ -839,6 +860,12 @@
   width: 16px;
   height: 16px;
   accent-color: #067647;
+}
+
+.gift-options label .bi {
+  flex: 0 0 auto;
+  color: #067647;
+  font-size: 15px;
 }
 
 .gift-badge {
@@ -1037,7 +1064,8 @@
   }
 
   .gift-options {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
   }
 
   .gift-options > div {
@@ -1430,9 +1458,9 @@
 }
 
 .producto-thumb.manual-thumb {
-  color: #7f56d9;
-  border-color: #d9d6fe;
-  background: #f4f3ff;
+  color: #0e78a5;
+  border-color: #b9dff0;
+  background: #eaf7fc;
 }
 
 .manual-badge {
@@ -1440,8 +1468,8 @@
   margin-top: 4px;
   padding: 3px 6px;
   border-radius: 999px;
-  color: #6941c6;
-  background: #f4f3ff;
+  color: #0e78a5;
+  background: #eaf7fc;
   font-size: 8px;
   font-weight: 900;
 }
@@ -1540,11 +1568,18 @@
 }
 
 .scanner-results-kicker {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: #0e78a5;
   font-size: 8px;
   font-weight: 900;
   letter-spacing: 0.14em;
+}
+
+.scanner-results-kicker .bi {
+  font-size: 12px;
+  letter-spacing: normal;
 }
 
 .scanner-results-header h2 {
@@ -1772,5 +1807,67 @@
   .metodo-ayuda {
     margin-left: auto;
     text-align: right;
+  }
+}
+
+
+/* =====================================================
+   AJUSTES FINALES - FLUJO RÁPIDO E ICONOS BOOTSTRAP
+   ===================================================== */
+
+.scanner-result-select .bi,
+.quick-product-btn .bi,
+.manual-add-button .bi,
+.btn-primary .bi,
+.btn-light .bi {
+  line-height: 1;
+}
+
+.scanner-result-select:focus-visible,
+.quick-product-btn:focus-visible,
+.gift-options label:focus-within {
+  outline: 3px solid rgba(21, 147, 199, 0.18);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1050px) and (min-width: 701px) {
+  .gift-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .gift-options > div {
+    grid-column: 1 / -1;
+  }
+
+  .gift-options label {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 700px) {
+  .ventas-header-title {
+    gap: 12px;
+  }
+
+  .ventas-header-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+  }
+
+  .ventas-header-icon .bi {
+    font-size: 21px;
+  }
+
+  .gift-options {
+    grid-template-columns: 1fr;
+  }
+
+  .gift-options > div {
+    grid-column: auto;
+  }
+
+  .gift-options label {
+    width: 100%;
   }
 }

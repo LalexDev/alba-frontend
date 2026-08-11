@@ -43,6 +43,11 @@ export interface Producto {
   proveedor?: Proveedor;
 }
 
+export interface ProductoEdicionVendedorRequest {
+  precioVenta: number;
+  descripcion?: string;
+}
+
 export interface ProductoRequest {
   codigoInterno?: string;
   codigoBarras: string;
