@@ -58,6 +58,7 @@ export class OrdenesRecibosComponent
   pagoAdicional = 0;
   pagoRevisado = false;
   errorAcciones = '';
+  confirmandoEliminacion = false;
 
   paginaActual = 1;
   elementosPorPagina = 10;
@@ -382,6 +383,7 @@ export class OrdenesRecibosComponent
     this.pagoAdicional = 0;
     this.pagoRevisado = false;
     this.errorAcciones = '';
+    this.confirmandoEliminacion = false;
     this.mostrarAcciones = true;
   }
 
@@ -395,6 +397,7 @@ export class OrdenesRecibosComponent
     this.pagoAdicional = 0;
     this.pagoRevisado = false;
     this.errorAcciones = '';
+    this.confirmandoEliminacion = false;
   }
 
   get nuevoMontoCancelado(): number {
@@ -472,11 +475,23 @@ export class OrdenesRecibosComponent
     );
   }
 
-  get puedeCancelar(): boolean {
+  get puedeEliminar(): boolean {
+    if (!this.ordenAcciones) {
+      return false;
+    }
+
     return (
       this.pagoRevisado &&
       this.pagoAdicionalValido &&
-      this.nuevoMontoCancelado <= 0.009
+      Number(
+        this.pagoAdicional || 0
+      ) <= 0.009 &&
+      this.ordenAcciones
+        .montoCancelado <= 0.009 &&
+      this.ordenAcciones
+        .estadoPago === 'PENDIENTE' &&
+      this.ordenAcciones
+        .estado !== 'COMPLETADA'
     );
   }
 
@@ -522,6 +537,93 @@ export class OrdenesRecibosComponent
       this.errorAcciones =
         `El pago adicional no puede superar el saldo de S/ ${this.ordenAcciones.saldo.toFixed(2)}.`;
     }
+  }
+
+  solicitarEliminarOrden(): void {
+    if (
+      !this.ordenAcciones ||
+      this.actualizando
+    ) {
+      return;
+    }
+
+    this.errorAcciones = '';
+
+    if (!this.pagoRevisado) {
+      this.errorAcciones =
+        'Primero confirma que revisaste el estado del pago.';
+      return;
+    }
+
+    if (!this.puedeEliminar) {
+      this.errorAcciones =
+        'Solo se pueden eliminar órdenes sin pagos y que no estén completadas.';
+      return;
+    }
+
+    this.confirmandoEliminacion =
+      true;
+  }
+
+  cancelarEliminarOrden(): void {
+    if (this.actualizando) {
+      return;
+    }
+
+    this.confirmandoEliminacion =
+      false;
+  }
+
+  confirmarEliminarOrden(): void {
+    if (
+      !this.ordenAcciones ||
+      !this.puedeEliminar ||
+      this.actualizando
+    ) {
+      return;
+    }
+
+    const idVenta =
+      this.ordenAcciones.idVenta;
+
+    const numeroOrden =
+      this.ordenAcciones.numeroOrden;
+
+    this.actualizando = true;
+    this.error = '';
+    this.errorAcciones = '';
+
+    this.ordenesService
+      .eliminarOrdenErronea(
+        idVenta
+      )
+      .pipe(
+        finalize(() => {
+          this.actualizando =
+            false;
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.mensaje =
+            `${numeroOrden} eliminada correctamente. El stock fue devuelto al inventario.`;
+
+          this.cerrarAcciones();
+          this.cargar();
+        },
+
+        error: (
+          error: unknown
+        ) => {
+          this.confirmandoEliminacion =
+            false;
+
+          this.errorAcciones =
+            error instanceof Error
+              ? error.message
+              : 'No se pudo eliminar la orden.';
+        }
+      });
   }
 
   cambiarEstado(

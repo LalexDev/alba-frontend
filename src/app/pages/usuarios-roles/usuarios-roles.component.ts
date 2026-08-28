@@ -436,6 +436,13 @@ export class UsuariosRolesComponent
 
   get contrasenasNoCoinciden():
     boolean {
+    if (
+      this.modoFormulario !==
+        'CREAR'
+    ) {
+      return false;
+    }
+
     return Boolean(
       this.form.confirmarPassword &&
       this.form.password !==
@@ -537,39 +544,55 @@ export class UsuariosRolesComponent
 
     if (
       this.modoFormulario ===
-        'CREAR' &&
-      !this.form.password
+        'CREAR'
     ) {
-      this.error =
-        'Ingresa una contraseña.';
-      return;
+      if (!this.form.password) {
+        this.error =
+          'Ingresa una contraseña.';
+        return;
+      }
+
+      if (
+        !this.passwordCumpleSeguridad
+      ) {
+        this.error =
+          'La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.';
+        return;
+      }
+
+      if (
+        !this.form.confirmarPassword
+      ) {
+        this.error =
+          'Confirma la contraseña.';
+        return;
+      }
+
+      if (
+        this.form.password !==
+        this.form.confirmarPassword
+      ) {
+        this.error =
+          'Las contraseñas no coinciden.';
+        return;
+      }
+    } else {
+      /*
+       * Seguridad adicional:
+       * aunque alguien manipule el HTML desde el navegador,
+       * la edición nunca envía una contraseña.
+       */
+      this.form.password = '';
+      this.form.confirmarPassword = '';
     }
 
     if (
-      this.form.password &&
-      !this.passwordCumpleSeguridad
+      this.modoFormulario ===
+        'EDITAR' &&
+      this.usuarioSeleccionado
     ) {
-      this.error =
-        'La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.';
-      return;
-    }
-
-    if (
-      this.form.password &&
-      !this.form.confirmarPassword
-    ) {
-      this.error =
-        'Confirma la contraseña.';
-      return;
-    }
-
-    if (
-      this.form.password !==
-      this.form.confirmarPassword
-    ) {
-      this.error =
-        'Las contraseñas no coinciden.';
-      return;
+      this.form.email =
+        this.usuarioSeleccionado.email;
     }
 
     this.guardando = true;

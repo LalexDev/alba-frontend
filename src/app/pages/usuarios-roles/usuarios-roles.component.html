@@ -487,7 +487,7 @@
             </strong>
           </div>
 
-          <div>
+          <div class="last-access-detail">
             <span>Último acceso</span>
             <strong>
               {{
@@ -498,6 +498,10 @@
                 ) || 'Sin registro'
               }}
             </strong>
+
+            <small>
+              Se actualiza automáticamente al iniciar sesión.
+            </small>
           </div>
 
           <div>
@@ -672,7 +676,11 @@
             <div>
               <h3>Datos personales</h3>
               <p>
-                Información del trabajador y datos para iniciar sesión.
+                {{
+                  modoFormulario === 'CREAR'
+                    ? 'Información del trabajador y datos para iniciar sesión.'
+                    : 'Modifica únicamente los datos del trabajador.'
+                }}
               </p>
             </div>
           </div>
@@ -786,6 +794,9 @@
                   [(ngModel)]="
                     form.email
                   "
+                  [readonly]="
+                    modoFormulario === 'EDITAR'
+                  "
                   placeholder="usuario@correo.com"
                 />
               </div>
@@ -818,6 +829,14 @@
                   Ingresa un correo válido.
                 </span>
               </div>
+
+              <small
+                class="field-help"
+                *ngIf="modoFormulario === 'EDITAR'"
+              >
+                El correo de acceso se administra desde
+                Supabase Authentication para mantener sincronizado el inicio de sesión.
+              </small>
             </div>
 
             <div class="field">
@@ -902,9 +921,20 @@
             </span>
 
             <div>
-              <h3>Rol y seguridad</h3>
+              <h3>
+                {{
+                  modoFormulario === 'CREAR'
+                    ? 'Rol y seguridad'
+                    : 'Rol y permisos'
+                }}
+              </h3>
+
               <p>
-                Define los permisos y la contraseña de acceso.
+                {{
+                  modoFormulario === 'CREAR'
+                    ? 'Define los permisos y la contraseña inicial de acceso.'
+                    : 'Actualiza el rol. La contraseña se administra desde Supabase Authentication.'
+                }}
               </p>
             </div>
           </div>
@@ -989,22 +1019,31 @@
               </span>
             </div>
 
-            <div class="field">
-              <label for="passwordUsuario">
-                {{
-                  modoFormulario === 'CREAR'
-                    ? 'Contraseña'
-                    : 'Nueva contraseña (opcional)'
-                }}
+            <div
+              class="security-managed-note full-field"
+              *ngIf="modoFormulario === 'EDITAR'"
+            >
+              <span class="security-managed-icon" aria-hidden="true">
+                <i class="bi bi-shield-lock-fill"></i>
+              </span>
 
-                <span
-                  class="required-mark"
-                  *ngIf="
-                    modoFormulario === 'CREAR'
-                  "
-                >
-                  *
+              <div>
+                <strong>Contraseña protegida</strong>
+                <span>
+                  Este formulario no consulta, muestra ni modifica contraseñas.
+                  Si necesitas cambiarla, hazlo desde
+                  <b>Supabase Authentication → Users</b>.
                 </span>
+              </div>
+            </div>
+
+            <div
+              class="field"
+              *ngIf="modoFormulario === 'CREAR'"
+            >
+              <label for="passwordUsuario">
+                Contraseña
+                <span class="required-mark">*</span>
               </label>
 
               <div
@@ -1030,9 +1069,7 @@
                       ? 'text'
                       : 'password'
                   "
-                  [required]="
-                    modoFormulario === 'CREAR'
-                  "
+                  required
                   minlength="8"
                   maxlength="72"
                   autocomplete="new-password"
@@ -1191,19 +1228,14 @@
               </ul>
             </div>
 
-            <div class="field">
+            <div
+              class="field"
+              *ngIf="modoFormulario === 'CREAR'"
+            >
               <label for="confirmarPasswordUsuario">
                 Confirmar contraseña
 
-                <span
-                  class="required-mark"
-                  *ngIf="
-                    modoFormulario === 'CREAR' ||
-                    !!form.password
-                  "
-                >
-                  *
-                </span>
+                <span class="required-mark">*</span>
               </label>
 
               <div
@@ -1232,10 +1264,7 @@
                       ? 'text'
                       : 'password'
                   "
-                  [required]="
-                    modoFormulario === 'CREAR' ||
-                    !!form.password
-                  "
+                  required
                   minlength="8"
                   maxlength="72"
                   autocomplete="new-password"
@@ -1311,7 +1340,10 @@
               </div>
             </div>
 
-            <label class="status-control full-field">
+            <label
+              class="status-control full-field"
+              *ngIf="modoFormulario === 'CREAR'"
+            >
               <input
                 type="checkbox"
                 name="activoUsuario"

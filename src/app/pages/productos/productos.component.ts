@@ -272,20 +272,32 @@ export class ProductosComponent
   }
 
   /**
-   * Total de monturas físicas disponibles/registradas.
+   * Cantidad de registros de la categoría Monturas.
    *
-   * Se suma stockActual de todas las monturas físicas,
-   * aunque estén clasificadas como sol, lectura, dama, niño, etc.
-   * Solo se excluyen accesorios evidentes como estuches,
-   * líquidos, limpiadores, microfibras y similares.
+   * Este valor debe coincidir con COUNT(*) de Supabase
+   * para la categoría Monturas.
    *
-   * Ejemplo:
-   * - Ray-Ban RB01: stock 3
-   * - Ray-Ban RB01: stock 2
-   * - Vogue VG10: stock 1
-   * Resultado: 6 monturas.
+   * Con los datos actuales:
+   * - 1722 registros de monturas
+   * - 1890 unidades físicas en stock
    */
   get totalMonturasRegistradas(): number {
+    return this.productos.filter(
+      producto =>
+        producto.estado &&
+        this.esProductoMontura(
+          producto
+        )
+    ).length;
+  }
+
+  /**
+   * Total físico disponible de monturas.
+   *
+   * Suma stockActual únicamente de los productos
+   * pertenecientes a la categoría Monturas.
+   */
+  get totalUnidadesMonturas(): number {
     return this.productos
       .filter(
         producto =>
@@ -3148,47 +3160,13 @@ export class ProductosComponent
         ''
       );
 
-    const nombre =
-      this.normalizarTexto(
-        producto.nombre ||
-        ''
-      );
-
-    const descripcion =
-      this.normalizarTexto(
-        producto.descripcion ||
-        ''
-      );
-
-    const texto =
-      `${categoria} ${nombre} ${descripcion}`;
-
     /*
-     * Antes solo contábamos categorías cuyo nombre contenía
-     * "montura", por eso el total podía quedar muy por debajo
-     * de las etiquetas físicas generadas.
-     *
-     * En la óptica también existen monturas clasificadas por
-     * colecciones/tipos distintos (sol, lectura, dama, niño, etc.).
-     * Por eso contamos todo producto físico de armazón y excluimos
-     * únicamente accesorios evidentes.
+     * En Supabase la categoría real es "Monturas".
+     * Se admite también "Montura" por compatibilidad.
      */
-    const accesorios = [
-      'estuche',
-      'liquido',
-      'limpiador',
-      'antiempan',
-      'microfibra',
-      'pano',
-      'spray',
-      'accesorio'
-    ];
-
-    return !accesorios.some(
-      termino =>
-        texto.includes(
-          termino
-        )
+    return (
+      categoria === 'monturas' ||
+      categoria === 'montura'
     );
   }
 

@@ -109,6 +109,10 @@ export class OrdenesRecibosService {
               numero_documento
             )
           `)
+          .eq(
+            'estado_venta',
+            'REGISTRADA'
+          )
           .order('fecha_venta', {
             ascending: false
           });
@@ -225,6 +229,41 @@ export class OrdenesRecibosService {
         ...orden,
         items
       };
+    });
+  }
+
+  eliminarOrdenErronea(
+    idVenta: number
+  ): Observable<void> {
+    return defer(async () => {
+      if (
+        !Number.isInteger(idVenta) ||
+        idVenta <= 0
+      ) {
+        throw new Error(
+          'La orden seleccionada no es válida.'
+        );
+      }
+
+      const {
+        error
+      } =
+        await this.supabaseService.client
+          .rpc(
+            'eliminar_orden_erronea',
+            {
+              p_id_venta:
+                idVenta
+            }
+          );
+
+      if (error) {
+        throw new Error(
+          this.traducirError(
+            error.message
+          )
+        );
+      }
     });
   }
 
@@ -542,6 +581,44 @@ export class OrdenesRecibosService {
     const texto = String(
       mensaje || ''
     ).toLowerCase();
+
+    if (
+      texto.includes(
+        'eliminar_orden_erronea'
+      ) ||
+      texto.includes(
+        'function public.eliminar_orden_erronea'
+      )
+    ) {
+      return 'Falta ejecutar 39_eliminar_orden_erronea.sql en Supabase.';
+    }
+
+    if (
+      texto.includes(
+        'tiene pagos registrados'
+      )
+    ) {
+      return 'No se puede eliminar una orden que ya tiene pagos registrados.';
+    }
+
+    if (
+      texto.includes(
+        'orden completada'
+      )
+    ) {
+      return 'Una orden completada no se puede eliminar.';
+    }
+
+    if (
+      texto.includes(
+        'solo puede eliminar sus propias ordenes'
+      ) ||
+      texto.includes(
+        'solo puede eliminar sus propias órdenes'
+      )
+    ) {
+      return 'El vendedor solo puede eliminar órdenes que él mismo registró.';
+    }
 
     if (
       texto.includes(

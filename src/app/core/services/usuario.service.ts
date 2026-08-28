@@ -283,31 +283,58 @@ export class UsuarioService {
     idUsuario: string,
     form: UsuarioForm
   ): Observable<void> {
-    return this.invocarAdministracion({
-      accion: 'ACTUALIZAR',
-      idUsuario,
-      usuario: {
-        nombres:
-          form.nombreCompleto
-            .replace(
-              /\s+/g,
-              ' '
-            )
-            .trim(),
-        apellidos: '',
-        email:
-          form.email
-            .trim()
-            .toLowerCase(),
-        telefono:
-          form.telefono.trim(),
-        rolId:
-          Number(form.rolId),
-        activo:
-          Boolean(form.activo),
-        password:
-          form.password.trim() ||
-          undefined
+    return defer(async () => {
+      const idLimpio =
+        String(
+          idUsuario || ''
+        ).trim();
+
+      if (!idLimpio) {
+        throw new Error(
+          'No se indicó el usuario que se desea actualizar.'
+        );
+      }
+
+      if (!form.rolId) {
+        throw new Error(
+          'Selecciona el rol del usuario.'
+        );
+      }
+
+      const {
+        error
+      } =
+        await this.supabaseService.client
+          .rpc(
+            'actualizar_usuario_perfil',
+            {
+              p_id_usuario:
+                idLimpio,
+              p_nombres:
+                form.nombreCompleto
+                  .replace(
+                    /\s+/g,
+                    ' '
+                  )
+                  .trim(),
+              p_apellidos:
+                '',
+              p_telefono:
+                form.telefono
+                  .trim(),
+              p_id_rol:
+                Number(
+                  form.rolId
+                )
+            }
+          );
+
+      if (error) {
+        throw new Error(
+          this.traducirError(
+            error.message
+          )
+        );
       }
     });
   }
@@ -583,6 +610,38 @@ export class UsuarioService {
       )
     ) {
       return 'No están disponibles los roles Administrador y Vendedor. Ejecuta el archivo 19_corregir_catalogo_roles.sql en Supabase.';
+    }
+
+    if (
+      texto.includes(
+        'actualizar_usuario_perfil'
+      ) ||
+      (
+        texto.includes(
+          'could not find the function'
+        ) &&
+        texto.includes(
+          'actualizar_usuario_perfil'
+        )
+      )
+    ) {
+      return 'Falta ejecutar 41_actualizar_usuario_perfil.sql en Supabase.';
+    }
+
+    if (
+      texto.includes(
+        'solo el administrador puede actualizar usuarios'
+      )
+    ) {
+      return 'Solo el administrador puede actualizar los datos de otros usuarios.';
+    }
+
+    if (
+      texto.includes(
+        'usuario a actualizar no encontrado'
+      )
+    ) {
+      return 'No se encontró el usuario seleccionado en la base de datos.';
     }
 
     if (

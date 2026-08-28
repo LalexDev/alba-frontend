@@ -22,13 +22,6 @@ import {
   ResultadoBusquedaEscanerProducto
 } from '../../core/models/producto.model';
 
-interface ClienteRapidoForm {
-  nombreCompleto: string;
-  dni: string;
-  celular: string;
-  correo: string;
-  direccion: string;
-}
 
 type ProductoRapido =
   | 'LIQUIDO'
@@ -44,11 +37,22 @@ interface ResumenRecibo {
   saldo: number;
 }
 
+interface ClienteVentaSeleccionado {
+  id: number;
+  nombreCompleto: string;
+  documento: string;
+  telefono: string;
+  correo: string;
+  direccion: string;
+}
+
 interface RecetaClienteVenta {
   id_receta: number;
   numero_orden?: string | null;
   fecha_entrada?: string | null;
   fecha_receta?: string | null;
+  profesional?: string | null;
+
   lejos_od_esfera?: number | null;
   lejos_od_cilindro?: number | null;
   lejos_od_eje?: number | null;
@@ -56,13 +60,28 @@ interface RecetaClienteVenta {
   lejos_oi_cilindro?: number | null;
   lejos_oi_eje?: number | null;
   lejos_dip?: number | null;
+
+  cerca_od_esfera?: number | null;
+  cerca_od_cilindro?: number | null;
+  cerca_od_eje?: number | null;
+  cerca_oi_esfera?: number | null;
+  cerca_oi_cilindro?: number | null;
+  cerca_oi_eje?: number | null;
+  cerca_dip?: number | null;
+
   adicion_od?: number | null;
   adicion_oi?: number | null;
   agudeza_visual_od?: string | null;
   agudeza_visual_oi?: string | null;
-  diagnostico?: string | null;
+
   tipo_lente?: string | null;
+  tipo_montura?: string | null;
+  marca?: string | null;
+  medida?: string | null;
+  diagnostico?: string | null;
   observaciones?: string | null;
+  proximo_control?: string | null;
+  vigente?: boolean | null;
 }
 
 @Component({
@@ -123,17 +142,14 @@ export class VentasComponent implements AfterViewInit {
   busquedaCliente = '';
   clienteSeleccionadoNombre = '';
 
+  clienteSeleccionado:
+    ClienteVentaSeleccionado | null = null;
+
   recetaCliente:
     RecetaClienteVenta | null = null;
 
   cargandoRecetaCliente = false;
-
-  mostrarClienteRapido = false;
   buscandoCliente = false;
-  guardandoCliente = false;
-
-  clienteRapido: ClienteRapidoForm =
-    this.crearClienteRapidoVacio();
 
   constructor(
     private productoService: ProductoService,
@@ -1201,41 +1217,6 @@ export class VentasComponent implements AfterViewInit {
   }
 
   /* =====================================================
-     MOSTRAR FORMULARIO DE CLIENTE RÁPIDO
-     ===================================================== */
-
-  toggleClienteRapido(): void {
-    this.mostrarClienteRapido =
-      !this.mostrarClienteRapido;
-
-    if (
-      this.mostrarClienteRapido &&
-      !this.clienteRapido.nombreCompleto
-    ) {
-      const termino =
-        this.busquedaCliente.trim();
-
-      if (/^\d{8}$/.test(termino)) {
-        this.clienteRapido.dni =
-          termino;
-      } else if (/^\d{9}$/.test(termino)) {
-        this.clienteRapido.celular =
-          termino;
-      } else {
-        this.clienteRapido.nombreCompleto =
-          termino;
-      }
-    }
-  }
-
-  limpiarClienteRapido(): void {
-    this.clienteRapido =
-      this.crearClienteRapidoVacio();
-
-    this.mensaje = '';
-  }
-
-  /* =====================================================
      BUSCAR CLIENTE
      ===================================================== */
 
@@ -1252,7 +1233,6 @@ export class VentasComponent implements AfterViewInit {
     if (!termino) {
       this.mensaje =
         'Escribe el nombre, DNI o teléfono del cliente.';
-
       return;
     }
 
@@ -1298,18 +1278,12 @@ export class VentasComponent implements AfterViewInit {
 
       if (!data) {
         this.clienteId = null;
-
+        this.clienteSeleccionado = null;
         this.clienteSeleccionadoNombre = '';
+        this.recetaCliente = null;
 
         this.mensaje =
-          'No se encontró el cliente. Puedes registrarlo rápidamente.';
-
-        this.mostrarClienteRapido = true;
-
-        this.prellenarClienteRapido(
-          termino
-        );
-
+          'No se encontró el cliente. Regístralo primero desde Clientes y recetas.';
         return;
       }
 
@@ -1327,17 +1301,46 @@ export class VentasComponent implements AfterViewInit {
       this.clienteSeleccionadoNombre =
         nombreCompleto;
 
+      this.clienteSeleccionado = {
+        id:
+          Number(data.id_cliente),
+        nombreCompleto,
+        documento:
+          String(
+            data.numero_documento ||
+            ''
+          ),
+        telefono:
+          String(
+            data.telefono ||
+            ''
+          ),
+        correo:
+          String(
+            data.email ||
+            ''
+          ),
+        direccion:
+          String(
+            data.direccion ||
+            ''
+          )
+      };
+
       this.busquedaCliente =
         nombreCompleto;
 
-      this.mostrarClienteRapido = false;
-
       this.mensaje =
-        `Cliente seleccionado: ${nombreCompleto}.`;
+        `Cliente seleccionado: ${nombreCompleto}. Consultando receta...`;
 
       await this.cargarRecetaCliente(
         this.clienteId
       );
+
+      this.mensaje =
+        this.recetaCliente
+          ? `Cliente seleccionado: ${nombreCompleto}. Receta cargada correctamente.`
+          : `Cliente seleccionado: ${nombreCompleto}, pero no tiene una receta vigente registrada.`;
 
       this.focusInput();
 
@@ -1357,272 +1360,12 @@ export class VentasComponent implements AfterViewInit {
     }
   }
 
-  /* =====================================================
-     GUARDAR CLIENTE RÁPIDO
-     ===================================================== */
-
-  async guardarClienteRapido():
-    Promise<void> {
-
-    if (this.guardandoCliente) {
-      return;
-    }
-
-    const nombreCompleto =
-      this.clienteRapido
-        .nombreCompleto
-        .trim()
-        .replace(/\s+/g, ' ');
-
-    const dni =
-      this.clienteRapido
-        .dni
-        .trim();
-
-    const celular =
-      this.clienteRapido
-        .celular
-        .trim();
-
-    const correo =
-      this.clienteRapido
-        .correo
-        .trim()
-        .toLowerCase();
-
-    const direccion =
-      this.clienteRapido
-        .direccion
-        .trim();
-
-    if (nombreCompleto.length < 3) {
-      this.mensaje =
-        'Ingresa el nombre completo del cliente.';
-
-      return;
-    }
-
-    if (
-      dni &&
-      !/^\d{8}$/.test(dni)
-    ) {
-      this.mensaje =
-        'El DNI debe contener exactamente 8 números.';
-
-      return;
-    }
-
-    if (
-      celular &&
-      !/^\d{9}$/.test(celular)
-    ) {
-      this.mensaje =
-        'El celular debe contener exactamente 9 números.';
-
-      return;
-    }
-
-    if (
-      correo &&
-      !this.correoValido(correo)
-    ) {
-      this.mensaje =
-        'Ingresa un correo electrónico válido.';
-
-      return;
-    }
-
-    this.guardandoCliente = true;
-
-    this.mensaje =
-      'Guardando cliente...';
-
-    try {
-      /*
-       * Si se ingresó DNI, comprobamos primero
-       * que el cliente no esté registrado.
-       */
-      if (dni) {
-        const {
-          data: clienteExistente,
-          error: errorBusqueda
-        } = await this.supabaseService.client
-          .from('clientes')
-          .select(`
-            id_cliente,
-            nombres,
-            apellidos,
-            activo
-          `)
-          .eq(
-            'tipo_documento',
-            'DNI'
-          )
-          .eq(
-            'numero_documento',
-            dni
-          )
-          .maybeSingle();
-
-        if (errorBusqueda) {
-          throw new Error(
-            errorBusqueda.message
-          );
-        }
-
-        if (clienteExistente) {
-          const nombreExistente = [
-            clienteExistente.nombres,
-            clienteExistente.apellidos
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .trim();
-
-          this.clienteId =
-            Number(
-              clienteExistente.id_cliente
-            );
-
-          this.clienteSeleccionadoNombre =
-            nombreExistente;
-
-          this.busquedaCliente =
-            nombreExistente;
-
-          this.mostrarClienteRapido =
-            false;
-
-          this.clienteRapido =
-            this.crearClienteRapidoVacio();
-
-          this.mensaje =
-            `El cliente ya estaba registrado y fue seleccionado: ${nombreExistente}.`;
-
-          await this.cargarRecetaCliente(
-            this.clienteId
-          );
-
-          this.focusInput();
-
-          return;
-        }
-      }
-
-      const {
-        nombres,
-        apellidos
-      } = this.separarNombreCompleto(
-        nombreCompleto
-      );
-
-      const {
-        data,
-        error
-      } = await this.supabaseService.client
-        .from('clientes')
-        .insert({
-          tipo_persona:
-            'NATURAL',
-
-          tipo_documento:
-            dni
-              ? 'DNI'
-              : 'SIN_DOCUMENTO',
-
-          numero_documento:
-            dni || null,
-
-          nombres,
-          apellidos,
-
-          razon_social:
-            null,
-
-          telefono:
-            celular || null,
-
-          email:
-            correo || null,
-
-          direccion:
-            direccion || null,
-
-          observaciones:
-            'Cliente registrado desde venta rápida',
-
-          activo:
-            true
-        })
-        .select(`
-          id_cliente,
-          nombres,
-          apellidos
-        `)
-        .single();
-
-      if (error) {
-        if (error.code === '23505') {
-          throw new Error(
-            'Ya existe un cliente registrado con ese documento.'
-          );
-        }
-
-        throw new Error(
-          error.message
-        );
-      }
-
-      const clienteGuardado = [
-        data.nombres,
-        data.apellidos
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
-
-      this.clienteId =
-        Number(data.id_cliente);
-
-      this.clienteSeleccionadoNombre =
-        clienteGuardado;
-
-      this.busquedaCliente =
-        clienteGuardado;
-
-      this.mostrarClienteRapido =
-        false;
-
-      this.clienteRapido =
-        this.crearClienteRapidoVacio();
-
-      this.recetaCliente = null;
-
-      this.mensaje =
-        `Cliente ${clienteGuardado} registrado y seleccionado correctamente.`;
-
-      this.focusInput();
-
-    } catch (error) {
-      console.error(
-        'Error al guardar cliente:',
-        error
-      );
-
-      this.mensaje =
-        error instanceof Error
-          ? error.message
-          : 'No se pudo registrar el cliente.';
-
-    } finally {
-      this.guardandoCliente = false;
-    }
-  }
 
   quitarCliente(): void {
     this.clienteId = null;
 
     this.clienteSeleccionadoNombre = '';
+    this.clienteSeleccionado = null;
 
     this.recetaCliente = null;
 
@@ -1658,6 +1401,7 @@ export class VentasComponent implements AfterViewInit {
             numero_orden,
             fecha_entrada,
             fecha_receta,
+            profesional,
             lejos_od_esfera,
             lejos_od_cilindro,
             lejos_od_eje,
@@ -1665,13 +1409,25 @@ export class VentasComponent implements AfterViewInit {
             lejos_oi_cilindro,
             lejos_oi_eje,
             lejos_dip,
+            cerca_od_esfera,
+            cerca_od_cilindro,
+            cerca_od_eje,
+            cerca_oi_esfera,
+            cerca_oi_cilindro,
+            cerca_oi_eje,
+            cerca_dip,
             adicion_od,
             adicion_oi,
             agudeza_visual_od,
             agudeza_visual_oi,
-            diagnostico,
             tipo_lente,
-            observaciones
+            tipo_montura,
+            marca,
+            medida,
+            diagnostico,
+            observaciones,
+            proximo_control,
+            vigente
           `)
           .eq('id_cliente', clienteId)
           .eq('vigente', true)
@@ -1699,6 +1455,67 @@ export class VentasComponent implements AfterViewInit {
     } finally {
       this.cargandoRecetaCliente = false;
     }
+  }
+
+  formatearGraduacion(
+    valor: number | null | undefined
+  ): string {
+    if (
+      valor === null ||
+      valor === undefined ||
+      Number.isNaN(
+        Number(valor)
+      )
+    ) {
+      return '—';
+    }
+
+    const numero =
+      Number(valor);
+
+    return numero > 0
+      ? `+${numero}`
+      : String(numero);
+  }
+
+  formatearDatoReceta(
+    valor:
+      string |
+      number |
+      null |
+      undefined
+  ): string {
+    if (
+      valor === null ||
+      valor === undefined ||
+      String(valor).trim() === ''
+    ) {
+      return '—';
+    }
+
+    return String(valor);
+  }
+
+  formatearFechaReceta(
+    valor:
+      string |
+      null |
+      undefined
+  ): string {
+    if (!valor) {
+      return '—';
+    }
+
+    const fecha =
+      String(valor)
+        .slice(0, 10)
+        .split('-');
+
+    if (fecha.length !== 3) {
+      return String(valor);
+    }
+
+    return `${fecha[2]}/${fecha[1]}/${fecha[0]}`;
   }
 
   imprimirRecetaCliente(): void {
@@ -1869,7 +1686,20 @@ export class VentasComponent implements AfterViewInit {
               </table>
             </section>
 
-            <div class="dip"><strong>DIP:</strong><span>${text(receta?.lejos_dip)}</span></div>
+            <div class="dip"><strong>DIP lejos:</strong><span>${text(receta?.lejos_dip)}</span></div>
+
+            <section class="grad">
+              <div class="lateral">CERCA</div>
+              <table>
+                <thead><tr><th></th><th>ESF.</th><th>CYL.</th><th>EJE</th></tr></thead>
+                <tbody>
+                  <tr><th>OD:</th><td>${grad(receta?.cerca_od_esfera)}</td><td>${grad(receta?.cerca_od_cilindro)}</td><td>${text(receta?.cerca_od_eje)}</td></tr>
+                  <tr><th>OI:</th><td>${grad(receta?.cerca_oi_esfera)}</td><td>${grad(receta?.cerca_oi_cilindro)}</td><td>${text(receta?.cerca_oi_eje)}</td></tr>
+                </tbody>
+              </table>
+            </section>
+
+            <div class="dip"><strong>DIP cerca:</strong><span>${text(receta?.cerca_dip)}</span></div>
 
             <section class="extras">
               <div class="extra"><strong>Adic. OD</strong> ${grad(receta?.adicion_od)}</div>
@@ -1878,8 +1708,11 @@ export class VentasComponent implements AfterViewInit {
               <div class="extra"><strong>AV OI</strong> ${text(receta?.agudeza_visual_oi)}</div>
             </section>
 
-            <section class="linea"><strong>Diagnóstico:</strong> ${text(receta?.diagnostico)}</section>
+            <section class="linea"><strong>Profesional:</strong> ${text(receta?.profesional)}</section>
             <section class="linea"><strong>Tipo de lente / lunas:</strong> ${text(receta?.tipo_lente)}</section>
+            <section class="linea"><strong>Montura:</strong> ${text(receta?.tipo_montura)} · <strong>Marca:</strong> ${text(receta?.marca)} · <strong>Medida:</strong> ${text(receta?.medida)}</section>
+            <section class="linea"><strong>Diagnóstico:</strong> ${text(receta?.diagnostico)}</section>
+            <section class="linea"><strong>Próximo control:</strong> ${text(receta?.proximo_control)}</section>
             <section class="linea observaciones"><strong>Observaciones:</strong> ${this.escapeHtml(observaciones)}</section>
           </main>
 
@@ -2952,58 +2785,14 @@ export class VentasComponent implements AfterViewInit {
     }, 0);
   }
 
-  private crearClienteRapidoVacio():
-    ClienteRapidoForm {
-
-    return {
-      nombreCompleto: '',
-      dni: '',
-      celular: '',
-      correo: '',
-      direccion: ''
-    };
-  }
-
   private reiniciarCliente(): void {
     this.clienteId = null;
-
     this.busquedaCliente = '';
-
     this.clienteSeleccionadoNombre = '';
-
+    this.clienteSeleccionado = null;
     this.recetaCliente = null;
     this.cargandoRecetaCliente = false;
-
-    this.mostrarClienteRapido = false;
-
     this.buscandoCliente = false;
-
-    this.guardandoCliente = false;
-
-    this.clienteRapido =
-      this.crearClienteRapidoVacio();
-  }
-
-  private prellenarClienteRapido(
-    termino: string
-  ): void {
-
-    if (/^\d{8}$/.test(termino)) {
-      this.clienteRapido.dni =
-        termino;
-
-      return;
-    }
-
-    if (/^\d{9}$/.test(termino)) {
-      this.clienteRapido.celular =
-        termino;
-
-      return;
-    }
-
-    this.clienteRapido.nombreCompleto =
-      termino;
   }
 
   private limpiarTerminoBusqueda(
@@ -3016,57 +2805,4 @@ export class VentasComponent implements AfterViewInit {
       .replace(/\s+/g, ' ');
   }
 
-  private correoValido(
-    correo: string
-  ): boolean {
-
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      .test(correo);
-  }
-
-  private separarNombreCompleto(
-    nombreCompleto: string
-  ): {
-    nombres: string;
-    apellidos: string;
-  } {
-    const partes =
-      nombreCompleto
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean);
-
-    if (partes.length === 1) {
-      return {
-        nombres: partes[0],
-        apellidos: ''
-      };
-    }
-
-    if (partes.length === 2) {
-      return {
-        nombres: partes[0],
-        apellidos: partes[1]
-      };
-    }
-
-    /*
-     * Para nombres como:
-     * Ana María Torres Díaz
-     *
-     * nombres: Ana María
-     * apellidos: Torres Díaz
-     */
-    return {
-      nombres:
-        partes
-          .slice(0, -2)
-          .join(' '),
-
-      apellidos:
-        partes
-          .slice(-2)
-          .join(' ')
-    };
-  }
 }

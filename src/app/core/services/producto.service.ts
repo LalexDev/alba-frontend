@@ -182,37 +182,93 @@ export class ProductoService {
 
   listar(): Observable<Producto[]> {
     return defer(async () => {
-      const {
-        data,
-        error
-      } =
-        await this.supabaseService.client
-          .from('productos')
-          .select(
-            this.columnasProducto
-          )
-          .order(
-            'nombre',
-            {
-              ascending: true
-            }
+      /*
+       * Supabase/PostgREST limita normalmente cada respuesta
+       * a un máximo de 1000 filas.
+       *
+       * Como el inventario ya supera ese límite, se recuperan
+       * los productos por bloques hasta completar toda la tabla.
+       */
+      const tamanioLote = 1000;
+
+      const filas:
+        ProductoDb[] = [];
+
+      let desde = 0;
+
+      while (true) {
+        const hasta =
+          desde +
+          tamanioLote -
+          1;
+
+        const {
+          data,
+          error
+        } =
+          await this.supabaseService.client
+            .from('productos')
+            .select(
+              this.columnasProducto
+            )
+            .order(
+              'nombre',
+              {
+                ascending: true
+              }
+            )
+            .order(
+              'id_producto',
+              {
+                ascending: true
+              }
+            )
+            .range(
+              desde,
+              hasta
+            );
+
+        if (error) {
+          console.error(
+            'Error al listar productos:',
+            error
           );
 
-      if (error) {
-        console.error(
-          'Error al listar productos:',
-          error
+          throw new Error(
+            error.message
+          );
+        }
+
+        const lote =
+          (data ?? []).map(
+            fila =>
+              fila as unknown as
+                ProductoDb
+          );
+
+        filas.push(
+          ...lote
         );
 
-        throw new Error(
-          error.message
-        );
+        /*
+         * Si el lote llega con menos de 1000 registros,
+         * ya se alcanzó el final de la tabla.
+         */
+        if (
+          lote.length <
+          tamanioLote
+        ) {
+          break;
+        }
+
+        desde +=
+          tamanioLote;
       }
 
-      return (data ?? []).map(
+      return filas.map(
         fila =>
           this.mapearProducto(
-            fila as unknown as ProductoDb
+            fila
           )
       );
     });

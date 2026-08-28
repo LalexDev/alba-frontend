@@ -443,16 +443,21 @@
         </div>
       </div>
 
-      <!-- CLIENTE -->
+      <!-- CLIENTE / PACIENTE -->
       <div class="card cliente-card">
         <div class="card-header">
           <div class="title-with-icon">
-            <span class="icon-box"><i class="bi bi-person"></i></span>
+            <span class="icon-box">
+              <i class="bi bi-person-vcard"></i>
+            </span>
 
-            <h2>
-              Cliente
-              <small>(opcional)</small>
-            </h2>
+            <div>
+              <h2>Cliente / paciente</h2>
+              <small class="client-card-help">
+                Busca un cliente registrado y se cargará automáticamente
+                su última receta vigente.
+              </small>
+            </div>
           </div>
         </div>
 
@@ -461,218 +466,326 @@
             type="text"
             [(ngModel)]="busquedaCliente"
             (keyup.enter)="buscarCliente()"
-            placeholder="Buscar cliente por nombre, DNI o teléfono..."
+            placeholder="Buscar por nombre, DNI o teléfono..."
             autocomplete="off"
+            [disabled]="buscandoCliente || procesandoVenta"
           />
 
           <button
             type="button"
             aria-label="Buscar cliente"
             (click)="buscarCliente()"
-            [disabled]="buscandoCliente"
+            [disabled]="buscandoCliente || procesandoVenta"
           >
-            <i [class]="buscandoCliente ? 'bi bi-hourglass-split' : 'bi bi-search'"></i>
+            <i
+              class="bi"
+              [ngClass]="
+                buscandoCliente
+                  ? 'bi-arrow-repeat spin-icon'
+                  : 'bi-search'
+              "
+              aria-hidden="true"
+            ></i>
           </button>
         </div>
 
-        <section
-          class="selected-client"
-          *ngIf="clienteId && clienteSeleccionadoNombre"
+        <ng-container
+          *ngIf="
+            clienteId &&
+            clienteSeleccionado as cliente
+          "
         >
-          <div class="selected-client-info">
-            <span class="selected-client-icon">
-              <i class="bi bi-person-check-fill" aria-hidden="true"></i>
-            </span>
-
-            <div>
-              <small>Cliente seleccionado</small>
-              <strong>{{ clienteSeleccionadoNombre }}</strong>
-
-              <span
-                class="recipe-status"
-                [class.available]="clienteTieneReceta"
-              >
+          <section class="selected-client">
+            <div class="selected-client-info">
+              <span class="selected-client-icon">
                 <i
-                  class="bi"
-                  [ngClass]="
-                    cargandoRecetaCliente
-                      ? 'bi-arrow-repeat spin-icon'
-                      : clienteTieneReceta
-                        ? 'bi-file-medical-fill'
-                        : 'bi-file-earmark-plus'
-                  "
+                  class="bi bi-person-check-fill"
                   aria-hidden="true"
                 ></i>
+              </span>
 
-                {{
-                  cargandoRecetaCliente
-                    ? 'Consultando receta...'
-                    : clienteTieneReceta
-                      ? 'Receta registrada'
-                      : 'Sin receta registrada'
-                }}
+              <div>
+                <small>Cliente seleccionado</small>
+                <strong>{{ cliente.nombreCompleto }}</strong>
+
+                <div class="selected-client-meta">
+                  <span>
+                    <i class="bi bi-person-vcard"></i>
+                    DNI:
+                    {{ cliente.documento || '—' }}
+                  </span>
+
+                  <span>
+                    <i class="bi bi-telephone"></i>
+                    {{ cliente.telefono || 'Sin teléfono' }}
+                  </span>
+                </div>
+
+                <span
+                  class="recipe-status"
+                  [class.available]="clienteTieneReceta"
+                >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      cargandoRecetaCliente
+                        ? 'bi-arrow-repeat spin-icon'
+                        : clienteTieneReceta
+                          ? 'bi-file-medical-fill'
+                          : 'bi-file-earmark-x'
+                    "
+                    aria-hidden="true"
+                  ></i>
+
+                  {{
+                    cargandoRecetaCliente
+                      ? 'Consultando receta...'
+                      : clienteTieneReceta
+                        ? 'Receta vigente cargada'
+                        : 'Sin receta vigente'
+                  }}
+                </span>
+              </div>
+            </div>
+
+            <div class="selected-client-actions">
+              <button
+                *ngIf="clienteTieneReceta"
+                type="button"
+                class="recipe-button"
+                (click)="imprimirRecetaCliente()"
+                [disabled]="cargandoRecetaCliente"
+              >
+                <i
+                  class="bi bi-printer"
+                  aria-hidden="true"
+                ></i>
+                Imprimir receta
+              </button>
+
+              <button
+                type="button"
+                class="remove-client-button"
+                (click)="quitarCliente()"
+                [disabled]="procesandoVenta"
+              >
+                <i
+                  class="bi bi-x-circle"
+                  aria-hidden="true"
+                ></i>
+                Quitar
+              </button>
+            </div>
+          </section>
+
+          <section
+            class="recipe-empty-card"
+            *ngIf="
+              !cargandoRecetaCliente &&
+              !recetaCliente
+            "
+          >
+            <i
+              class="bi bi-file-earmark-x"
+              aria-hidden="true"
+            ></i>
+
+            <div>
+              <strong>Cliente sin receta vigente</strong>
+              <span>
+                Registra o actualiza su receta desde
+                <b>Clientes y recetas</b>.
               </span>
             </div>
-          </div>
+          </section>
 
-          <div class="selected-client-actions">
-            <button
-              type="button"
-              class="recipe-button"
-              (click)="imprimirRecetaCliente()"
-              [disabled]="cargandoRecetaCliente"
-            >
-              <i class="bi bi-printer" aria-hidden="true"></i>
-              {{ clienteTieneReceta ? 'Imprimir receta' : 'Imprimir receta en blanco' }}
-            </button>
+          <section
+            class="client-recipe-card"
+            *ngIf="recetaCliente as receta"
+          >
+            <header class="client-recipe-header">
+              <div>
+                <span class="client-recipe-kicker">
+                  RECETA ÓPTICA ACTUAL
+                </span>
 
-            <button
-              type="button"
-              class="remove-client-button"
-              (click)="quitarCliente()"
-            >
-              <i class="bi bi-x-circle" aria-hidden="true"></i>
-              Quitar
-            </button>
-          </div>
-        </section>
+                <h3>
+                  {{
+                    receta.numero_orden ||
+                    'Sin número de orden'
+                  }}
+                </h3>
+              </div>
 
-        <button
-          class="link-btn"
-          type="button"
-          (click)="toggleClienteRapido()"
-        >
-          <i
-            class="bi"
-            [ngClass]="
-              mostrarClienteRapido
-                ? 'bi-chevron-up'
-                : 'bi-person-plus'
-            "
-            aria-hidden="true"
-          ></i>
+              <span class="recipe-valid-badge">
+                <i
+                  class="bi bi-check-circle-fill"
+                  aria-hidden="true"
+                ></i>
+                Vigente
+              </span>
+            </header>
 
-          {{
-            mostrarClienteRapido
-              ? 'Ocultar formulario'
-              : 'Nuevo cliente rápido'
-          }}
-        </button>
+            <div class="recipe-general-grid">
+              <div>
+                <small>Fecha de entrada</small>
+                <strong>
+                  {{ formatearFechaReceta(receta.fecha_entrada) }}
+                </strong>
+              </div>
 
-        <div
-          class="cliente-rapido-form"
-          *ngIf="mostrarClienteRapido"
-        >
-          <div class="cliente-grid">
+              <div>
+                <small>Próximo control</small>
+                <strong>
+                  {{ formatearFechaReceta(receta.proximo_control) }}
+                </strong>
+              </div>
 
-            <div class="field">
-              <label for="clienteNombre">
-                Nombre completo
-              </label>
+              <div>
+                <small>Profesional</small>
+                <strong>
+                  {{ formatearDatoReceta(receta.profesional) }}
+                </strong>
+              </div>
 
-              <input
-                id="clienteNombre"
-                type="text"
-                [(ngModel)]="
-                  clienteRapido.nombreCompleto
-                "
-                placeholder="Ej. Ana Torres Díaz"
-              />
+              <div>
+                <small>DIP lejos</small>
+                <strong>
+                  {{ formatearDatoReceta(receta.lejos_dip) }}
+                </strong>
+              </div>
             </div>
 
-            <div class="field">
-              <label for="clienteDni">
-                DNI
-              </label>
+            <div class="recipe-table-wrap">
+              <table class="recipe-values-table">
+                <thead>
+                  <tr>
+                    <th>Visión</th>
+                    <th>Ojo</th>
+                    <th>Esfera</th>
+                    <th>Cilindro</th>
+                    <th>Eje</th>
+                    <th>DIP</th>
+                  </tr>
+                </thead>
 
-              <input
-                id="clienteDni"
-                type="text"
-                inputmode="numeric"
-                maxlength="8"
-                [(ngModel)]="clienteRapido.dni"
-                placeholder="Ej. 76543210"
-              />
+                <tbody>
+                  <tr>
+                    <td rowspan="2">
+                      <span class="vision-badge">Lejos</span>
+                    </td>
+                    <td><strong>OD</strong></td>
+                    <td>{{ formatearGraduacion(receta.lejos_od_esfera) }}</td>
+                    <td>{{ formatearGraduacion(receta.lejos_od_cilindro) }}</td>
+                    <td>{{ formatearDatoReceta(receta.lejos_od_eje) }}</td>
+                    <td rowspan="2">
+                      {{ formatearDatoReceta(receta.lejos_dip) }}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td><strong>OI</strong></td>
+                    <td>{{ formatearGraduacion(receta.lejos_oi_esfera) }}</td>
+                    <td>{{ formatearGraduacion(receta.lejos_oi_cilindro) }}</td>
+                    <td>{{ formatearDatoReceta(receta.lejos_oi_eje) }}</td>
+                  </tr>
+
+                  <tr>
+                    <td rowspan="2">
+                      <span class="vision-badge near">Cerca</span>
+                    </td>
+                    <td><strong>OD</strong></td>
+                    <td>{{ formatearGraduacion(receta.cerca_od_esfera) }}</td>
+                    <td>{{ formatearGraduacion(receta.cerca_od_cilindro) }}</td>
+                    <td>{{ formatearDatoReceta(receta.cerca_od_eje) }}</td>
+                    <td rowspan="2">
+                      {{ formatearDatoReceta(receta.cerca_dip) }}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td><strong>OI</strong></td>
+                    <td>{{ formatearGraduacion(receta.cerca_oi_esfera) }}</td>
+                    <td>{{ formatearGraduacion(receta.cerca_oi_cilindro) }}</td>
+                    <td>{{ formatearDatoReceta(receta.cerca_oi_eje) }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <div class="field">
-              <label for="clienteCelular">
-                Celular
-              </label>
+            <div class="recipe-extra-grid">
+              <div>
+                <small>Adición OD</small>
+                <strong>
+                  {{ formatearGraduacion(receta.adicion_od) }}
+                </strong>
+              </div>
 
-              <input
-                id="clienteCelular"
-                type="tel"
-                inputmode="numeric"
-                maxlength="9"
-                [(ngModel)]="clienteRapido.celular"
-                placeholder="Ej. 987654321"
-              />
+              <div>
+                <small>Adición OI</small>
+                <strong>
+                  {{ formatearGraduacion(receta.adicion_oi) }}
+                </strong>
+              </div>
+
+              <div>
+                <small>Agudeza visual OD</small>
+                <strong>
+                  {{ formatearDatoReceta(receta.agudeza_visual_od) }}
+                </strong>
+              </div>
+
+              <div>
+                <small>Agudeza visual OI</small>
+                <strong>
+                  {{ formatearDatoReceta(receta.agudeza_visual_oi) }}
+                </strong>
+              </div>
+
+              <div>
+                <small>Tipo de lente / lunas</small>
+                <strong>
+                  {{ formatearDatoReceta(receta.tipo_lente) }}
+                </strong>
+              </div>
+
+              <div>
+                <small>Tipo de montura</small>
+                <strong>
+                  {{ formatearDatoReceta(receta.tipo_montura) }}
+                </strong>
+              </div>
+
+              <div>
+                <small>Marca</small>
+                <strong>
+                  {{ formatearDatoReceta(receta.marca) }}
+                </strong>
+              </div>
+
+              <div>
+                <small>Medida</small>
+                <strong>
+                  {{ formatearDatoReceta(receta.medida) }}
+                </strong>
+              </div>
             </div>
 
-            <div class="field">
-              <label for="clienteCorreo">
-                Correo
-                <span>(opcional)</span>
-              </label>
-
-              <input
-                id="clienteCorreo"
-                type="email"
-                [(ngModel)]="clienteRapido.correo"
-                placeholder="Ej. cliente@gmail.com"
-              />
+            <div class="recipe-text-block">
+              <small>Diagnóstico</small>
+              <strong>
+                {{ formatearDatoReceta(receta.diagnostico) }}
+              </strong>
             </div>
 
-            <div class="field full">
-              <label for="clienteDireccion">
-                Dirección
-                <span>(opcional)</span>
-              </label>
-
-              <input
-                id="clienteDireccion"
-                type="text"
-                [(ngModel)]="clienteRapido.direccion"
-                placeholder="Ej. Jr. Los Pinos 123"
-              />
+            <div class="recipe-text-block">
+              <small>Observaciones</small>
+              <strong>
+                {{ formatearDatoReceta(receta.observaciones) }}
+              </strong>
             </div>
-          </div>
-
-          <div class="cliente-form-actions">
-            <button
-              class="btn-light"
-              type="button"
-              (click)="limpiarClienteRapido()"
-            >
-              <i class="bi bi-eraser" aria-hidden="true"></i>
-              Limpiar
-            </button>
-
-            <button
-              class="btn-primary small-btn"
-              type="button"
-              (click)="guardarClienteRapido()"
-              [disabled]="guardandoCliente"
-            >
-              <i
-                class="bi"
-                [ngClass]="
-                  guardandoCliente
-                    ? 'bi-arrow-repeat spin-icon'
-                    : 'bi-person-check'
-                "
-                aria-hidden="true"
-              ></i>
-
-              {{
-                guardandoCliente
-                  ? 'Guardando...'
-                  : 'Guardar cliente'
-              }}
-            </button>
-          </div>
-        </div>
+          </section>
+        </ng-container>
       </div>
 
     </div>

@@ -2179,3 +2179,103 @@ select:focus-visible {
     min-height: 118px;
   }
 }
+
+
+
+/* =====================================================
+   EDICIÓN SEGURA DE USUARIO
+   ===================================================== */
+
+.security-managed-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid #8fd1ec;
+  border-radius: 12px;
+  background: #f4fbfe;
+}
+
+.security-managed-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  color: #0e78a5;
+  background: #ffffff;
+}
+
+.security-managed-icon .bi {
+  font-size: 21px;
+}
+
+.security-managed-note > div {
+  min-width: 0;
+}
+
+.security-managed-note strong,
+.security-managed-note span {
+  display: block;
+}
+
+.security-managed-note strong {
+  color: #101828;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.security-managed-note > div > span {
+  margin-top: 4px;
+  color: #475467;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.last-access-detail {
+  flex-wrap: wrap;
+}
+
+.last-access-detail small {
+  flex: 0 0 100%;
+  margin-top: 3px;
+  color: #667085;
+  font-size: 9px;
+  line-height: 1.35;
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .security-managed-note {
+    padding: 13px;
+  }
+
+  .security-managed-note > div > span {
+    font-size: 12px;
+  }
+
+  .last-access-detail small {
+    text-align: left;
+  }
+}
+
+
+
+/* =====================================================
+   EDICIÓN DE USUARIO - CAMPOS ADMINISTRADOS POR AUTH
+   ===================================================== */
+
+.field input[readonly] {
+  color: #475467;
+  background: #f2f4f7;
+  cursor: not-allowed;
+}
+
+.field-help {
+  display: block;
+  margin-top: 2px;
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.45;
+}

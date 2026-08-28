@@ -915,6 +915,68 @@
           </div>
         </div>
 
+        <section
+          class="delete-order-confirmation"
+          *ngIf="confirmandoEliminacion"
+        >
+          <div class="delete-order-confirmation__icon">
+            <i
+              class="bi bi-exclamation-triangle-fill"
+              aria-hidden="true"
+            ></i>
+          </div>
+
+          <div class="delete-order-confirmation__content">
+            <strong>
+              ¿Eliminar definitivamente esta orden del listado?
+            </strong>
+
+            <p>
+              Se anulará la venta por registro equivocado,
+              se devolverán al inventario las monturas/productos
+              descontados y dejará de aparecer en Órdenes y recibos.
+            </p>
+
+            <small>
+              Esta opción solo funciona cuando no existe ningún pago.
+            </small>
+          </div>
+
+          <div class="delete-order-confirmation__actions">
+            <button
+              type="button"
+              class="delete-order-no"
+              (click)="cancelarEliminarOrden()"
+              [disabled]="actualizando"
+            >
+              No, volver
+            </button>
+
+            <button
+              type="button"
+              class="delete-order-yes"
+              (click)="confirmarEliminarOrden()"
+              [disabled]="actualizando"
+            >
+              <i
+                class="bi"
+                [ngClass]="
+                  actualizando
+                    ? 'bi-arrow-repeat spin-icon'
+                    : 'bi-trash3-fill'
+                "
+                aria-hidden="true"
+              ></i>
+
+              {{
+                actualizando
+                  ? 'Eliminando...'
+                  : 'Sí, eliminar orden'
+              }}
+            </button>
+          </div>
+        </section>
+
         <div class="state-actions reviewed-actions">
           <button
             type="button"
@@ -951,17 +1013,22 @@
 
           <button
             type="button"
-            class="state-option cancelled"
-            (click)="cambiarEstado('CANCELADA')"
+            class="state-option delete-order"
+            (click)="solicitarEliminarOrden()"
             [disabled]="
               actualizando ||
-              !puedeCancelar
+              !puedeEliminar
             "
           >
-            <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
+            <i
+              class="bi bi-trash3-fill"
+              aria-hidden="true"
+            ></i>
             <span>
-              <strong>Cancelar orden</strong>
-              <small>Solo cuando no existen pagos registrados</small>
+              <strong>Eliminar orden</strong>
+              <small>
+                Devuelve el stock y la quita del listado
+              </small>
             </span>
           </button>
         </div>

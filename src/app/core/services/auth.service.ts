@@ -174,6 +174,33 @@ export class AuthService {
       perfil.email
     );
 
+    /*
+     * 5. Registrar el último acceso del usuario.
+     *
+     * Se ejecuta únicamente después de:
+     * - credenciales correctas;
+     * - perfil existente;
+     * - usuario activo;
+     * - rol autorizado.
+     *
+     * Un fallo del registro de auditoría no bloquea una
+     * autenticación que ya fue validada correctamente.
+     */
+    const {
+      error: accesoError
+    } =
+      await this.supabaseService.client
+        .rpc(
+          'registrar_ultimo_acceso'
+        );
+
+    if (accesoError) {
+      console.warn(
+        'No se pudo registrar el último acceso:',
+        accesoError.message
+      );
+    }
+
     return {
       token: sesion.access_token,
       role: role as 'ADMINISTRADOR' | 'VENDEDOR'

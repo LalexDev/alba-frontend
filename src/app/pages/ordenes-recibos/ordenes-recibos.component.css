@@ -2102,3 +2102,125 @@ select:focus-visible {
     flex-direction: column;
   }
 }
+
+
+
+/* =====================================================
+   ELIMINAR ORDEN ERRÓNEA
+   ===================================================== */
+
+.reviewed-actions .state-option.delete-order {
+  color: var(--danger);
+  border-color: #fda29b;
+  background: var(--danger-soft);
+}
+
+.reviewed-actions .state-option.delete-order:hover:not(:disabled) {
+  color: #ffffff;
+  border-color: var(--danger);
+  background: var(--danger);
+}
+
+.delete-order-confirmation {
+  display: grid;
+  grid-template-columns:
+    52px minmax(0, 1fr);
+  gap: 13px;
+  margin: 0 22px 8px;
+  padding: 15px;
+  border: 1px solid #fda29b;
+  border-radius: 14px;
+  background: #fff7f6;
+}
+
+.delete-order-confirmation__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 13px;
+  color: var(--danger);
+  background: #ffffff;
+}
+
+.delete-order-confirmation__icon .bi {
+  font-size: 24px;
+}
+
+.delete-order-confirmation__content {
+  min-width: 0;
+}
+
+.delete-order-confirmation__content strong {
+  display: block;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.delete-order-confirmation__content p {
+  margin: 5px 0;
+  color: #475467;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.delete-order-confirmation__content small {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.delete-order-confirmation__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+
+.delete-order-confirmation__actions button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.delete-order-no {
+  color: #344054;
+  border: 1px solid #d0d5dd;
+  background: #ffffff;
+}
+
+.delete-order-yes {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #ffffff;
+  border: 1px solid var(--danger);
+  background: var(--danger);
+}
+
+.delete-order-confirmation__actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 620px) {
+  .delete-order-confirmation {
+    grid-template-columns: 1fr;
+    margin-inline: 14px;
+  }
+
+  .delete-order-confirmation__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .delete-order-confirmation__actions button {
+    width: 100%;
+  }
+}
