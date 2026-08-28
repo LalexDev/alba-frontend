@@ -3003,3 +3003,19 @@ textarea:focus-visible {
     align-items: flex-start;
   }
 }
+
+
+
+/* =====================================================
+   RESUMEN SUPERIOR: MONTURAS / MARCAS / STOCK / VALORIZACIÓN
+   ===================================================== */
+
+.stats-grid .stat-card .stat-description {
+  max-width: 240px;
+}
+
+@media (max-width: 620px) {
+  .stats-grid .stat-card .stat-description {
+    max-width: none;
+  }
+}

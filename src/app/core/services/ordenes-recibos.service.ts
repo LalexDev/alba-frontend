@@ -4,8 +4,11 @@ import { defer, Observable } from 'rxjs';
 import type {
   DetalleOrdenItem,
   EstadoOrden,
+  EstadoPagoOrden,
   OrdenRecibo,
-  OrdenReciboDetalle
+  OrdenReciboDetalle,
+  RevisionPagoEstadoRequest,
+  RevisionPagoEstadoResultado
 } from '../models/orden-recibo.model';
 
 import { SupabaseService } from './supabase.service';
@@ -27,6 +30,9 @@ interface VentaDb {
   fecha_entrega?: string | null;
   tipo_documento_interno?: string | null;
   total?: number | string | null;
+  a_cuenta?: number | string | null;
+  saldo?: number | string | null;
+  estado_pago?: string | null;
   monto_cancelado?: number | string | null;
   monto_pendiente?: number | string | null;
   metodo_pago?: string | null;
@@ -85,6 +91,9 @@ export class OrdenesRecibosService {
             fecha_entrega,
             tipo_documento_interno,
             total,
+            a_cuenta,
+            saldo,
+            estado_pago,
             monto_cancelado,
             monto_pendiente,
             metodo_pago,
@@ -219,35 +228,86 @@ export class OrdenesRecibosService {
     });
   }
 
-  cambiarEstado(
-    idVenta: number,
-    estado: EstadoOrden
-  ): Observable<void> {
+  revisarPagoYEstado(
+    request: RevisionPagoEstadoRequest
+  ): Observable<RevisionPagoEstadoResultado> {
     return defer(async () => {
-      const payload: Record<string, unknown> = {
-        estado_orden: estado
-      };
+      const pagoAdicional =
+        Number(request.pagoAdicional || 0);
 
-      if (estado === 'COMPLETADA') {
-        payload['fecha_entrega'] =
-          new Date().toISOString();
+      if (
+        !Number.isFinite(pagoAdicional) ||
+        pagoAdicional < 0
+      ) {
+        throw new Error(
+          'El pago adicional no es válido.'
+        );
       }
 
-      if (estado === 'PENDIENTE') {
-        payload['fecha_entrega'] = null;
-      }
-
-      const { error } =
+      const { data, error } =
         await this.supabaseService.client
-          .from('ventas')
-          .update(payload)
-          .eq('id_venta', idVenta);
+          .rpc(
+            'revisar_pago_y_estado_orden',
+            {
+              p_id_venta:
+                request.idVenta,
+              p_estado_orden:
+                request.estadoOrden,
+              p_pago_adicional:
+                Number(
+                  pagoAdicional.toFixed(2)
+                ),
+              p_pago_revisado:
+                request.pagoRevisado
+            }
+          );
 
       if (error) {
         throw new Error(
           this.traducirError(error.message)
         );
       }
+
+      const resultado =
+        (data || {}) as
+          Record<string, unknown>;
+
+      return {
+        idVenta:
+          Number(
+            resultado['id_venta'] ||
+            request.idVenta
+          ),
+        total:
+          this.numero(
+            resultado['total'] as
+              number | string | null
+          ),
+        montoCancelado:
+          this.numero(
+            resultado['monto_cancelado'] as
+              number | string | null
+          ),
+        saldo:
+          this.numero(
+            resultado['saldo'] as
+              number | string | null
+          ),
+        estadoPago:
+          this.estadoPagoSeguro(
+            String(
+              resultado['estado_pago'] ||
+              ''
+            )
+          ),
+        estadoOrden:
+          this.estadoSeguro(
+            String(
+              resultado['estado_orden'] ||
+              request.estadoOrden
+            )
+          )
+      };
     });
   }
 
@@ -272,14 +332,25 @@ export class OrdenesRecibosService {
       'Cliente general';
 
     const total = this.numero(fila.total);
+
     const montoCancelado =
-      this.numero(fila.monto_cancelado);
+      fila.a_cuenta !== null &&
+      fila.a_cuenta !== undefined
+        ? this.numero(fila.a_cuenta)
+        : this.numero(
+            fila.monto_cancelado
+          );
 
     const saldoGuardado =
-      fila.monto_pendiente === null ||
-      fila.monto_pendiente === undefined
-        ? null
-        : this.numero(fila.monto_pendiente);
+      fila.saldo !== null &&
+      fila.saldo !== undefined
+        ? this.numero(fila.saldo)
+        : fila.monto_pendiente === null ||
+            fila.monto_pendiente === undefined
+          ? null
+          : this.numero(
+              fila.monto_pendiente
+            );
 
     const saldo = saldoGuardado === null
       ? Math.max(total - montoCancelado, 0)
@@ -327,6 +398,13 @@ export class OrdenesRecibosService {
           'SEGURO'
           ? fila.metodo_pago
           : 'EFECTIVO',
+      estadoPago:
+        this.estadoPagoSeguro(
+          fila.estado_pago,
+          total,
+          montoCancelado,
+          saldo
+        ),
       estado,
       observaciones:
         fila.observaciones || ''
@@ -415,6 +493,39 @@ export class OrdenesRecibosService {
     return 'PENDIENTE';
   }
 
+  private estadoPagoSeguro(
+    estado:
+      string | null | undefined,
+    total: number = 0,
+    pagado: number = 0,
+    saldo: number = 0
+  ): EstadoPagoOrden {
+    if (estado === 'PAGADO') {
+      return 'PAGADO';
+    }
+
+    if (estado === 'PARCIAL') {
+      return 'PARCIAL';
+    }
+
+    if (estado === 'PENDIENTE') {
+      return 'PENDIENTE';
+    }
+
+    if (
+      saldo <= 0.009 &&
+      total > 0
+    ) {
+      return 'PAGADO';
+    }
+
+    if (pagado > 0) {
+      return 'PARCIAL';
+    }
+
+    return 'PENDIENTE';
+  }
+
   private numero(
     valor: number | string | null | undefined
   ): number {
@@ -439,9 +550,61 @@ export class OrdenesRecibosService {
       texto.includes('estado_orden') ||
       texto.includes('monto_cancelado') ||
       texto.includes('monto_pendiente') ||
-      texto.includes('fecha_entrega')
+      texto.includes('fecha_entrega') ||
+      texto.includes(
+        'revisar_pago_y_estado_orden'
+      )
     ) {
-      return 'Falta ejecutar el SQL de Órdenes y recibos en Supabase.';
+      return 'Falta ejecutar el SQL de revisión de pagos y estados en Supabase.';
+    }
+
+    if (
+      texto.includes(
+        'debes revisar y validar el pago'
+      )
+    ) {
+      return 'Debes revisar y validar el estado del pago antes de cambiar la orden.';
+    }
+
+    if (
+      texto.includes(
+        'saldo pendiente'
+      ) &&
+      texto.includes(
+        'completar'
+      )
+    ) {
+      return 'No puedes completar la orden mientras exista saldo pendiente.';
+    }
+
+    if (
+      texto.includes(
+        'pagos registrados'
+      ) &&
+      texto.includes(
+        'cancelar'
+      )
+    ) {
+      return 'La orden tiene pagos registrados. Gestiona primero la devolución antes de cancelarla.';
+    }
+
+    if (
+      texto.includes(
+        'pago adicional'
+      ) &&
+      texto.includes(
+        'saldo'
+      )
+    ) {
+      return 'El pago adicional no puede superar el saldo pendiente.';
+    }
+
+    if (
+      texto.includes(
+        'caja abierta'
+      )
+    ) {
+      return 'Debes tener una caja abierta para registrar un pago adicional en efectivo.';
     }
 
     if (

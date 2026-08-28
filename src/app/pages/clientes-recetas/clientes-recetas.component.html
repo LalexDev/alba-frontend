@@ -369,6 +369,20 @@
                       aria-hidden="true"
                     ></i>
                   </button>
+
+                  <button
+                    *ngIf="esAdministrador"
+                    type="button"
+                    class="delete-client-button"
+                    (click)="solicitarEliminarCliente(cliente)"
+                    title="Eliminar cliente / paciente"
+                    aria-label="Eliminar cliente"
+                  >
+                    <i
+                      class="bi bi-trash3"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -560,6 +574,16 @@
           >
             <i class="bi bi-person-gear" aria-hidden="true"></i>
             Datos del cliente
+          </button>
+
+          <button
+            *ngIf="esAdministrador"
+            type="button"
+            class="delete-client-quick"
+            (click)="solicitarEliminarCliente(clienteSeleccionado)"
+          >
+            <i class="bi bi-trash3" aria-hidden="true"></i>
+            Eliminar cliente
           </button>
 
           <button
@@ -1351,4 +1375,84 @@
       </form>
     </section>
   </div>
+
+  <!-- =====================================================
+       CONFIRMACIÓN DE ELIMINACIÓN DE CLIENTE
+       ===================================================== -->
+  <div
+    class="modal-backdrop"
+    *ngIf="
+      mostrarConfirmacionEliminarCliente &&
+      clientePorEliminar
+    "
+    (click)="cancelarEliminarCliente()"
+  >
+    <section
+      class="delete-client-modal"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="tituloEliminarCliente"
+      (click)="$event.stopPropagation()"
+    >
+      <span class="delete-client-warning" aria-hidden="true">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </span>
+
+      <div class="delete-client-copy">
+        <small>CONFIRMAR ELIMINACIÓN</small>
+
+        <h2 id="tituloEliminarCliente">
+          ¿Eliminar a
+          {{ clientePorEliminar.nombreCompleto }}?
+        </h2>
+
+        <p>
+          Si el cliente no tiene ventas u órdenes, se eliminará
+          permanentemente junto con sus recetas ópticas.
+        </p>
+
+        <p class="delete-client-note">
+          Si ya tiene ventas u órdenes registradas, el sistema
+          bloqueará la eliminación para conservar el historial.
+          En ese caso usa el interruptor para desactivarlo.
+        </p>
+      </div>
+
+      <footer class="delete-client-actions">
+        <button
+          type="button"
+          class="cancel-button"
+          (click)="cancelarEliminarCliente()"
+          [disabled]="eliminandoCliente"
+        >
+          <i class="bi bi-x-circle" aria-hidden="true"></i>
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="confirm-delete-client"
+          (click)="eliminarCliente()"
+          [disabled]="eliminandoCliente"
+        >
+          <i
+            class="bi"
+            [ngClass]="
+              eliminandoCliente
+                ? 'bi-arrow-repeat spin-icon'
+                : 'bi-trash3-fill'
+            "
+            aria-hidden="true"
+          ></i>
+
+          {{
+            eliminandoCliente
+              ? 'Eliminando...'
+              : 'Eliminar cliente'
+          }}
+        </button>
+      </footer>
+    </section>
+  </div>
+
 </div>

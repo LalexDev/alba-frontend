@@ -25,19 +25,45 @@
   </header>
 
   <section class="stats-grid" [class.seller-view]="esVendedor">
+
     <article class="stat-card">
       <span class="stat-icon">
         <i
-          class="bi bi-boxes"
+          class="bi bi-eyeglasses"
           aria-hidden="true"
         ></i>
       </span>
+
       <div>
-        <small>Marcas en inventario</small>
-        <strong>{{ totalProductos }}</strong>
+        <small>Monturas registradas</small>
+
+        <strong>
+          {{ totalMonturasRegistradas }}
+        </strong>
+
         <span class="stat-description">
-          {{ totalModelosRegistrados }}
-          modelo(s) registrados
+          Todas las unidades, incluidas repetidas
+        </span>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-icon">
+        <i
+          class="bi bi-tags-fill"
+          aria-hidden="true"
+        ></i>
+      </span>
+
+      <div>
+        <small>Marcas</small>
+
+        <strong>
+          {{ totalMarcasRegistradas }}
+        </strong>
+
+        <span class="stat-description">
+          Marcas distintas con productos en inventario
         </span>
       </div>
     </article>
@@ -52,36 +78,34 @@
           aria-hidden="true"
         ></i>
       </span>
+
       <div>
         <small>Stock bajo</small>
-        <strong>{{ totalBajoStock }}</strong>
-        <span class="stat-description">Stock mínimo: 5 por defecto</span>
+
+        <strong>
+          {{ totalBajoStock }}
+        </strong>
+
+        <span class="stat-description">
+          Stock mínimo: 5 por defecto
+        </span>
       </div>
     </article>
 
-    <article class="stat-card">
-      <span class="stat-icon">
-        <i
-          class="bi bi-tags-fill"
-          aria-hidden="true"
-        ></i>
-      </span>
-      <div>
-        <small>Categorías</small>
-        <strong>{{ totalCategorias }}</strong>
-        <span class="stat-description">Categorías activas</span>
-      </div>
-    </article>
-
-    <article class="stat-card value-card" *ngIf="esAdministrador">
+    <article
+      class="stat-card value-card"
+      *ngIf="esAdministrador"
+    >
       <span class="stat-icon">
         <i
           class="bi bi-cash-stack"
           aria-hidden="true"
         ></i>
       </span>
+
       <div>
         <small>Valorización</small>
+
         <strong>
           S/
           {{
@@ -89,9 +113,13 @@
               | number:'1.2-2'
           }}
         </strong>
-        <span class="stat-description">Valor de compra del stock</span>
+
+        <span class="stat-description">
+          Valor de compra del stock
+        </span>
       </div>
     </article>
+
   </section>
 
   <section

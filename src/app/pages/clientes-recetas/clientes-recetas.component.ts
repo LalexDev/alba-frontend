@@ -30,6 +30,10 @@ import {
   SupabaseService
 } from '../../core/services/supabase.service';
 
+import {
+  TokenService
+} from '../../core/services/token.service';
+
 type ModoFormulario =
   | 'NUEVO_CLIENTE'
   | 'EDITAR_CLIENTE'
@@ -67,6 +71,10 @@ export class ClientesRecetasComponent
   mostrarFormulario = false;
   mostrarFicha = false;
 
+  mostrarConfirmacionEliminarCliente = false;
+  clientePorEliminar: Cliente | null = null;
+  eliminandoCliente = false;
+
   modoFormulario: ModoFormulario =
     'NUEVO_CLIENTE';
 
@@ -90,11 +98,17 @@ export class ClientesRecetasComponent
 
   constructor(
     private clienteService: ClienteService,
-    private supabaseService: SupabaseService
+    private supabaseService: SupabaseService,
+    private tokenService: TokenService
   ) {}
 
   ngOnInit(): void {
     this.cargar();
+  }
+
+  get esAdministrador(): boolean {
+    return this.tokenService.getRole() ===
+      'ADMINISTRADOR';
   }
 
   get totalClientes(): number {
@@ -2054,6 +2068,179 @@ export class ClientesRecetasComponent
   ): void {
     this.clienteSeleccionado =
       cliente;
+  }
+
+  solicitarEliminarCliente(
+    cliente: Cliente
+  ): void {
+    if (!this.esAdministrador) {
+      this.error =
+        'Solo el administrador puede eliminar clientes.';
+      return;
+    }
+
+    this.clientePorEliminar =
+      cliente;
+    this.mostrarConfirmacionEliminarCliente =
+      true;
+    this.error = '';
+    this.ok = '';
+  }
+
+  cancelarEliminarCliente(): void {
+    if (this.eliminandoCliente) {
+      return;
+    }
+
+    this.mostrarConfirmacionEliminarCliente =
+      false;
+    this.clientePorEliminar =
+      null;
+  }
+
+  async eliminarCliente(): Promise<void> {
+    if (
+      !this.esAdministrador ||
+      !this.clientePorEliminar ||
+      this.eliminandoCliente
+    ) {
+      return;
+    }
+
+    const cliente =
+      this.clientePorEliminar;
+
+    this.eliminandoCliente =
+      true;
+    this.error = '';
+    this.ok = '';
+
+    try {
+      const {
+        data,
+        error
+      } =
+        await this.supabaseService.client
+          .rpc(
+            'eliminar_cliente_seguro',
+            {
+              p_id_cliente:
+                cliente.id
+            }
+          );
+
+      if (error) {
+        throw new Error(
+          this.traducirErrorEliminarCliente(
+            error.message
+          )
+        );
+      }
+
+      const resultado =
+        (
+          data &&
+          typeof data === 'object'
+            ? data
+            : {}
+        ) as
+          Record<
+            string,
+            unknown
+          >;
+
+      const recetasEliminadas =
+        Number(
+          resultado[
+            'recetas_eliminadas'
+          ] ||
+          0
+        );
+
+      this.ok =
+        recetasEliminadas > 0
+          ? `Cliente eliminado junto con ${recetasEliminadas} receta(s).`
+          : 'Cliente eliminado correctamente.';
+
+      if (
+        this.clienteSeleccionado?.id ===
+        cliente.id
+      ) {
+        this.clienteSeleccionado =
+          null;
+      }
+
+      this.mostrarConfirmacionEliminarCliente =
+        false;
+      this.clientePorEliminar =
+        null;
+
+      this.cargar();
+    } catch (
+      error: unknown
+    ) {
+      this.error =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo eliminar el cliente.';
+    } finally {
+      this.eliminandoCliente =
+        false;
+    }
+  }
+
+  private traducirErrorEliminarCliente(
+    mensaje: string
+  ): string {
+    const texto =
+      String(
+        mensaje || ''
+      )
+        .toLowerCase();
+
+    if (
+      texto.includes(
+        'ventas u ordenes'
+      ) ||
+      texto.includes(
+        'ventas u órdenes'
+      )
+    ) {
+      return 'Este cliente tiene ventas u órdenes registradas. No se puede eliminar; puedes desactivarlo para conservar el historial.';
+    }
+
+    if (
+      texto.includes(
+        'solo el administrador'
+      )
+    ) {
+      return 'Solo el administrador puede eliminar clientes.';
+    }
+
+    if (
+      texto.includes(
+        'foreign key'
+      ) ||
+      texto.includes(
+        'violates foreign key'
+      )
+    ) {
+      return 'El cliente tiene información relacionada y no puede eliminarse de forma segura. Desactívalo para conservar el historial.';
+    }
+
+    if (
+      texto.includes(
+        'eliminar_cliente_seguro'
+      ) ||
+      texto.includes(
+        'schema cache'
+      )
+    ) {
+      return 'Falta ejecutar 38_eliminar_cliente_seguro.sql en Supabase.';
+    }
+
+    return mensaje ||
+      'No se pudo eliminar el cliente.';
   }
 
   cambiarEstado(

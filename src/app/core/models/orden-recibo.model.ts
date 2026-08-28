@@ -3,6 +3,11 @@ export type EstadoOrden =
   | 'COMPLETADA'
   | 'CANCELADA';
 
+export type EstadoPagoOrden =
+  | 'PENDIENTE'
+  | 'PARCIAL'
+  | 'PAGADO';
+
 export type TipoDocumentoInterno =
   | 'ORDEN_TRABAJO'
   | 'RECIBO';
@@ -27,6 +32,7 @@ export interface OrdenRecibo {
   montoCancelado: number;
   saldo: number;
   metodoPago: MetodoPagoOrden;
+  estadoPago: EstadoPagoOrden;
   estado: EstadoOrden;
   observaciones: string;
 }
@@ -58,6 +64,7 @@ export interface FiltrosOrdenes {
   desde: string;
   hasta: string;
   estado: 'TODOS' | EstadoOrden;
+  estadoPago: 'TODOS' | EstadoPagoOrden;
   tipo: 'TODOS' | TipoDocumentoInterno;
   metodoPago: 'TODOS' | MetodoPagoOrden;
 }
@@ -67,4 +74,21 @@ export interface ResumenOrdenes {
   completadas: number;
   pendientes: number;
   canceladas: number;
+}
+
+
+export interface RevisionPagoEstadoRequest {
+  idVenta: number;
+  estadoOrden: EstadoOrden;
+  pagoAdicional: number;
+  pagoRevisado: boolean;
+}
+
+export interface RevisionPagoEstadoResultado {
+  idVenta: number;
+  total: number;
+  montoCancelado: number;
+  saldo: number;
+  estadoPago: EstadoPagoOrden;
+  estadoOrden: EstadoOrden;
 }

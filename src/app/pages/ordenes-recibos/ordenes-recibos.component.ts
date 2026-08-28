@@ -12,6 +12,7 @@ import {
 
 import type {
   EstadoOrden,
+  EstadoPagoOrden,
   FiltrosOrdenes,
   OrdenRecibo,
   OrdenReciboDetalle,
@@ -21,6 +22,10 @@ import type {
 import {
   OrdenesRecibosService
 } from '../../core/services/ordenes-recibos.service';
+
+import {
+  TokenService
+} from '../../core/services/token.service';
 
 @Component({
   selector: 'app-ordenes-recibos',
@@ -50,6 +55,10 @@ export class OrdenesRecibosComponent
   mostrarDetalle = false;
   mostrarAcciones = false;
 
+  pagoAdicional = 0;
+  pagoRevisado = false;
+  errorAcciones = '';
+
   paginaActual = 1;
   elementosPorPagina = 10;
 
@@ -58,6 +67,9 @@ export class OrdenesRecibosComponent
 
   private readonly router =
     inject(Router);
+
+  private readonly tokenService =
+    inject(TokenService);
 
   constructor() {}
 
@@ -91,6 +103,15 @@ export class OrdenesRecibosComponent
         this.filtros.estado !== 'TODOS' &&
         orden.estado !==
           this.filtros.estado
+      ) {
+        return false;
+      }
+
+      if (
+        this.filtros.estadoPago !==
+          'TODOS' &&
+        orden.estadoPago !==
+          this.filtros.estadoPago
       ) {
         return false;
       }
@@ -255,8 +276,14 @@ export class OrdenesRecibosComponent
   }
 
   nuevaOrden(): void {
+    const ruta =
+      this.tokenService.getRole() ===
+        'VENDEDOR'
+        ? '/vendedor/ventas'
+        : '/admin/ventas';
+
     this.router.navigate([
-      '/admin/ventas'
+      ruta
     ]);
   }
 
@@ -352,6 +379,9 @@ export class OrdenesRecibosComponent
     orden: OrdenRecibo
   ): void {
     this.ordenAcciones = orden;
+    this.pagoAdicional = 0;
+    this.pagoRevisado = false;
+    this.errorAcciones = '';
     this.mostrarAcciones = true;
   }
 
@@ -362,6 +392,136 @@ export class OrdenesRecibosComponent
 
     this.mostrarAcciones = false;
     this.ordenAcciones = null;
+    this.pagoAdicional = 0;
+    this.pagoRevisado = false;
+    this.errorAcciones = '';
+  }
+
+  get nuevoMontoCancelado(): number {
+    if (!this.ordenAcciones) {
+      return 0;
+    }
+
+    return Number(
+      Math.min(
+        this.ordenAcciones
+          .montoCancelado +
+          Number(
+            this.pagoAdicional ||
+            0
+          ),
+        this.ordenAcciones.total
+      ).toFixed(2)
+    );
+  }
+
+  get nuevoSaldo(): number {
+    if (!this.ordenAcciones) {
+      return 0;
+    }
+
+    return Number(
+      Math.max(
+        this.ordenAcciones.total -
+        this.nuevoMontoCancelado,
+        0
+      ).toFixed(2)
+    );
+  }
+
+  get nuevoEstadoPago():
+    EstadoPagoOrden {
+    if (!this.ordenAcciones) {
+      return 'PENDIENTE';
+    }
+
+    if (this.nuevoSaldo <= 0.009) {
+      return 'PAGADO';
+    }
+
+    if (this.nuevoMontoCancelado > 0) {
+      return 'PARCIAL';
+    }
+
+    return 'PENDIENTE';
+  }
+
+  get pagoAdicionalValido(): boolean {
+    if (!this.ordenAcciones) {
+      return false;
+    }
+
+    const pago =
+      Number(
+        this.pagoAdicional || 0
+      );
+
+    return (
+      Number.isFinite(pago) &&
+      pago >= 0 &&
+      pago <=
+        this.ordenAcciones.saldo
+    );
+  }
+
+  get puedeCompletar(): boolean {
+    return (
+      this.pagoRevisado &&
+      this.pagoAdicionalValido &&
+      this.nuevoSaldo <= 0.009
+    );
+  }
+
+  get puedeCancelar(): boolean {
+    return (
+      this.pagoRevisado &&
+      this.pagoAdicionalValido &&
+      this.nuevoMontoCancelado <= 0.009
+    );
+  }
+
+  pagarTodo(): void {
+    if (!this.ordenAcciones) {
+      return;
+    }
+
+    this.pagoAdicional =
+      Number(
+        this.ordenAcciones.saldo
+          .toFixed(2)
+      );
+
+    this.validarPagoAdicional();
+  }
+
+  validarPagoAdicional(): void {
+    this.errorAcciones = '';
+
+    if (!this.ordenAcciones) {
+      return;
+    }
+
+    const pago =
+      Number(
+        this.pagoAdicional || 0
+      );
+
+    if (
+      !Number.isFinite(pago) ||
+      pago < 0
+    ) {
+      this.errorAcciones =
+        'El pago adicional no es válido.';
+      return;
+    }
+
+    if (
+      pago >
+      this.ordenAcciones.saldo
+    ) {
+      this.errorAcciones =
+        `El pago adicional no puede superar el saldo de S/ ${this.ordenAcciones.saldo.toFixed(2)}.`;
+    }
   }
 
   cambiarEstado(
@@ -374,39 +534,104 @@ export class OrdenesRecibosComponent
       return;
     }
 
+    this.validarPagoAdicional();
+
+    if (this.errorAcciones) {
+      return;
+    }
+
+    if (!this.pagoRevisado) {
+      this.errorAcciones =
+        'Marca la confirmación de revisión del pago antes de continuar.';
+      return;
+    }
+
+    if (
+      estado === 'COMPLETADA' &&
+      this.nuevoSaldo > 0.009
+    ) {
+      this.errorAcciones =
+        'No puedes completar la orden mientras exista saldo pendiente.';
+      return;
+    }
+
+    if (
+      estado === 'CANCELADA' &&
+      this.nuevoMontoCancelado > 0.009
+    ) {
+      this.errorAcciones =
+        'La orden tiene pagos registrados. Primero debe gestionarse la devolución.';
+      return;
+    }
+
     this.actualizando = true;
     this.error = '';
+    this.errorAcciones = '';
 
-    const idVenta =
-      this.ordenAcciones.idVenta;
+    const numeroOrden =
+      this.ordenAcciones.numeroOrden;
 
     this.ordenesService
-      .cambiarEstado(
-        idVenta,
-        estado
-      )
+      .revisarPagoYEstado({
+        idVenta:
+          this.ordenAcciones.idVenta,
+        estadoOrden: estado,
+        pagoAdicional:
+          Number(
+            this.pagoAdicional || 0
+          ),
+        pagoRevisado:
+          this.pagoRevisado
+      })
       .pipe(
         finalize(() => {
           this.actualizando = false;
         })
       )
       .subscribe({
-        next: () => {
+        next: (resultado) => {
+          const pagoTexto =
+            Number(
+              this.pagoAdicional || 0
+            ) > 0
+              ? ` Pago actualizado: S/ ${resultado.montoCancelado.toFixed(2)}; saldo: S/ ${resultado.saldo.toFixed(2)}.`
+              : '';
+
           this.mensaje =
-            `Orden marcada como ${this.textoEstado(
-              estado
-            ).toLowerCase()}.`;
+            `${numeroOrden}: estado ${this.textoEstado(
+              resultado.estadoOrden
+            ).toLowerCase()}.${pagoTexto}`;
 
           this.cerrarAcciones();
           this.cargar();
         },
         error: (error: unknown) => {
-          this.error =
+          this.errorAcciones =
             error instanceof Error
               ? error.message
-              : 'No se pudo cambiar el estado.';
+              : 'No se pudo revisar el pago y cambiar el estado.';
         }
       });
+  }
+
+  textoEstadoPago(
+    estado: EstadoPagoOrden
+  ): string {
+    if (estado === 'PAGADO') {
+      return 'Pagado';
+    }
+
+    if (estado === 'PARCIAL') {
+      return 'Parcial';
+    }
+
+    return 'Pendiente';
+  }
+
+  claseEstadoPago(
+    estado: EstadoPagoOrden
+  ): string {
+    return estado.toLowerCase();
   }
 
   imprimir(
@@ -484,7 +709,11 @@ export class OrdenesRecibosComponent
               orden.saldo,
             'Método de pago':
               orden.metodoPago,
-            'Estado':
+            'Estado del pago':
+              this.textoEstadoPago(
+                orden.estadoPago
+              ),
+            'Estado de la orden':
               this.textoEstado(
                 orden.estado
               ),
@@ -507,12 +736,13 @@ export class OrdenesRecibosComponent
         { wch: 14 },
         { wch: 14 },
         { wch: 20 },
-        { wch: 16 },
+        { wch: 17 },
+        { wch: 18 },
         { wch: 45 }
       ];
 
       const rango = utils.decode_range(
-        hoja['!ref'] || 'A1:L1'
+        hoja['!ref'] || 'A1:M1'
       );
 
       for (
@@ -595,7 +825,7 @@ export class OrdenesRecibosComponent
     const ventana = window.open(
       '',
       '_blank',
-      'width=850,height=900'
+      'width=420,height=850'
     );
 
     if (!ventana) {
@@ -606,15 +836,34 @@ export class OrdenesRecibosComponent
 
     const filas = orden.items
       .map(item => `
-        <tr>
-          <td>${this.escapeHtml(item.producto)}</td>
-          <td>${this.escapeHtml(item.marca || '-')}</td>
-          <td>${this.escapeHtml(item.modelo || '-')}</td>
-          <td>${this.escapeHtml(item.medida || '-')}</td>
-          <td>${item.cantidad}</td>
-          <td>S/ ${item.precioUnitario.toFixed(2)}</td>
-          <td>S/ ${item.subtotal.toFixed(2)}</td>
-        </tr>
+        <div class="item">
+          <div class="item-head">
+            <strong>
+              ${this.escapeHtml(item.producto)}
+            </strong>
+            <strong>
+              S/ ${item.subtotal.toFixed(2)}
+            </strong>
+          </div>
+
+          <div class="item-meta">
+            ${this.escapeHtml(
+              [
+                item.marca,
+                item.modelo,
+                item.medida
+              ]
+                .filter(Boolean)
+                .join(' · ') ||
+              'Sin detalle adicional'
+            )}
+          </div>
+
+          <div class="item-meta">
+            ${item.cantidad} x
+            S/ ${item.precioUnitario.toFixed(2)}
+          </div>
+        </div>
       `)
       .join('');
 
@@ -624,155 +873,265 @@ export class OrdenesRecibosComponent
         <head>
           <meta charset="utf-8">
           <title>${this.escapeHtml(orden.numeroOrden)}</title>
+
           <style>
-            * { box-sizing: border-box; }
+            @page {
+              size: 70mm 210mm;
+              margin: 2mm;
+            }
+
+            * {
+              box-sizing: border-box;
+            }
+
+            html,
             body {
+              width: 66mm;
+              min-height: 206mm;
               margin: 0;
-              padding: 28px;
+              padding: 0;
               color: #000;
+              background: #fff;
               font-family: Arial, sans-serif;
-              font-size: 12px;
+              font-size: 9px;
             }
-            .head {
-              display: flex;
-              justify-content: space-between;
-              gap: 24px;
-              border-bottom: 2px solid #1593C7;
-              padding-bottom: 14px;
+
+            body {
+              padding: 1mm 0;
             }
-            h1 { margin: 0; font-size: 23px; }
-            h2 { margin: 5px 0 0; font-size: 14px; }
-            .meta {
-              display: grid;
-              grid-template-columns: repeat(2, 1fr);
-              gap: 8px 24px;
-              margin: 20px 0;
-            }
-            .meta div, .totals div {
-              display: flex;
-              justify-content: space-between;
-              gap: 16px;
-              border-bottom: 1px solid #ddd;
-              padding: 7px 0;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 18px;
-            }
-            th, td {
-              border: 1px solid #ccc;
-              padding: 7px;
-              text-align: left;
-            }
-            th {
-              background: #EAF7FC;
-            }
-            .totals {
-              width: 330px;
-              margin: 18px 0 0 auto;
-            }
-            .total {
-              font-size: 15px;
-              font-weight: bold;
-            }
-            .footer {
-              margin-top: 34px;
+
+            .center {
               text-align: center;
-              color: #555;
             }
+
+            .brand {
+              margin: 0;
+              font-size: 16px;
+              font-weight: 800;
+            }
+
+            .sub {
+              margin: 1mm 0 0;
+              font-size: 8px;
+            }
+
+            .doc {
+              margin: 2mm 0;
+              padding: 2mm 0;
+              border-top: 1px dashed #000;
+              border-bottom: 1px dashed #000;
+              text-align: center;
+            }
+
+            .doc strong {
+              display: block;
+              font-size: 11px;
+            }
+
+            .row {
+              display: flex;
+              justify-content: space-between;
+              gap: 2mm;
+              padding: .7mm 0;
+            }
+
+            .row span:first-child {
+              color: #333;
+            }
+
+            .items {
+              margin: 2mm 0;
+              border-top: 1px dashed #000;
+              border-bottom: 1px dashed #000;
+            }
+
+            .item {
+              padding: 1.4mm 0;
+              border-bottom: 1px dotted #bbb;
+            }
+
+            .item:last-child {
+              border-bottom: 0;
+            }
+
+            .item-head {
+              display: flex;
+              justify-content: space-between;
+              gap: 2mm;
+              font-size: 9px;
+            }
+
+            .item-head strong:first-child {
+              max-width: 44mm;
+            }
+
+            .item-meta {
+              margin-top: .6mm;
+              color: #444;
+              font-size: 8px;
+              line-height: 1.25;
+            }
+
+            .totals {
+              margin-top: 2mm;
+            }
+
+            .totals .row {
+              font-size: 10px;
+            }
+
+            .totals .total {
+              margin-top: 1mm;
+              padding-top: 1mm;
+              border-top: 1px solid #000;
+              font-size: 12px;
+              font-weight: 800;
+            }
+
+            .payment-status {
+              margin: 2mm 0;
+              padding: 1.5mm;
+              border: 1px solid #000;
+              text-align: center;
+              font-weight: 800;
+            }
+
+            .obs {
+              margin-top: 2mm;
+              line-height: 1.35;
+              overflow-wrap: anywhere;
+            }
+
+            .footer {
+              margin-top: 4mm;
+              padding-top: 2mm;
+              border-top: 1px dashed #000;
+              text-align: center;
+              font-size: 8px;
+            }
+
             @media print {
-              body { padding: 0; }
+              html,
+              body {
+                width: 66mm;
+                min-height: 206mm;
+              }
             }
           </style>
         </head>
+
         <body>
-          <section class="head">
-            <div>
-              <h1>Óptica Alba</h1>
-              <h2>${this.escapeHtml(
+          <header class="center">
+            <h1 class="brand">Óptica Alba</h1>
+            <p class="sub">Sistema para ópticas · Cajamarca, Perú</p>
+          </header>
+
+          <section class="doc">
+            <strong>
+              ${this.escapeHtml(
                 this.textoTipo(orden.tipo)
-              )}</h2>
-              <p>Cajamarca, Perú</p>
-            </div>
+              )}
+            </strong>
+
+            ${this.escapeHtml(
+              orden.numeroOrden
+            )}
+
             <div>
-              <strong>${this.escapeHtml(
-                orden.numeroOrden
-              )}</strong>
-              <p>${this.escapeHtml(
+              ${this.escapeHtml(
                 this.formatearFecha(
                   orden.fechaVenta
                 )
-              )}</p>
+              )}
             </div>
           </section>
 
-          <section class="meta">
-            <div>
+          <section>
+            <div class="row">
               <span>Cliente</span>
-              <strong>${this.escapeHtml(
-                orden.cliente
-              )}</strong>
+              <strong>
+                ${this.escapeHtml(orden.cliente)}
+              </strong>
             </div>
-            <div>
+
+            <div class="row">
               <span>Documento</span>
-              <strong>${this.escapeHtml(
-                orden.documento || '-'
-              )}</strong>
+              <strong>
+                ${this.escapeHtml(
+                  orden.documento || '-'
+                )}
+              </strong>
             </div>
-            <div>
+
+            <div class="row">
               <span>Teléfono</span>
-              <strong>${this.escapeHtml(
-                orden.telefono || '-'
-              )}</strong>
+              <strong>
+                ${this.escapeHtml(
+                  orden.telefono || '-'
+                )}
+              </strong>
             </div>
-            <div>
-              <span>Método de pago</span>
-              <strong>${this.escapeHtml(
-                orden.metodoPago
-              )}</strong>
+
+            <div class="row">
+              <span>Método</span>
+              <strong>
+                ${this.escapeHtml(
+                  orden.metodoPago
+                )}
+              </strong>
             </div>
           </section>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Medida</th>
-                <th>Cant.</th>
-                <th>P. unitario</th>
-                <th>Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${
-                filas ||
-                '<tr><td colspan="7">Sin productos registrados</td></tr>'
-              }
-            </tbody>
-          </table>
+          <section class="items">
+            ${
+              filas ||
+              '<div class="item">Sin productos registrados</div>'
+            }
+          </section>
 
           <section class="totals">
-            <div>
+            <div class="row">
               <span>Total</span>
-              <strong>S/ ${orden.total.toFixed(2)}</strong>
+              <strong>
+                S/ ${orden.total.toFixed(2)}
+              </strong>
             </div>
-            <div>
-              <span>Cancelado</span>
-              <strong>S/ ${orden.montoCancelado.toFixed(2)}</strong>
+
+            <div class="row">
+              <span>Pagado</span>
+              <strong>
+                S/ ${orden.montoCancelado.toFixed(2)}
+              </strong>
             </div>
-            <div class="total">
+
+            <div class="row total">
               <span>Saldo</span>
-              <strong>S/ ${orden.saldo.toFixed(2)}</strong>
+              <strong>
+                S/ ${orden.saldo.toFixed(2)}
+              </strong>
             </div>
           </section>
 
-          <p>
-            <strong>Observaciones:</strong>
+          <div class="payment-status">
+            PAGO:
             ${this.escapeHtml(
-              orden.observaciones || 'Sin observaciones'
+              this.textoEstadoPago(
+                orden.estadoPago
+              ).toUpperCase()
+            )}
+            · ORDEN:
+            ${this.escapeHtml(
+              this.textoEstado(
+                orden.estado
+              ).toUpperCase()
+            )}
+          </div>
+
+          <p class="obs">
+            <strong>Observaciones:</strong><br>
+            ${this.escapeHtml(
+              orden.observaciones ||
+              'Sin observaciones'
             )}
           </p>
 
@@ -781,7 +1140,9 @@ export class OrdenesRecibosComponent
           </p>
 
           <script>
-            window.onload = () => window.print();
+            window.onload = () => {
+              window.print();
+            };
           </script>
         </body>
       </html>
@@ -806,6 +1167,7 @@ export class OrdenesRecibosComponent
       hasta:
         this.fechaInput(hoy),
       estado: 'TODOS',
+      estadoPago: 'TODOS',
       tipo: 'TODOS',
       metodoPago: 'TODOS'
     };

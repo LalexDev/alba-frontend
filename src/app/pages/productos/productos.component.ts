@@ -271,6 +271,69 @@ export class ProductosComponent
       });
   }
 
+  /**
+   * Total de monturas físicas disponibles/registradas.
+   *
+   * Se suma stockActual de todas las monturas físicas,
+   * aunque estén clasificadas como sol, lectura, dama, niño, etc.
+   * Solo se excluyen accesorios evidentes como estuches,
+   * líquidos, limpiadores, microfibras y similares.
+   *
+   * Ejemplo:
+   * - Ray-Ban RB01: stock 3
+   * - Ray-Ban RB01: stock 2
+   * - Vogue VG10: stock 1
+   * Resultado: 6 monturas.
+   */
+  get totalMonturasRegistradas(): number {
+    return this.productos
+      .filter(
+        producto =>
+          producto.estado &&
+          this.esProductoMontura(
+            producto
+          )
+      )
+      .reduce(
+        (
+          total,
+          producto
+        ) =>
+          total +
+          Math.max(
+            Number(
+              producto.stockActual ||
+              0
+            ),
+            0
+          ),
+        0
+      );
+  }
+
+  /**
+   * Marcas distintas presentes en el inventario activo.
+   * No usa inventarioPorMarca.length porque ese valor puede repetir
+   * una misma marca cuando aparece en categorías diferentes.
+   */
+  get totalMarcasRegistradas(): number {
+    return new Set(
+      this.productos
+        .filter(
+          producto =>
+            producto.estado
+        )
+        .map(
+          producto =>
+            this.normalizarTexto(
+              producto.marca?.nombre ||
+              ''
+            )
+        )
+        .filter(Boolean)
+    ).size;
+  }
+
   get totalProductos(): number {
     return this.inventarioPorMarca.length;
   }
@@ -3074,6 +3137,59 @@ export class ProductosComponent
     return minimo === maximo
       ? formato(minimo)
       : `${formato(minimo)} - ${formato(maximo)}`;
+  }
+
+  private esProductoMontura(
+    producto: Producto
+  ): boolean {
+    const categoria =
+      this.normalizarTexto(
+        producto.categoria?.nombre ||
+        ''
+      );
+
+    const nombre =
+      this.normalizarTexto(
+        producto.nombre ||
+        ''
+      );
+
+    const descripcion =
+      this.normalizarTexto(
+        producto.descripcion ||
+        ''
+      );
+
+    const texto =
+      `${categoria} ${nombre} ${descripcion}`;
+
+    /*
+     * Antes solo contábamos categorías cuyo nombre contenía
+     * "montura", por eso el total podía quedar muy por debajo
+     * de las etiquetas físicas generadas.
+     *
+     * En la óptica también existen monturas clasificadas por
+     * colecciones/tipos distintos (sol, lectura, dama, niño, etc.).
+     * Por eso contamos todo producto físico de armazón y excluimos
+     * únicamente accesorios evidentes.
+     */
+    const accesorios = [
+      'estuche',
+      'liquido',
+      'limpiador',
+      'antiempan',
+      'microfibra',
+      'pano',
+      'spray',
+      'accesorio'
+    ];
+
+    return !accesorios.some(
+      termino =>
+        texto.includes(
+          termino
+        )
+    );
   }
 
   private normalizarTexto(

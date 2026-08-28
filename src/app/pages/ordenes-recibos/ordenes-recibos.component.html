@@ -107,6 +107,22 @@
       </div>
 
       <div class="filter-field">
+        <label for="estadoPagoOrden">
+          Estado del pago
+        </label>
+        <select
+          id="estadoPagoOrden"
+          [(ngModel)]="filtros.estadoPago"
+          (ngModelChange)="aplicarFiltros()"
+        >
+          <option value="TODOS">Todos</option>
+          <option value="PENDIENTE">Pendiente</option>
+          <option value="PARCIAL">Parcial</option>
+          <option value="PAGADO">Pagado</option>
+        </select>
+      </div>
+
+      <div class="filter-field">
         <label for="metodoOrden">Método de pago</label>
         <select
           id="metodoOrden"
@@ -119,6 +135,7 @@
           <option value="TRANSFERENCIA">
             Transferencia
           </option>
+          <option value="SEGURO">Seguro</option>
         </select>
       </div>
     </div>
@@ -258,7 +275,8 @@
               <th>Total</th>
               <th>Cancelado</th>
               <th>Saldo</th>
-              <th>Estado</th>
+              <th>Estado pago</th>
+              <th>Estado orden</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -320,6 +338,26 @@
 
               <td class="money debt">
                 S/ {{ orden.saldo | number:'1.2-2' }}
+              </td>
+
+              <td>
+                <span
+                  class="payment-status-badge"
+                  [ngClass]="claseEstadoPago(orden.estadoPago)"
+                >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      orden.estadoPago === 'PAGADO'
+                        ? 'bi-check-circle-fill'
+                        : orden.estadoPago === 'PARCIAL'
+                          ? 'bi-circle-half'
+                          : 'bi-clock-fill'
+                    "
+                    aria-hidden="true"
+                  ></i>
+                  {{ textoEstadoPago(orden.estadoPago) }}
+                </span>
               </td>
 
               <td>
@@ -525,7 +563,16 @@
               </strong>
             </div>
             <div>
-              <span><i class="bi bi-activity"></i> Estado</span>
+              <span>
+                <i class="bi bi-credit-card-2-front"></i>
+                Estado pago
+              </span>
+              <strong>
+                {{ textoEstadoPago(ordenSeleccionada.estadoPago) }}
+              </strong>
+            </div>
+            <div>
+              <span><i class="bi bi-activity"></i> Estado orden</span>
               <strong>
                 {{ textoEstado(ordenSeleccionada.estado) }}
               </strong>
@@ -651,14 +698,14 @@
     </section>
   </div>
 
-  <!-- MODAL ACCIONES -->
+  <!-- MODAL REVISIÓN DE PAGO Y ESTADO -->
   <div
     class="modal-backdrop"
     *ngIf="mostrarAcciones"
     (click)="cerrarAcciones()"
   >
     <section
-      class="actions-modal"
+      class="actions-modal payment-review-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="actionsTitle"
@@ -667,7 +714,7 @@
       <header class="modal-header">
         <div>
           <span class="page-kicker">
-            CAMBIAR ESTADO
+            REVISAR PAGO Y ESTADO
           </span>
           <h2 id="actionsTitle">
             {{ ordenAcciones?.numeroOrden }}
@@ -685,37 +732,240 @@
         </button>
       </header>
 
-      <div class="state-actions">
-        <button
-          type="button"
-          class="state-option completed"
-          (click)="cambiarEstado('COMPLETADA')"
-          [disabled]="actualizando"
-        >
-          <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-          Marcar como completada
-        </button>
+      <ng-container *ngIf="ordenAcciones">
+        <div class="payment-review-content">
 
-        <button
-          type="button"
-          class="state-option pending"
-          (click)="cambiarEstado('PENDIENTE')"
-          [disabled]="actualizando"
-        >
-          <i class="bi bi-hourglass-split" aria-hidden="true"></i>
-          Marcar como pendiente
-        </button>
+          <section class="payment-review-summary">
+            <div>
+              <small>Total</small>
+              <strong>
+                S/ {{ ordenAcciones.total | number:'1.2-2' }}
+              </strong>
+            </div>
 
-        <button
-          type="button"
-          class="state-option cancelled"
-          (click)="cambiarEstado('CANCELADA')"
-          [disabled]="actualizando"
-        >
-          <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
-          Marcar como cancelada
-        </button>
-      </div>
+            <div class="paid-box">
+              <small>Pagado</small>
+              <strong>
+                S/ {{ ordenAcciones.montoCancelado | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <div class="debt-box">
+              <small>Saldo</small>
+              <strong>
+                S/ {{ ordenAcciones.saldo | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <div>
+              <small>Método</small>
+              <strong>{{ ordenAcciones.metodoPago }}</strong>
+            </div>
+          </section>
+
+          <section class="current-payment-state">
+            <div>
+              <span>Estado actual del pago</span>
+              <strong
+                class="payment-status-badge"
+                [ngClass]="claseEstadoPago(ordenAcciones.estadoPago)"
+              >
+                {{ textoEstadoPago(ordenAcciones.estadoPago) }}
+              </strong>
+            </div>
+
+            <div>
+              <span>Estado actual de la orden</span>
+              <strong
+                class="status-badge"
+                [ngClass]="claseEstado(ordenAcciones.estado)"
+              >
+                {{ textoEstado(ordenAcciones.estado) }}
+              </strong>
+            </div>
+          </section>
+
+          <section
+            class="additional-payment-card"
+            *ngIf="ordenAcciones.saldo > 0.009"
+          >
+            <div class="payment-section-title">
+              <div>
+                <span class="section-icon">
+                  <i class="bi bi-cash-coin" aria-hidden="true"></i>
+                </span>
+                <div>
+                  <strong>Pago adicional</strong>
+                  <small>
+                    Registra un abono antes de cambiar el estado.
+                  </small>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="pay-all-button"
+                (click)="pagarTodo()"
+                [disabled]="actualizando"
+              >
+                <i class="bi bi-check2-all" aria-hidden="true"></i>
+                Pagar saldo
+              </button>
+            </div>
+
+            <div class="payment-input-grid">
+              <div class="payment-input-field">
+                <label for="pagoAdicional">
+                  Importe recibido ahora
+                </label>
+
+                <div class="money-input">
+                  <span>S/</span>
+                  <input
+                    id="pagoAdicional"
+                    type="number"
+                    min="0"
+                    [max]="ordenAcciones.saldo"
+                    step="0.01"
+                    [(ngModel)]="pagoAdicional"
+                    (ngModelChange)="validarPagoAdicional()"
+                    [disabled]="actualizando"
+                  />
+                </div>
+
+                <small>
+                  Método actual:
+                  <b>{{ ordenAcciones.metodoPago }}</b>
+                </small>
+              </div>
+            </div>
+          </section>
+
+          <p
+            class="payment-modal-error"
+            *ngIf="errorAcciones"
+          >
+            <i
+              class="bi bi-exclamation-triangle-fill"
+              aria-hidden="true"
+            ></i>
+            <span>{{ errorAcciones }}</span>
+          </p>
+
+          <section class="projected-payment">
+            <div>
+              <span>Nuevo pagado</span>
+              <strong>
+                S/ {{ nuevoMontoCancelado | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <div>
+              <span>Nuevo saldo</span>
+              <strong
+                [class.zero-balance]="nuevoSaldo <= 0.009"
+              >
+                S/ {{ nuevoSaldo | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <div>
+              <span>Estado del pago</span>
+              <strong
+                class="payment-status-badge"
+                [ngClass]="claseEstadoPago(nuevoEstadoPago)"
+              >
+                {{ textoEstadoPago(nuevoEstadoPago) }}
+              </strong>
+            </div>
+          </section>
+
+          <label class="review-confirmation">
+            <input
+              type="checkbox"
+              [(ngModel)]="pagoRevisado"
+              [disabled]="actualizando"
+            />
+            <span>
+              <strong>
+                He revisado y validado el estado del pago.
+              </strong>
+              <small>
+                Verifiqué el importe pagado, el saldo y el método
+                antes de modificar la orden.
+              </small>
+            </span>
+          </label>
+
+          <div
+            class="completion-warning"
+            *ngIf="nuevoSaldo > 0.009"
+          >
+            <i
+              class="bi bi-info-circle-fill"
+              aria-hidden="true"
+            ></i>
+            <span>
+              La orden no puede marcarse como completada
+              mientras tenga un saldo de
+              <strong>
+                S/ {{ nuevoSaldo | number:'1.2-2' }}
+              </strong>.
+            </span>
+          </div>
+        </div>
+
+        <div class="state-actions reviewed-actions">
+          <button
+            type="button"
+            class="state-option completed"
+            (click)="cambiarEstado('COMPLETADA')"
+            [disabled]="
+              actualizando ||
+              !puedeCompletar
+            "
+          >
+            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+            <span>
+              <strong>Completar orden</strong>
+              <small>Solo con saldo S/ 0.00</small>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="state-option pending"
+            (click)="cambiarEstado('PENDIENTE')"
+            [disabled]="
+              actualizando ||
+              !pagoRevisado ||
+              !pagoAdicionalValido
+            "
+          >
+            <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+            <span>
+              <strong>Mantener pendiente</strong>
+              <small>Puede estar pagada y pendiente de entrega</small>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="state-option cancelled"
+            (click)="cambiarEstado('CANCELADA')"
+            [disabled]="
+              actualizando ||
+              !puedeCancelar
+            "
+          >
+            <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
+            <span>
+              <strong>Cancelar orden</strong>
+              <small>Solo cuando no existen pagos registrados</small>
+            </span>
+          </button>
+        </div>
+      </ng-container>
     </section>
   </div>
 </div>
