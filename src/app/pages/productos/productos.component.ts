@@ -362,24 +362,6 @@ export class ProductosComponent
     return this.productosBajoStock.length;
   }
 
-  get valorizacionInventario(): number {
-    if (!this.esAdministrador) {
-      return 0;
-    }
-
-    return this.productos.reduce(
-      (total, producto) =>
-        total +
-        Number(
-          producto.precioCompra || 0
-        ) *
-        Number(
-          producto.stockActual || 0
-        ),
-      0
-    );
-  }
-
   get productosBajoStock():
     ProductoInventario[] {
     return this.inventarioPorMarca.filter(

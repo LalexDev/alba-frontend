@@ -93,34 +93,6 @@
       </div>
     </article>
 
-    <article
-      class="stat-card value-card"
-      *ngIf="esAdministrador"
-    >
-      <span class="stat-icon">
-        <i
-          class="bi bi-cash-stack"
-          aria-hidden="true"
-        ></i>
-      </span>
-
-      <div>
-        <small>Valorización</small>
-
-        <strong>
-          S/
-          {{
-            valorizacionInventario
-              | number:'1.2-2'
-          }}
-        </strong>
-
-        <span class="stat-description">
-          Valor de compra del stock
-        </span>
-      </div>
-    </article>
-
   </section>
 
   <section
