@@ -1106,11 +1106,6 @@ export class VentasComponent implements AfterViewInit {
           ? error.message
           : 'No se pudo agregar el líquido gratuito.';
     } finally {
-      /*
-       * No enfocamos el escáner aquí.
-       * El focus del código de barras hacía que el navegador
-       * volviera a la parte superior de la página.
-       */
       this.restaurarPosicionScroll(
         posicionScroll
       );
@@ -1888,7 +1883,7 @@ export class VentasComponent implements AfterViewInit {
           .replace(/\s+/g, ' ')
           .trim();
 
-      if (proyecto.length < 2) {
+      if (!proyecto) {
         this.mensaje =
           'Ingresa el proyecto del crédito.';
         return;

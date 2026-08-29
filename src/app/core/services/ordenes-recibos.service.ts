@@ -2,12 +2,15 @@ import { Injectable } from '@angular/core';
 import { defer, Observable } from 'rxjs';
 
 import type {
+  CambioMonturaRequest,
+  CambioMonturaResultado,
   DetalleOrdenItem,
   EstadoOrden,
   EstadoPagoOrden,
   OrdenRecibo,
   OrdenReciboDetalle,
   PagoCreditoRequest,
+  MonturaCambioOption,
   PagoCreditoResultado,
   RevisionPagoEstadoRequest,
   RevisionPagoEstadoResultado
@@ -52,6 +55,10 @@ interface MarcaDb {
   nombre?: string | null;
 }
 
+interface CategoriaDb {
+  nombre?: string | null;
+}
+
 interface ProductoDb {
   id_producto: number;
   codigo_interno?: string | null;
@@ -60,7 +67,14 @@ interface ProductoDb {
   color?: string | null;
   medida?: string | null;
   material?: string | null;
+  stock_actual?: number | string | null;
+  codigo_barras?: string | null;
+  activo?: boolean | null;
   marca?: MarcaDb | MarcaDb[] | null;
+  categoria?:
+    CategoriaDb |
+    CategoriaDb[] |
+    null;
 }
 
 interface DetalleVentaDb {
@@ -199,7 +213,13 @@ export class OrdenesRecibosService {
                 color,
                 medida,
                 material,
+                stock_actual,
+                codigo_barras,
+                activo,
                 marca:marcas (
+                  nombre
+                ),
+                categoria:categorias (
                   nombre
                 )
               )
@@ -242,6 +262,261 @@ export class OrdenesRecibosService {
       return {
         ...orden,
         items
+      };
+    });
+  }
+
+  buscarMonturasParaCambio(
+    termino: string
+  ): Observable<MonturaCambioOption[]> {
+    return defer(async () => {
+      const limpio =
+        String(
+          termino || ''
+        )
+          .trim()
+          .replace(
+            /[,%()]/g,
+            ''
+          )
+          .replace(
+            /\s+/g,
+            ' '
+          );
+
+      if (limpio.length < 2) {
+        throw new Error(
+          'Escribe o escanea al menos 2 caracteres para buscar la montura.'
+        );
+      }
+
+      const columnas = `
+        id_producto,
+        codigo_interno,
+        codigo_barras,
+        nombre,
+        modelo,
+        color,
+        medida,
+        stock_actual,
+        activo,
+        marca:marcas (
+          nombre
+        ),
+        categoria:categorias (
+          nombre
+        )
+      `;
+
+      /*
+       * Primero intentamos coincidencia exacta:
+       * código interno, código de barras o medida.
+       */
+      let respuesta =
+        await this.supabaseService.client
+          .from('productos')
+          .select(columnas)
+          .eq(
+            'activo',
+            true
+          )
+          .gt(
+            'stock_actual',
+            0
+          )
+          .or(
+            [
+              `codigo_interno.eq.${limpio}`,
+              `codigo_barras.eq.${limpio}`,
+              `medida.eq.${limpio}`
+            ].join(',')
+          )
+          .limit(30);
+
+      if (
+        respuesta.error
+      ) {
+        throw new Error(
+          this.traducirError(
+            respuesta.error.message
+          )
+        );
+      }
+
+      let filas =
+        respuesta.data ?? [];
+
+      /*
+       * Si no hubo coincidencia exacta,
+       * buscamos por código, nombre, modelo o medida.
+       */
+      if (!filas.length) {
+        respuesta =
+          await this.supabaseService.client
+            .from('productos')
+            .select(columnas)
+            .eq(
+              'activo',
+              true
+            )
+            .gt(
+              'stock_actual',
+              0
+            )
+            .or(
+              [
+                `codigo_interno.ilike.%${limpio}%`,
+                `nombre.ilike.%${limpio}%`,
+                `modelo.ilike.%${limpio}%`,
+                `medida.ilike.%${limpio}%`
+              ].join(',')
+            )
+            .limit(30);
+
+        if (
+          respuesta.error
+        ) {
+          throw new Error(
+            this.traducirError(
+              respuesta.error.message
+            )
+          );
+        }
+
+        filas =
+          respuesta.data ?? [];
+      }
+
+      return filas
+        .map(
+          fila =>
+            this.mapearMonturaCambio(
+              fila as unknown as
+                ProductoDb
+            )
+        )
+        .filter(
+          (
+            producto
+          ): producto is MonturaCambioOption =>
+            producto !== null
+        );
+    });
+  }
+
+  cambiarMonturaOrden(
+    request: CambioMonturaRequest
+  ): Observable<CambioMonturaResultado> {
+    return defer(async () => {
+      if (
+        !Number.isInteger(
+          request.idVenta
+        ) ||
+        request.idVenta <= 0 ||
+        !Number.isInteger(
+          request.idDetalleVenta
+        ) ||
+        request.idDetalleVenta <= 0 ||
+        !Number.isInteger(
+          request.idProductoNuevo
+        ) ||
+        request.idProductoNuevo <= 0
+      ) {
+        throw new Error(
+          'Los datos del cambio de montura no son válidos.'
+        );
+      }
+
+      const {
+        data,
+        error
+      } =
+        await this.supabaseService.client
+          .rpc(
+            'cambiar_montura_orden',
+            {
+              p_id_venta:
+                request.idVenta,
+              p_id_detalle_venta:
+                request.idDetalleVenta,
+              p_id_producto_nuevo:
+                request.idProductoNuevo,
+              p_motivo:
+                String(
+                  request.motivo ||
+                  ''
+                ).trim() ||
+                null
+            }
+          );
+
+      if (error) {
+        throw new Error(
+          this.traducirError(
+            error.message
+          )
+        );
+      }
+
+      const resultado =
+        (data || {}) as
+          Record<string, unknown>;
+
+      return {
+        idVenta:
+          Number(
+            resultado['id_venta'] ||
+            request.idVenta
+          ),
+        idDetalleVenta:
+          Number(
+            resultado[
+              'id_detalle_venta'
+            ] ||
+            request.idDetalleVenta
+          ),
+        idProductoAnterior:
+          Number(
+            resultado[
+              'id_producto_anterior'
+            ] || 0
+          ),
+        idProductoNuevo:
+          Number(
+            resultado[
+              'id_producto_nuevo'
+            ] ||
+            request.idProductoNuevo
+          ),
+        cantidad:
+          Number(
+            resultado['cantidad'] ||
+            1
+          ),
+        stockAnteriorDevuelto:
+          Number(
+            resultado[
+              'stock_anterior_devuelto'
+            ] || 0
+          ),
+        stockNuevoRestante:
+          Number(
+            resultado[
+              'stock_nuevo_restante'
+            ] || 0
+          ),
+        monturaAnterior:
+          String(
+            resultado[
+              'montura_anterior'
+            ] || ''
+          ),
+        monturaNueva:
+          String(
+            resultado[
+              'montura_nueva'
+            ] || ''
+          )
       };
     });
   }
@@ -310,6 +585,8 @@ export class OrdenesRecibosService {
                 Number(
                   pagoAdicional.toFixed(2)
                 ),
+              p_metodo_pago_adicional:
+                request.metodoPagoAdicional,
               p_pago_revisado:
                 request.pagoRevisado
             }
@@ -359,7 +636,29 @@ export class OrdenesRecibosService {
               resultado['estado_orden'] ||
               request.estadoOrden
             )
-          )
+          ),
+        metodoPagoAdicional:
+          resultado['metodo_pago_adicional']
+            ? String(
+                resultado['metodo_pago_adicional']
+              ) as
+                RevisionPagoEstadoResultado[
+                  'metodoPagoAdicional'
+                ]
+            : null,
+        idCajaPago:
+          resultado['id_caja_pago'] === null ||
+          resultado['id_caja_pago'] === undefined
+            ? null
+            : Number(
+                resultado['id_caja_pago']
+              ),
+        fechaPago:
+          resultado['fecha_pago']
+            ? String(
+                resultado['fecha_pago']
+              )
+            : null
       };
     });
   }
@@ -562,6 +861,11 @@ export class OrdenesRecibosService {
       producto?.marca
     );
 
+    const categoria =
+      this.obtenerRelacion(
+        producto?.categoria
+      );
+
     return {
       idDetalle:
         Number(fila.id_detalle_venta),
@@ -596,6 +900,8 @@ export class OrdenesRecibosService {
         producto?.material || '',
       marca:
         marca?.nombre || '',
+      categoria:
+        categoria?.nombre || '',
       cantidad:
         this.numero(fila.cantidad),
       precioUnitario:
@@ -605,6 +911,98 @@ export class OrdenesRecibosService {
       subtotal:
         this.numero(fila.subtotal)
     };
+  }
+
+  private mapearMonturaCambio(
+    fila: ProductoDb
+  ): MonturaCambioOption | null {
+    const categoria =
+      this.obtenerRelacion(
+        fila.categoria
+      );
+
+    const nombreCategoria =
+      this.normalizarTexto(
+        categoria?.nombre ||
+        ''
+      );
+
+    if (
+      !nombreCategoria.includes(
+        'montura'
+      ) &&
+      !nombreCategoria.includes(
+        'armazon'
+      )
+    ) {
+      return null;
+    }
+
+    const marca =
+      this.obtenerRelacion(
+        fila.marca
+      );
+
+    return {
+      idProducto:
+        Number(
+          fila.id_producto
+        ),
+      codigoInterno:
+        String(
+          fila.codigo_interno ||
+          ''
+        ),
+      codigoBarras:
+        String(
+          fila.codigo_barras ||
+          ''
+        ),
+      nombre:
+        String(
+          fila.nombre ||
+          'Montura'
+        ),
+      marca:
+        String(
+          marca?.nombre ||
+          ''
+        ),
+      modelo:
+        String(
+          fila.modelo ||
+          ''
+        ),
+      color:
+        String(
+          fila.color ||
+          ''
+        ),
+      medida:
+        String(
+          fila.medida ||
+          ''
+        ),
+      stockActual:
+        this.numero(
+          fila.stock_actual
+        )
+    };
+  }
+
+  private normalizarTexto(
+    valor: string
+  ): string {
+    return String(
+      valor || ''
+    )
+      .normalize('NFD')
+      .replace(
+        /[\u0300-\u036f]/g,
+        ''
+      )
+      .toLowerCase()
+      .trim();
   }
 
   private obtenerRelacion<T>(
@@ -724,6 +1122,41 @@ export class OrdenesRecibosService {
 
     if (
       texto.includes(
+        'cambiar_montura_orden'
+      )
+    ) {
+      return 'Falta ejecutar 47_cambio_montura_orden.sql en Supabase.';
+    }
+
+    if (
+      texto.includes(
+        'producto seleccionado no es una montura'
+      ) ||
+      texto.includes(
+        'producto nuevo no es una montura'
+      )
+    ) {
+      return 'El producto seleccionado debe pertenecer a la categoría Monturas.';
+    }
+
+    if (
+      texto.includes(
+        'stock insuficiente'
+      )
+    ) {
+      return 'La montura nueva no tiene stock suficiente para realizar el cambio.';
+    }
+
+    if (
+      texto.includes(
+        'misma montura'
+      )
+    ) {
+      return 'Selecciona una montura diferente a la que ya tiene la orden.';
+    }
+
+    if (
+      texto.includes(
         'liquidar_credito_orden'
       )
     ) {
@@ -807,7 +1240,7 @@ export class OrdenesRecibosService {
         'caja abierta'
       )
     ) {
-      return 'Debes tener una caja abierta para registrar un pago adicional en efectivo.';
+      return 'Debes tener abierta la caja general de hoy para registrar el abono.';
     }
 
     if (

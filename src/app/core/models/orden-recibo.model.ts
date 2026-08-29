@@ -28,6 +28,12 @@ export type MetodoCobroCredito =
   | 'YAPE'
   | 'TRANSFERENCIA';
 
+export type MetodoPagoAbonoOrden =
+  | 'EFECTIVO'
+  | 'YAPE'
+  | 'TRANSFERENCIA'
+  | 'SEGURO';
+
 export interface OrdenRecibo {
   idVenta: number;
   numeroOrden: string;
@@ -66,6 +72,7 @@ export interface DetalleOrdenItem {
   medida: string;
   material: string;
   marca: string;
+  categoria?: string;
   cantidad: number;
   precioUnitario: number;
   descuento: number;
@@ -99,6 +106,8 @@ export interface RevisionPagoEstadoRequest {
   idVenta: number;
   estadoOrden: EstadoOrden;
   pagoAdicional: number;
+  metodoPagoAdicional:
+    MetodoPagoAbonoOrden;
   pagoRevisado: boolean;
 }
 
@@ -109,6 +118,12 @@ export interface RevisionPagoEstadoResultado {
   saldo: number;
   estadoPago: EstadoPagoOrden;
   estadoOrden: EstadoOrden;
+
+  metodoPagoAdicional?:
+    MetodoPagoAbonoOrden | null;
+
+  idCajaPago?: number | null;
+  fechaPago?: string | null;
 }
 
 
@@ -123,4 +138,40 @@ export interface PagoCreditoResultado {
   montoPagado: number;
   saldo: number;
   estadoPago: EstadoPagoOrden;
+}
+
+
+/* ============================================================
+   CAMBIO DE MONTURA
+   ============================================================ */
+
+export interface MonturaCambioOption {
+  idProducto: number;
+  codigoInterno: string;
+  codigoBarras: string;
+  nombre: string;
+  marca: string;
+  modelo: string;
+  color: string;
+  medida: string;
+  stockActual: number;
+}
+
+export interface CambioMonturaRequest {
+  idVenta: number;
+  idDetalleVenta: number;
+  idProductoNuevo: number;
+  motivo?: string;
+}
+
+export interface CambioMonturaResultado {
+  idVenta: number;
+  idDetalleVenta: number;
+  idProductoAnterior: number;
+  idProductoNuevo: number;
+  cantidad: number;
+  stockAnteriorDevuelto: number;
+  stockNuevoRestante: number;
+  monturaAnterior: string;
+  monturaNueva: string;
 }

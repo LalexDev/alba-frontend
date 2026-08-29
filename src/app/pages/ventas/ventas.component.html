@@ -1075,6 +1075,20 @@
               <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
               Para registrar crédito debes seleccionar un cliente.
             </p>
+
+            <p
+              class="credit-client-warning"
+              *ngIf="
+                clienteId &&
+                (!entidadCredito || !proyectoCredito.trim())
+              "
+            >
+              <i
+                class="bi bi-info-circle"
+                aria-hidden="true"
+              ></i>
+              Completa la entidad y el proyecto para registrar el crédito.
+            </p>
           </section>
 
           <div class="summary-field">
@@ -1110,9 +1124,17 @@
 
             {{
               procesandoVenta
-                ? 'Registrando venta...'
+                ? (
+                    pagoPorCredito
+                      ? 'Registrando crédito...'
+                      : 'Registrando venta...'
+                  )
                 : pagoPorCredito
-                  ? 'Registrar crédito'
+                  ? (
+                      imprimirRecibo
+                        ? 'Registrar crédito e imprimir'
+                        : 'Registrar crédito'
+                    )
                   : imprimirRecibo
                     ? 'Cobrar e imprimir resumen'
                     : 'Registrar venta'

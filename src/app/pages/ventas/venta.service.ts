@@ -475,75 +475,9 @@ export class VentaService {
     const resultado =
       data as RegistrarVentaDb;
 
-    const idVenta =
-      Number(
-        resultado.id_venta
-      );
-
-    if (
-      !Number.isInteger(idVenta) ||
-      idVenta <= 0
-    ) {
-      throw new Error(
-        'Supabase no devolvió el identificador de la venta registrada.'
-      );
-    }
-
-    /*
-     * Confirmamos que la venta existe realmente en la tabla
-     * antes de informar éxito, imprimir y limpiar el formulario.
-     */
-    const {
-      data: ventaConfirmada,
-      error: errorConfirmacion
-    } = await this.supabase.client
-      .from('ventas')
-      .select(`
-        id_venta,
-        metodo_pago,
-        entidad_credito,
-        estado_venta
-      `)
-      .eq(
-        'id_venta',
-        idVenta
-      )
-      .eq(
-        'estado_venta',
-        'REGISTRADA'
-      )
-      .maybeSingle();
-
-    if (errorConfirmacion) {
-      throw new Error(
-        this.traducirError(
-          errorConfirmacion.message
-        )
-      );
-    }
-
-    if (!ventaConfirmada) {
-      throw new Error(
-        'La venta no quedó registrada en Órdenes y recibos. El formulario se conservará para volver a intentar.'
-      );
-    }
-
-    if (
-      metodo === 'CREDITO' &&
-      (
-        ventaConfirmada.metodo_pago !==
-          'CREDITO' ||
-        ventaConfirmada.entidad_credito !==
-          credito?.entidad
-      )
-    ) {
-      throw new Error(
-        'El crédito quedó incompleto en Supabase. Revisa la actualización SQL de DS/Deyfor.'
-      );
-    }
-
     return {
-      idVenta,
+      idVenta:
+        Number(resultado.id_venta),
       numeroVenta:
         String(resultado.numero_venta),
       total:

@@ -499,6 +499,19 @@
 
                   <button
                     type="button"
+                    class="change-frame-action"
+                    (click)="abrirCambioMontura(orden)"
+                    title="Cambiar montura"
+                    aria-label="Cambiar montura"
+                  >
+                    <i
+                      class="bi bi-arrow-left-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+
+                  <button
+                    type="button"
                     (click)="abrirAcciones(orden)"
                     title="Más acciones"
                     aria-label="Más acciones"
@@ -1018,8 +1031,38 @@
 
             <div class="payment-input-grid">
               <div class="payment-input-field">
+                <label for="metodoPagoAdicional">
+                  Método recibido hoy
+                </label>
+
+                <select
+                  id="metodoPagoAdicional"
+                  [(ngModel)]="metodoPagoAdicional"
+                  [disabled]="actualizando"
+                >
+                  <option value="EFECTIVO">
+                    Efectivo
+                  </option>
+                  <option value="YAPE">
+                    Yape
+                  </option>
+                  <option value="TRANSFERENCIA">
+                    Transferencia
+                  </option>
+                  <option value="SEGURO">
+                    Seguro
+                  </option>
+                </select>
+
+                <small>
+                  Método original de la orden:
+                  <b>{{ ordenAcciones.metodoPago }}</b>
+                </small>
+              </div>
+
+              <div class="payment-input-field">
                 <label for="pagoAdicional">
-                  Importe recibido ahora
+                  Importe recibido hoy
                 </label>
 
                 <div class="money-input">
@@ -1037,10 +1080,30 @@
                 </div>
 
                 <small>
-                  Método actual:
-                  <b>{{ ordenAcciones.metodoPago }}</b>
+                  Saldo pendiente:
+                  <b>
+                    S/
+                    {{
+                      ordenAcciones.saldo
+                        | number:'1.2-2'
+                    }}
+                  </b>
                 </small>
               </div>
+            </div>
+
+            <div class="payment-day-note">
+              <i
+                class="bi bi-calendar-check"
+                aria-hidden="true"
+              ></i>
+
+              <span>
+                La fecha original de la orden no cambia.
+                Este abono se registra únicamente en la
+                <strong>caja general abierta de hoy</strong>
+                por el importe recibido ahora.
+              </span>
             </div>
           </section>
 
@@ -1238,4 +1301,426 @@
       </ng-container>
     </section>
   </div>
+  <!-- =====================================================
+       CAMBIO DE MONTURA
+       ===================================================== -->
+  <div
+    class="frame-change-backdrop"
+    *ngIf="mostrarCambioMontura"
+    (click)="cerrarCambioMontura()"
+  >
+    <section
+      class="frame-change-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tituloCambioMontura"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="frame-change-header">
+        <div>
+          <span class="page-kicker">
+            INVENTARIO / ORDEN
+          </span>
+
+          <h2 id="tituloCambioMontura">
+            Cambiar montura
+          </h2>
+
+          <p *ngIf="ordenCambioMontura">
+            {{ ordenCambioMontura.numeroOrden }}
+            ·
+            {{ ordenCambioMontura.cliente }}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="frame-change-close"
+          (click)="cerrarCambioMontura()"
+          [disabled]="guardandoCambioMontura"
+          aria-label="Cerrar"
+        >
+          <i
+            class="bi bi-x-lg"
+            aria-hidden="true"
+          ></i>
+        </button>
+      </header>
+
+      <div
+        class="frame-change-loading"
+        *ngIf="cargandoCambioMontura"
+      >
+        <i
+          class="bi bi-arrow-repeat spin-icon"
+          aria-hidden="true"
+        ></i>
+        Cargando monturas de la orden...
+      </div>
+
+      <ng-container
+        *ngIf="
+          !cargandoCambioMontura &&
+          ordenCambioMontura
+        "
+      >
+        <section class="frame-change-step">
+          <div class="frame-step-title">
+            <span>1</span>
+            <div>
+              <strong>Montura que regresa al stock</strong>
+              <small>
+                Selecciona la montura entregada originalmente.
+              </small>
+            </div>
+          </div>
+
+          <div
+            class="sold-frame-list"
+            *ngIf="
+              monturasVendidasCambio.length > 0
+            "
+          >
+            <button
+              type="button"
+              class="sold-frame-card"
+              *ngFor="
+                let item of monturasVendidasCambio
+              "
+              [class.active]="
+                monturaVendidaSeleccionada
+                  ?.idDetalle ===
+                item.idDetalle
+              "
+              (click)="
+                monturaVendidaSeleccionada =
+                  item;
+                monturaNuevaSeleccionada =
+                  null;
+                monturasCambio = []
+              "
+              [disabled]="guardandoCambioMontura"
+            >
+              <span class="frame-radio">
+                <i
+                  class="bi"
+                  [ngClass]="
+                    monturaVendidaSeleccionada
+                      ?.idDetalle ===
+                    item.idDetalle
+                      ? 'bi-check-circle-fill'
+                      : 'bi-circle'
+                  "
+                  aria-hidden="true"
+                ></i>
+              </span>
+
+              <span class="frame-card-copy">
+                <strong>
+                  {{
+                    item.marca ||
+                    item.producto
+                  }}
+                  {{
+                    item.modelo
+                      ? ' · ' + item.modelo
+                      : ''
+                  }}
+                </strong>
+
+                <small>
+                  Código:
+                  {{ item.codigo || '—' }}
+                  · Medida:
+                  {{ item.medida || '—' }}
+                  · Color:
+                  {{ item.color || '—' }}
+                </small>
+              </span>
+            </button>
+          </div>
+        </section>
+
+        <section
+          class="frame-change-step"
+          *ngIf="monturaVendidaSeleccionada"
+        >
+          <div class="frame-step-title">
+            <span>2</span>
+            <div>
+              <strong>Buscar montura nueva</strong>
+              <small>
+                Escanea el código o escribe código, medida, nombre o modelo.
+              </small>
+            </div>
+          </div>
+
+          <div class="frame-search-row">
+            <div class="frame-search-input">
+              <i
+                class="bi bi-upc-scan"
+                aria-hidden="true"
+              ></i>
+
+              <input
+                type="text"
+                [(ngModel)]="busquedaMonturaCambio"
+                (keyup.enter)="buscarMonturaCambio()"
+                [disabled]="
+                  buscandoMonturaCambio ||
+                  guardandoCambioMontura
+                "
+                placeholder="Ej. OPT-000001 o 52-18-140"
+              />
+            </div>
+
+            <button
+              type="button"
+              class="frame-search-button"
+              (click)="buscarMonturaCambio()"
+              [disabled]="
+                buscandoMonturaCambio ||
+                guardandoCambioMontura
+              "
+            >
+              <i
+                class="bi"
+                [ngClass]="
+                  buscandoMonturaCambio
+                    ? 'bi-arrow-repeat spin-icon'
+                    : 'bi-search'
+                "
+                aria-hidden="true"
+              ></i>
+
+              {{
+                buscandoMonturaCambio
+                  ? 'Buscando...'
+                  : 'Buscar'
+              }}
+            </button>
+          </div>
+
+          <div
+            class="replacement-frame-list"
+            *ngIf="monturasCambio.length > 0"
+          >
+            <button
+              type="button"
+              class="replacement-frame-card"
+              *ngFor="
+                let producto of monturasCambio
+              "
+              [class.active]="
+                monturaNuevaSeleccionada
+                  ?.idProducto ===
+                producto.idProducto
+              "
+              (click)="
+                seleccionarMonturaNueva(
+                  producto
+                )
+              "
+              [disabled]="guardandoCambioMontura"
+            >
+              <div class="replacement-frame-main">
+                <span class="frame-radio">
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      monturaNuevaSeleccionada
+                        ?.idProducto ===
+                      producto.idProducto
+                        ? 'bi-check-circle-fill'
+                        : 'bi-circle'
+                    "
+                    aria-hidden="true"
+                  ></i>
+                </span>
+
+                <div>
+                  <strong>
+                    {{
+                      producto.marca ||
+                      producto.nombre
+                    }}
+                    {{
+                      producto.modelo
+                        ? ' · ' + producto.modelo
+                        : ''
+                    }}
+                  </strong>
+
+                  <small>
+                    {{ producto.codigoInterno || producto.codigoBarras || 'Sin código' }}
+                    · {{ producto.medida || 'Sin medida' }}
+                    · {{ producto.color || 'Sin color' }}
+                  </small>
+                </div>
+              </div>
+
+              <span class="replacement-stock">
+                Stock:
+                <b>{{ producto.stockActual }}</b>
+              </span>
+            </button>
+          </div>
+        </section>
+
+        <section
+          class="frame-change-step"
+          *ngIf="monturaNuevaSeleccionada"
+        >
+          <div class="frame-step-title">
+            <span>3</span>
+            <div>
+              <strong>Confirmar cambio</strong>
+              <small>
+                El valor financiero de la venta no se modificará.
+              </small>
+            </div>
+          </div>
+
+          <div class="frame-change-summary">
+            <div class="frame-summary-card return">
+              <small>Regresa al inventario</small>
+              <strong>
+                {{
+                  monturaVendidaSeleccionada?.marca ||
+                  monturaVendidaSeleccionada?.producto
+                }}
+              </strong>
+              <span>
+                + {{
+                  monturaVendidaSeleccionada?.cantidad ||
+                  1
+                }} unidad(es)
+              </span>
+            </div>
+
+            <i
+              class="bi bi-arrow-left-right"
+              aria-hidden="true"
+            ></i>
+
+            <div class="frame-summary-card out">
+              <small>Sale del inventario</small>
+              <strong>
+                {{
+                  monturaNuevaSeleccionada.marca ||
+                  monturaNuevaSeleccionada.nombre
+                }}
+              </strong>
+              <span>
+                - {{
+                  monturaVendidaSeleccionada?.cantidad ||
+                  1
+                }} unidad(es)
+              </span>
+            </div>
+          </div>
+
+          <label class="frame-reason-field">
+            <span>Motivo / observación (opcional)</span>
+
+            <textarea
+              rows="2"
+              maxlength="240"
+              [(ngModel)]="motivoCambioMontura"
+              [disabled]="guardandoCambioMontura"
+              placeholder="Ej. Cliente solicitó cambio de modelo o medida."
+            ></textarea>
+          </label>
+
+          <div class="frame-financial-note">
+            <i
+              class="bi bi-info-circle-fill"
+              aria-hidden="true"
+            ></i>
+
+            <span>
+              Solo se cambia la montura y el inventario.
+              <strong>
+                El total, pagos y saldo de la orden permanecen iguales.
+              </strong>
+            </span>
+          </div>
+        </section>
+
+        <p
+          class="frame-change-error"
+          *ngIf="errorCambioMontura"
+        >
+          <i
+            class="bi bi-exclamation-triangle-fill"
+            aria-hidden="true"
+          ></i>
+          {{ errorCambioMontura }}
+        </p>
+      </ng-container>
+
+      <footer class="frame-change-footer">
+        <button
+          type="button"
+          class="frame-cancel-button"
+          (click)="cerrarCambioMontura()"
+          [disabled]="guardandoCambioMontura"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="frame-confirm-button"
+          (click)="confirmarCambioMontura()"
+          [disabled]="
+            guardandoCambioMontura ||
+            !monturaVendidaSeleccionada ||
+            !monturaNuevaSeleccionada
+          "
+        >
+          <i
+            class="bi"
+            [ngClass]="
+              guardandoCambioMontura
+                ? 'bi-arrow-repeat spin-icon'
+                : 'bi-arrow-left-right'
+            "
+            aria-hidden="true"
+          ></i>
+
+          {{
+            guardandoCambioMontura
+              ? 'Cambiando...'
+              : 'Confirmar cambio de montura'
+          }}
+        </button>
+      </footer>
+    </section>
+  </div>
+
+  <div
+    class="frame-change-success-toast"
+    *ngIf="mensajeCambioMonturaExitoso"
+    role="status"
+    aria-live="polite"
+  >
+    <span class="frame-change-success-icon">
+      <i
+        class="bi bi-check-lg"
+        aria-hidden="true"
+      ></i>
+    </span>
+
+    <div>
+      <strong>
+        {{ mensajeCambioMonturaExitoso }}
+      </strong>
+
+      <small>
+        La montura anterior regresó al stock y la nueva fue descontada del inventario.
+      </small>
+    </div>
+  </div>
+
 </div>
