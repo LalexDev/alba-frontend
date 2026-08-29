@@ -13,7 +13,9 @@ import {
 import type {
   EstadoOrden,
   EstadoPagoOrden,
+  EntidadCreditoOrden,
   FiltrosOrdenes,
+  MetodoCobroCredito,
   OrdenRecibo,
   OrdenReciboDetalle,
   ResumenOrdenes
@@ -59,6 +61,17 @@ export class OrdenesRecibosComponent
   pagoRevisado = false;
   errorAcciones = '';
   confirmandoEliminacion = false;
+
+  vistaListado:
+    'TODAS' |
+    'DS' |
+    'DEYFOR' = 'TODAS';
+
+  metodoCobroCredito:
+    MetodoCobroCredito =
+      'TRANSFERENCIA';
+
+  montoCobroCredito = 0;
 
   paginaActual = 1;
   elementosPorPagina = 10;
@@ -129,6 +142,19 @@ export class OrdenesRecibosComponent
           'TODOS' &&
         orden.metodoPago !==
           this.filtros.metodoPago
+      ) {
+        return false;
+      }
+
+      if (
+        this.vistaListado !==
+          'TODAS' &&
+        (
+          orden.metodoPago !==
+            'CREDITO' ||
+          orden.entidadCredito !==
+            this.vistaListado
+        )
       ) {
         return false;
       }
@@ -243,6 +269,38 @@ export class OrdenesRecibosComponent
     return this.porcentaje(
       this.resumen.canceladas
     );
+  }
+
+
+  get cantidadCreditoDS(): number {
+    return this.ordenes.filter(
+      orden =>
+        orden.metodoPago ===
+          'CREDITO' &&
+        orden.entidadCredito ===
+          'DS'
+    ).length;
+  }
+
+  get cantidadCreditoDeyfor(): number {
+    return this.ordenes.filter(
+      orden =>
+        orden.metodoPago ===
+          'CREDITO' &&
+        orden.entidadCredito ===
+          'DEYFOR'
+    ).length;
+  }
+
+  seleccionarVistaListado(
+    vista:
+      'TODAS' |
+      'DS' |
+      'DEYFOR'
+  ): void {
+    this.vistaListado = vista;
+    this.paginaActual = 1;
+    this.mensaje = '';
   }
 
   cargar(): void {
@@ -384,6 +442,18 @@ export class OrdenesRecibosComponent
     this.pagoRevisado = false;
     this.errorAcciones = '';
     this.confirmandoEliminacion = false;
+
+    this.metodoCobroCredito =
+      'TRANSFERENCIA';
+
+    this.montoCobroCredito =
+      orden.metodoPago ===
+        'CREDITO'
+        ? Number(
+            orden.saldo.toFixed(2)
+          )
+        : 0;
+
     this.mostrarAcciones = true;
   }
 
@@ -398,6 +468,9 @@ export class OrdenesRecibosComponent
     this.pagoRevisado = false;
     this.errorAcciones = '';
     this.confirmandoEliminacion = false;
+    this.metodoCobroCredito =
+      'TRANSFERENCIA';
+    this.montoCobroCredito = 0;
   }
 
   get nuevoMontoCancelado(): number {
@@ -537,6 +610,73 @@ export class OrdenesRecibosComponent
       this.errorAcciones =
         `El pago adicional no puede superar el saldo de S/ ${this.ordenAcciones.saldo.toFixed(2)}.`;
     }
+  }
+
+  registrarPagoCredito(): void {
+    if (
+      !this.ordenAcciones ||
+      this.ordenAcciones.metodoPago !==
+        'CREDITO' ||
+      this.actualizando
+    ) {
+      return;
+    }
+
+    const monto =
+      Number(
+        this.montoCobroCredito ||
+        0
+      );
+
+    if (
+      !Number.isFinite(monto) ||
+      monto <= 0 ||
+      monto >
+        this.ordenAcciones.saldo
+    ) {
+      this.errorAcciones =
+        `El pago debe ser mayor a S/ 0.00 y no superar S/ ${this.ordenAcciones.saldo.toFixed(2)}.`;
+      return;
+    }
+
+    this.actualizando = true;
+    this.errorAcciones = '';
+    this.error = '';
+
+    const numero =
+      this.ordenAcciones.numeroOrden;
+
+    this.ordenesService
+      .registrarPagoCredito({
+        idVenta:
+          this.ordenAcciones.idVenta,
+        metodoCobro:
+          this.metodoCobroCredito,
+        monto
+      })
+      .pipe(
+        finalize(() => {
+          this.actualizando = false;
+        })
+      )
+      .subscribe({
+        next: resultado => {
+          this.mensaje =
+            `${numero}: pago de crédito registrado por S/ ${resultado.montoPagado.toFixed(2)}. Saldo S/ ${resultado.saldo.toFixed(2)}.`;
+
+          this.cerrarAcciones();
+          this.cargar();
+        },
+
+        error: (
+          error: unknown
+        ) => {
+          this.errorAcciones =
+            error instanceof Error
+              ? error.message
+              : 'No se pudo registrar el pago del crédito.';
+        }
+      });
   }
 
   solicitarEliminarOrden(): void {
@@ -769,6 +909,122 @@ export class OrdenesRecibosComponent
       this.imprimirDetalle(
         this.ordenSeleccionada
       );
+    }
+  }
+
+  exportarExcelCredito(
+    entidad: EntidadCreditoOrden
+  ): void {
+    const ordenes =
+      this.ordenesFiltradas.filter(
+        orden =>
+          orden.metodoPago ===
+            'CREDITO' &&
+          orden.entidadCredito ===
+            entidad
+      );
+
+    if (
+      this.exportando ||
+      !ordenes.length
+    ) {
+      return;
+    }
+
+    this.exportando = true;
+    this.error = '';
+
+    try {
+      const filas =
+        ordenes.map(
+          orden => ({
+            'N° de orden':
+              orden.numeroOrden,
+            'Cliente':
+              orden.cliente,
+            'Total':
+              orden.total,
+            'Medidas':
+              orden.medidasCredito ||
+              '',
+            'Montura':
+              orden.monturaCredito ||
+              '',
+            'Proyecto':
+              orden.proyectoCredito ||
+              '',
+            'Fecha':
+              this.formatearFechaCorta(
+                orden.fechaVenta
+              )
+          })
+        );
+
+      const hoja =
+        utils.json_to_sheet(
+          filas
+        );
+
+      hoja['!cols'] = [
+        { wch: 21 },
+        { wch: 34 },
+        { wch: 14 },
+        { wch: 24 },
+        { wch: 34 },
+        { wch: 30 },
+        { wch: 14 }
+      ];
+
+      const rango =
+        utils.decode_range(
+          hoja['!ref'] ||
+          'A1:G1'
+        );
+
+      for (
+        let fila = 1;
+        fila <= rango.e.r;
+        fila += 1
+      ) {
+        const celda =
+          hoja[
+            utils.encode_cell({
+              r: fila,
+              c: 2
+            })
+          ];
+
+        if (celda) {
+          celda.z =
+            'S/ #,##0.00';
+        }
+      }
+
+      const libro =
+        utils.book_new();
+
+      utils.book_append_sheet(
+        libro,
+        hoja,
+        `Crédito ${entidad}`
+      );
+
+      writeFileXLSX(
+        libro,
+        `credito-${entidad.toLowerCase()}-optica-alba-${this.fechaActual()}.xlsx`
+      );
+
+      this.mensaje =
+        `Excel de crédito ${entidad} descargado correctamente.`;
+    } catch (
+      error: unknown
+    ) {
+      this.error =
+        error instanceof Error
+          ? error.message
+          : `No se pudo generar el Excel de ${entidad}.`;
+    } finally {
+      this.exportando = false;
     }
   }
 
@@ -1294,8 +1550,79 @@ export class OrdenesRecibosComponent
   private fechaSimple(
     valor: string
   ): string {
-    return String(valor || '')
-      .slice(0, 10);
+    const fecha =
+      new Date(valor);
+
+    if (
+      Number.isNaN(
+        fecha.getTime()
+      )
+    ) {
+      return String(
+        valor || ''
+      ).slice(0, 10);
+    }
+
+    /*
+     * Supabase guarda TIMESTAMPTZ en UTC.
+     *
+     * Ejemplo:
+     * 28/08/2026 19:04 en Perú
+     * se almacena como
+     * 29/08/2026 00:04 UTC.
+     *
+     * Si usamos slice(0, 10), la venta se interpreta
+     * como del día siguiente y el filtro "Hasta hoy"
+     * la oculta desde las 7:00 p. m.
+     */
+    const partes =
+      new Intl.DateTimeFormat(
+        'en-US',
+        {
+          timeZone:
+            'America/Lima',
+          year:
+            'numeric',
+          month:
+            '2-digit',
+          day:
+            '2-digit'
+        }
+      )
+        .formatToParts(
+          fecha
+        );
+
+    const obtener =
+      (
+        tipo:
+          'year' |
+          'month' |
+          'day'
+      ): string =>
+        partes.find(
+          parte =>
+            parte.type === tipo
+        )?.value || '';
+
+    const anio =
+      obtener('year');
+    const mes =
+      obtener('month');
+    const dia =
+      obtener('day');
+
+    if (
+      !anio ||
+      !mes ||
+      !dia
+    ) {
+      return String(
+        valor || ''
+      ).slice(0, 10);
+    }
+
+    return `${anio}-${mes}-${dia}`;
   }
 
   private formatearFecha(
@@ -1318,9 +1645,39 @@ export class OrdenesRecibosComponent
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: 'America/Lima'
       }
     );
+  }
+
+  private formatearFechaCorta(
+    valor: string
+  ): string {
+    const fecha =
+      new Date(valor);
+
+    if (
+      Number.isNaN(
+        fecha.getTime()
+      )
+    ) {
+      return valor;
+    }
+
+    return new Intl.DateTimeFormat(
+      'es-PE',
+      {
+        timeZone:
+          'America/Lima',
+        day:
+          '2-digit',
+        month:
+          '2-digit',
+        year:
+          'numeric'
+      }
+    ).format(fecha);
   }
 
   private fechaInput(

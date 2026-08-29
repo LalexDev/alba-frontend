@@ -10,8 +10,8 @@
         <span class="page-kicker">CONTROL DIARIO</span>
         <h1>Caja y cierre diario</h1>
         <p>
-          Controla apertura, ventas cobradas, efectivo físico
-          y diferencias al finalizar la jornada.
+          Controla una sola caja general de la óptica:
+          ventas, efectivo, Yape y diferencias al finalizar la jornada.
         </p>
       </div>
     </div>
@@ -114,9 +114,12 @@
 
     <section class="active-cash-header">
       <div>
-        <span class="section-kicker">CAJA ACTUAL</span>
-        <h2>{{ caja.usuario }}</h2>
+        <span class="section-kicker">CAJA GENERAL ACTUAL</span>
+        <h2>Caja general de la óptica</h2>
         <p>
+          Abierta por:
+          <strong>{{ caja.usuario }}</strong>
+          ·
           Apertura:
           <strong>{{ fechaTexto(caja.fechaApertura) }}</strong>
         </p>
@@ -235,6 +238,64 @@
           <strong>
             S/ {{ caja.resumen.seguro | number:'1.2-2' }}
           </strong>
+        </div>
+      </article>
+    </section>
+
+    <section class="credit-cash-grid">
+      <article class="credit-cash-card">
+        <span class="credit-cash-icon">
+          <i class="bi bi-building" aria-hidden="true"></i>
+        </span>
+
+        <div>
+          <small>Crédito DS generado</small>
+          <strong>
+            S/ {{ caja.resumen.creditoDsGenerado | number:'1.2-2' }}
+          </strong>
+          <span>Venta del día todavía no cobrada</span>
+        </div>
+      </article>
+
+      <article class="credit-cash-card">
+        <span class="credit-cash-icon">
+          <i class="bi bi-buildings" aria-hidden="true"></i>
+        </span>
+
+        <div>
+          <small>Crédito Deyfor generado</small>
+          <strong>
+            S/ {{ caja.resumen.creditoDeyforGenerado | number:'1.2-2' }}
+          </strong>
+          <span>Venta del día todavía no cobrada</span>
+        </div>
+      </article>
+
+      <article class="credit-cash-card total-credit">
+        <span class="credit-cash-icon">
+          <i class="bi bi-calendar2-check" aria-hidden="true"></i>
+        </span>
+
+        <div>
+          <small>Total crédito generado</small>
+          <strong>
+            S/ {{ caja.resumen.creditoGeneradoTotal | number:'1.2-2' }}
+          </strong>
+          <span>DS + Deyfor</span>
+        </div>
+      </article>
+
+      <article class="credit-cash-card collected-credit">
+        <span class="credit-cash-icon">
+          <i class="bi bi-check2-circle" aria-hidden="true"></i>
+        </span>
+
+        <div>
+          <small>Créditos cobrados hoy</small>
+          <strong>
+            S/ {{ caja.resumen.creditosCobradosHoy | number:'1.2-2' }}
+          </strong>
+          <span>Pagos mensuales recibidos en esta caja</span>
         </div>
       </article>
     </section>
@@ -407,64 +468,130 @@
           </span>
         </header>
 
-        <div class="expected-box">
-          <span>Efectivo esperado</span>
-          <strong>
-            S/ {{ caja.resumen.efectivoEsperado | number:'1.2-2' }}
-          </strong>
-          <small>
-            Incluye monto inicial, efectivo de ventas,
-            ingresos y egresos manuales.
-          </small>
-        </div>
+        <div class="closing-checks-grid">
+          <section class="closing-check cash-check">
+            <div class="expected-box">
+              <span>Efectivo esperado</span>
+              <strong>
+                S/ {{ caja.resumen.efectivoEsperado | number:'1.2-2' }}
+              </strong>
+              <small>
+                Monto inicial + efectivo cobrado
+                + ingresos manuales - egresos.
+              </small>
+            </div>
 
-        <div class="field">
-          <label for="montoContado">
-            Efectivo físico contado *
-          </label>
+            <div class="field">
+              <label for="montoContado">
+                Efectivo físico contado *
+              </label>
 
-          <div class="money-input large">
-            <span>S/</span>
-            <input
-              id="montoContado"
-              type="number"
-              min="0"
-              step="0.01"
-              [(ngModel)]="montoContado"
-            />
-          </div>
-        </div>
+              <div class="money-input large">
+                <span>S/</span>
+                <input
+                  id="montoContado"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [(ngModel)]="montoContado"
+                />
+              </div>
+            </div>
 
-        <div
-          class="difference-box"
-          *ngIf="montoContado !== null"
-          [ngClass]="estadoDiferencia.toLowerCase()"
-        >
-          <div>
-            <span>Diferencia</span>
-            <strong>
-              {{ diferenciaPrevia >= 0 ? '+ ' : '- ' }}
-              S/
-              {{
-                (
-                  diferenciaPrevia >= 0
-                    ? diferenciaPrevia
-                    : -diferenciaPrevia
-                )
-                  | number:'1.2-2'
-              }}
-            </strong>
-          </div>
+            <div
+              class="difference-box"
+              *ngIf="montoContado !== null"
+              [ngClass]="estadoDiferencia.toLowerCase()"
+            >
+              <div>
+                <span>Diferencia efectivo</span>
+                <strong>
+                  {{ diferenciaPrevia >= 0 ? '+ ' : '- ' }}
+                  S/
+                  {{
+                    (
+                      diferenciaPrevia >= 0
+                        ? diferenciaPrevia
+                        : -diferenciaPrevia
+                    )
+                      | number:'1.2-2'
+                  }}
+                </strong>
+              </div>
 
-          <p>
-            {{
-              estadoDiferencia === 'CUADRADA'
-                ? 'Caja cuadrada.'
-                : estadoDiferencia === 'FALTANTE'
-                  ? 'Existe un faltante de efectivo.'
-                  : 'Existe un sobrante de efectivo.'
-            }}
-          </p>
+              <p>
+                {{
+                  estadoDiferencia === 'CUADRADA'
+                    ? 'Efectivo cuadrado.'
+                    : estadoDiferencia === 'FALTANTE'
+                      ? 'Existe un faltante de efectivo.'
+                      : 'Existe un sobrante de efectivo.'
+                }}
+              </p>
+            </div>
+          </section>
+
+          <section class="closing-check yape-check">
+            <div class="expected-box yape-expected">
+              <span>Yape esperado</span>
+              <strong>
+                S/ {{ caja.resumen.yapeEsperado | number:'1.2-2' }}
+              </strong>
+              <small>
+                Verifica el monto recibido en la cuenta Yape
+                durante esta caja.
+              </small>
+            </div>
+
+            <div class="field">
+              <label for="montoYapeConfirmado">
+                Yape confirmado *
+              </label>
+
+              <div class="money-input large">
+                <span>S/</span>
+                <input
+                  id="montoYapeConfirmado"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [(ngModel)]="montoYapeConfirmado"
+                />
+              </div>
+            </div>
+
+            <div
+              class="difference-box"
+              *ngIf="montoYapeConfirmado !== null"
+              [ngClass]="estadoDiferenciaYape.toLowerCase()"
+            >
+              <div>
+                <span>Diferencia Yape</span>
+                <strong>
+                  {{ diferenciaYapePrevia >= 0 ? '+ ' : '- ' }}
+                  S/
+                  {{
+                    (
+                      diferenciaYapePrevia >= 0
+                        ? diferenciaYapePrevia
+                        : -diferenciaYapePrevia
+                    )
+                      | number:'1.2-2'
+                  }}
+                </strong>
+              </div>
+
+              <p>
+                {{
+                  estadoDiferenciaYape === 'CUADRADA'
+                    ? 'Yape cuadrado.'
+                    : estadoDiferenciaYape === 'FALTANTE'
+                      ? 'Faltan cobros por confirmar en Yape.'
+                      : 'Hay un monto mayor al esperado en Yape.'
+                }}
+              </p>
+            </div>
+          </section>
         </div>
 
         <div class="field">
@@ -483,7 +610,11 @@
           type="button"
           class="close-cash-button"
           (click)="cerrarCaja()"
-          [disabled]="cerrando || montoContado === null"
+          [disabled]="
+            cerrando ||
+            montoContado === null ||
+            montoYapeConfirmado === null
+          "
         >
           <i
             class="bi"
@@ -509,9 +640,7 @@
         <span class="section-kicker">HISTORIAL</span>
         <h2>
           {{
-            esAdministrador
-              ? 'Cierres de todos los vendedores'
-              : 'Mis cierres de caja'
+            'Cierres generales de caja'
           }}
         </h2>
       </div>
@@ -584,13 +713,16 @@
         <thead>
           <tr>
             <th>Fecha</th>
-            <th *ngIf="esAdministrador">Vendedor</th>
+            <th>Abierta por</th>
             <th>Ventas</th>
             <th>Total cobrado</th>
             <th>Efectivo</th>
-            <th>Esperado</th>
-            <th>Contado</th>
-            <th>Diferencia</th>
+            <th>Efec. esperado</th>
+            <th>Efec. contado</th>
+            <th>Dif. efectivo</th>
+            <th>Yape</th>
+            <th>Yape confirmado</th>
+            <th>Dif. Yape</th>
             <th>Estado</th>
           </tr>
         </thead>
@@ -599,7 +731,7 @@
           <tr *ngFor="let item of historial">
             <td>{{ fechaTexto(item.fechaApertura) }}</td>
 
-            <td *ngIf="esAdministrador">
+            <td>
               <strong>{{ item.usuario }}</strong>
             </td>
 
@@ -638,6 +770,33 @@
                 }}
               </span>
               <ng-template #sinDiferencia>—</ng-template>
+            </td>
+
+            <td>
+              S/ {{ item.yape | number:'1.2-2' }}
+            </td>
+
+            <td>
+              <ng-container *ngIf="item.yapeConfirmado !== null; else sinYapeConfirmado">
+                S/ {{ item.yapeConfirmado | number:'1.2-2' }}
+              </ng-container>
+              <ng-template #sinYapeConfirmado>—</ng-template>
+            </td>
+
+            <td>
+              <span
+                class="difference-badge"
+                [ngClass]="classDiferencia(item.diferenciaYape)"
+                *ngIf="item.diferenciaYape !== null; else sinDiferenciaYape"
+              >
+                {{ signoDiferencia(item.diferenciaYape) }}
+                S/
+                {{
+                  diferenciaAbsoluta(item.diferenciaYape)
+                    | number:'1.2-2'
+                }}
+              </span>
+              <ng-template #sinDiferenciaYape>—</ng-template>
             </td>
 
             <td>

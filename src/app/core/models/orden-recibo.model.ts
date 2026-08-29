@@ -16,7 +16,17 @@ export type MetodoPagoOrden =
   | 'EFECTIVO'
   | 'YAPE'
   | 'TRANSFERENCIA'
-  | 'SEGURO';
+  | 'SEGURO'
+  | 'CREDITO';
+
+export type EntidadCreditoOrden =
+  | 'DS'
+  | 'DEYFOR';
+
+export type MetodoCobroCredito =
+  | 'EFECTIVO'
+  | 'YAPE'
+  | 'TRANSFERENCIA';
 
 export interface OrdenRecibo {
   idVenta: number;
@@ -32,6 +42,14 @@ export interface OrdenRecibo {
   montoCancelado: number;
   saldo: number;
   metodoPago: MetodoPagoOrden;
+
+  entidadCredito?:
+    EntidadCreditoOrden | null;
+
+  proyectoCredito?: string;
+  medidasCredito?: string;
+  monturaCredito?: string;
+
   estadoPago: EstadoPagoOrden;
   estado: EstadoOrden;
   observaciones: string;
@@ -91,4 +109,18 @@ export interface RevisionPagoEstadoResultado {
   saldo: number;
   estadoPago: EstadoPagoOrden;
   estadoOrden: EstadoOrden;
+}
+
+
+export interface PagoCreditoRequest {
+  idVenta: number;
+  metodoCobro: MetodoCobroCredito;
+  monto: number;
+}
+
+export interface PagoCreditoResultado {
+  idVenta: number;
+  montoPagado: number;
+  saldo: number;
+  estadoPago: EstadoPagoOrden;
 }

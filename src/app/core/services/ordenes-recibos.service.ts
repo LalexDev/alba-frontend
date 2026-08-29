@@ -7,6 +7,8 @@ import type {
   EstadoPagoOrden,
   OrdenRecibo,
   OrdenReciboDetalle,
+  PagoCreditoRequest,
+  PagoCreditoResultado,
   RevisionPagoEstadoRequest,
   RevisionPagoEstadoResultado
 } from '../models/orden-recibo.model';
@@ -36,6 +38,10 @@ interface VentaDb {
   monto_cancelado?: number | string | null;
   monto_pendiente?: number | string | null;
   metodo_pago?: string | null;
+  entidad_credito?: string | null;
+  proyecto_credito?: string | null;
+  medidas_credito?: string | null;
+  montura_credito?: string | null;
   estado_orden?: string | null;
   estado_venta?: string | null;
   observaciones?: string | null;
@@ -97,6 +103,10 @@ export class OrdenesRecibosService {
             monto_cancelado,
             monto_pendiente,
             metodo_pago,
+            entidad_credito,
+            proyecto_credito,
+            medidas_credito,
+            montura_credito,
             estado_orden,
             estado_venta,
             observaciones,
@@ -151,6 +161,10 @@ export class OrdenesRecibosService {
               monto_cancelado,
               monto_pendiente,
               metodo_pago,
+              entidad_credito,
+              proyecto_credito,
+              medidas_credito,
+              montura_credito,
               estado_orden,
               estado_venta,
               observaciones,
@@ -350,6 +364,79 @@ export class OrdenesRecibosService {
     });
   }
 
+  registrarPagoCredito(
+    request: PagoCreditoRequest
+  ): Observable<PagoCreditoResultado> {
+    return defer(async () => {
+      const monto =
+        Number(
+          request.monto || 0
+        );
+
+      if (
+        !Number.isFinite(monto) ||
+        monto <= 0
+      ) {
+        throw new Error(
+          'El importe del crédito no es válido.'
+        );
+      }
+
+      const { data, error } =
+        await this.supabaseService.client
+          .rpc(
+            'liquidar_credito_orden',
+            {
+              p_id_venta:
+                request.idVenta,
+              p_metodo_cobro:
+                request.metodoCobro,
+              p_monto:
+                Number(
+                  monto.toFixed(2)
+                )
+            }
+          );
+
+      if (error) {
+        throw new Error(
+          this.traducirError(
+            error.message
+          )
+        );
+      }
+
+      const resultado =
+        (data || {}) as
+          Record<string, unknown>;
+
+      return {
+        idVenta:
+          Number(
+            resultado['id_venta'] ||
+            request.idVenta
+          ),
+        montoPagado:
+          this.numero(
+            resultado['monto_pagado'] as
+              number | string | null
+          ),
+        saldo:
+          this.numero(
+            resultado['saldo'] as
+              number | string | null
+          ),
+        estadoPago:
+          this.estadoPagoSeguro(
+            String(
+              resultado['estado_pago'] ||
+              ''
+            )
+          )
+      };
+    });
+  }
+
   private mapearOrden(
     fila: VentaDb
   ): OrdenRecibo {
@@ -434,9 +521,24 @@ export class OrdenesRecibosService {
         fila.metodo_pago ===
           'TRANSFERENCIA' ||
         fila.metodo_pago ===
-          'SEGURO'
+          'SEGURO' ||
+        fila.metodo_pago ===
+          'CREDITO'
           ? fila.metodo_pago
           : 'EFECTIVO',
+      entidadCredito:
+        fila.entidad_credito ===
+          'DS' ||
+        fila.entidad_credito ===
+          'DEYFOR'
+          ? fila.entidad_credito
+          : null,
+      proyectoCredito:
+        fila.proyecto_credito || '',
+      medidasCredito:
+        fila.medidas_credito || '',
+      monturaCredito:
+        fila.montura_credito || '',
       estadoPago:
         this.estadoPagoSeguro(
           fila.estado_pago,
@@ -618,6 +720,30 @@ export class OrdenesRecibosService {
       )
     ) {
       return 'El vendedor solo puede eliminar órdenes que él mismo registró.';
+    }
+
+    if (
+      texto.includes(
+        'liquidar_credito_orden'
+      )
+    ) {
+      return 'Falta ejecutar 44_credito_ds_deyfor.sql en Supabase.';
+    }
+
+    if (
+      texto.includes(
+        'no corresponde a una venta a crédito'
+      )
+    ) {
+      return 'La orden seleccionada no corresponde a un crédito DS/Deyfor.';
+    }
+
+    if (
+      texto.includes(
+        'no existe una caja general abierta'
+      )
+    ) {
+      return 'Abre la caja general antes de registrar el pago mensual del crédito.';
     }
 
     if (

@@ -859,17 +859,21 @@
               <div>
                 <label for="aCuenta">
                   {{
-                    pagoPorSeguro
-                      ? 'Cobertura del seguro'
-                      : 'Pago recibido'
+                    pagoPorCredito
+                      ? 'Crédito mensual'
+                      : pagoPorSeguro
+                        ? 'Cobertura del seguro'
+                        : 'Pago recibido'
                   }}
                 </label>
 
                 <small>
                   {{
-                    pagoPorSeguro
-                      ? 'El seguro cubre automáticamente el total'
-                      : 'Monto que entrega el cliente hoy'
+                    pagoPorCredito
+                      ? 'DS o Deyfor pagarán posteriormente; hoy no ingresa dinero'
+                      : pagoPorSeguro
+                        ? 'El seguro cubre automáticamente el total'
+                        : 'Monto que entrega el cliente hoy'
                   }}
                 </small>
               </div>
@@ -881,7 +885,8 @@
                 [disabled]="
                   carrito.length === 0 ||
                   procesandoVenta ||
-                  pagoPorSeguro
+                  pagoPorSeguro ||
+                  pagoPorCredito
                 "
               >
                 <i class="bi bi-cash-stack" aria-hidden="true"></i>
@@ -901,7 +906,8 @@
                 (ngModelChange)="actualizarACuenta()"
                 [disabled]="
                   procesandoVenta ||
-                  pagoPorSeguro
+                  pagoPorSeguro ||
+                  pagoPorCredito
                 "
               />
             </div>
@@ -966,7 +972,109 @@
                   Cobertura total
                 </small>
               </button>
+
+              <button
+                type="button"
+                class="metodo-btn metodo-credito"
+                [class.active]="
+                  metodoPago === 'CREDITO'
+                "
+                (click)="
+                  seleccionarMetodo(
+                    'CREDITO'
+                  )
+                "
+                [disabled]="procesandoVenta"
+              >
+                <span class="metodo-icon">
+                  <i
+                    class="bi bi-calendar2-check"
+                    aria-hidden="true"
+                  ></i>
+                </span>
+
+                <span class="metodo-nombre">
+                  Crédito
+                </span>
+
+                <small class="metodo-ayuda">
+                  Pago mensual
+                </small>
+              </button>
             </div>
+          </section>
+
+          <section
+            class="credit-sale-panel"
+            *ngIf="pagoPorCredito"
+          >
+            <header class="credit-sale-header">
+              <span class="credit-sale-icon">
+                <i class="bi bi-building-check" aria-hidden="true"></i>
+              </span>
+
+              <div>
+                <strong>Crédito institucional</strong>
+                <small>
+                  Selecciona DS o Deyfor. Cuenta como venta del día,
+                  pero no como dinero cobrado hasta su pago mensual.
+                </small>
+              </div>
+            </header>
+
+            <div class="credit-entities">
+              <button
+                type="button"
+                [class.active]="entidadCredito === 'DS'"
+                (click)="entidadCredito = 'DS'"
+                [disabled]="procesandoVenta"
+              >
+                <i class="bi bi-building" aria-hidden="true"></i>
+                DS
+              </button>
+
+              <button
+                type="button"
+                [class.active]="entidadCredito === 'DEYFOR'"
+                (click)="entidadCredito = 'DEYFOR'"
+                [disabled]="procesandoVenta"
+              >
+                <i class="bi bi-buildings" aria-hidden="true"></i>
+                Deyfor
+              </button>
+            </div>
+
+            <div class="credit-project-field">
+              <label for="proyectoCredito">
+                Proyecto *
+              </label>
+
+              <input
+                id="proyectoCredito"
+                type="text"
+                maxlength="160"
+                [(ngModel)]="proyectoCredito"
+                [disabled]="procesandoVenta"
+                placeholder="Ej. Proyecto Cajamarca 2026"
+              />
+            </div>
+
+            <div class="credit-snapshot">
+              <div>
+                <small>Medidas</small>
+                <strong>{{ medidasCreditoVista }}</strong>
+              </div>
+
+              <div>
+                <small>Montura</small>
+                <strong>{{ monturaCreditoVista }}</strong>
+              </div>
+            </div>
+
+            <p class="credit-client-warning" *ngIf="!clienteId">
+              <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+              Para registrar crédito debes seleccionar un cliente.
+            </p>
           </section>
 
           <div class="summary-field">
@@ -1003,26 +1111,16 @@
             {{
               procesandoVenta
                 ? 'Registrando venta...'
-                : imprimirRecibo
-                  ? 'Cobrar e imprimir resumen'
-                  : 'Registrar venta'
+                : pagoPorCredito
+                  ? 'Registrar crédito'
+                  : imprimirRecibo
+                    ? 'Cobrar e imprimir resumen'
+                    : 'Registrar venta'
             }}
           </button>
         </div>
       </div>
 
-      <!-- INFORMACIÓN -->
-      <div class="card info-card">
-        <div class="title-with-icon">
-          <span class="icon-box"><i class="bi bi-lightning-charge"></i></span>
-          <h2>Venta rápida</h2>
-        </div>
-
-        <p>
-          Escanea productos para agregarlos al carrito
-          y completa el pago.
-        </p>
-      </div>
 
     </div>
     <!-- FIN COLUMNA DERECHA -->

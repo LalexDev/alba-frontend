@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { from, Observable } from 'rxjs';
 
 import {
+  DatosCreditoVenta,
   ItemVenta,
   VentaListado,
   VentaRegistrada
@@ -13,7 +14,8 @@ export type MetodoPago =
   | 'EFECTIVO'
   | 'YAPE'
   | 'TRANSFERENCIA'
-  | 'SEGURO';
+  | 'SEGURO'
+  | 'CREDITO';
 
 interface RegistrarVentaDb {
   id_venta: number;
@@ -51,7 +53,8 @@ export class VentaService {
     aCuenta: number = 0,
     observaciones: string = '',
     clienteId: number | null = null,
-    descuentoManual: number = 0
+    descuentoManual: number = 0,
+    datosCredito: DatosCreditoVenta | null = null
   ): Observable<VentaRegistrada> {
     return from(
       this.registrarVentaInterna(
@@ -60,7 +63,8 @@ export class VentaService {
         aCuenta,
         observaciones,
         clienteId,
-        descuentoManual
+        descuentoManual,
+        datosCredito
       )
     );
   }
@@ -90,7 +94,8 @@ export class VentaService {
     aCuenta: number,
     observaciones: string,
     clienteId: number | null,
-    descuentoManual: number
+    descuentoManual: number,
+    datosCredito: DatosCreditoVenta | null
   ): Promise<VentaRegistrada> {
 
     if (!items.length) {
@@ -107,7 +112,8 @@ export class VentaService {
       'EFECTIVO',
       'YAPE',
       'TRANSFERENCIA',
-      'SEGURO'
+      'SEGURO',
+      'CREDITO'
     ];
 
     if (!metodosPermitidos.includes(metodo)) {
@@ -261,11 +267,13 @@ export class VentaService {
     );
 
     const adelanto =
-      metodo === 'SEGURO'
-        ? totalCarrito
-        : Number(
-            aCuenta || 0
-          );
+      metodo === 'CREDITO'
+        ? 0
+        : metodo === 'SEGURO'
+          ? totalCarrito
+          : Number(
+              aCuenta || 0
+            );
 
     if (
       !Number.isFinite(adelanto) ||
@@ -275,6 +283,40 @@ export class VentaService {
       throw new Error(
         'El monto a cuenta debe estar entre S/ 0.00 y el total de la venta.'
       );
+    }
+
+    const credito =
+      metodo === 'CREDITO'
+        ? datosCredito
+        : null;
+
+    if (metodo === 'CREDITO') {
+      if (!clienteId) {
+        throw new Error(
+          'Selecciona un cliente para registrar una venta a crédito.'
+        );
+      }
+
+      if (
+        !credito ||
+        !['DS', 'DEYFOR'].includes(
+          String(credito.entidad)
+        )
+      ) {
+        throw new Error(
+          'Selecciona la entidad del crédito: DS o Deyfor.'
+        );
+      }
+
+      if (
+        String(
+          credito.proyecto || ''
+        ).trim().length < 2
+      ) {
+        throw new Error(
+          'Ingresa el proyecto del crédito.'
+        );
+      }
     }
 
     /*
@@ -401,7 +443,15 @@ export class VentaService {
           ),
         p_observaciones:
           observaciones.trim() || null,
-        p_detalles: detalles
+        p_detalles: detalles,
+        p_entidad_credito:
+          credito?.entidad || null,
+        p_proyecto_credito:
+          credito?.proyecto.trim() || null,
+        p_medidas_credito:
+          credito?.medidas.trim() || null,
+        p_montura_credito:
+          credito?.montura.trim() || null
       }
     );
 
@@ -459,6 +509,10 @@ export class VentaService {
         metodo_pago,
         estado_pago,
         estado_venta,
+        entidad_credito,
+        proyecto_credito,
+        medidas_credito,
+        montura_credito,
         observaciones,
 
         cliente:clientes (
@@ -535,6 +589,23 @@ export class VentaService {
           String(fila.estado_pago),
         estadoVenta:
           String(fila.estado_venta),
+        entidadCredito:
+          fila.entidad_credito === 'DS' ||
+          fila.entidad_credito === 'DEYFOR'
+            ? fila.entidad_credito
+            : null,
+        proyectoCredito:
+          String(
+            fila.proyecto_credito || ''
+          ),
+        medidasCredito:
+          String(
+            fila.medidas_credito || ''
+          ),
+        monturaCredito:
+          String(
+            fila.montura_credito || ''
+          ),
         observaciones:
           fila.observaciones
             ? String(fila.observaciones)
@@ -653,6 +724,25 @@ export class VentaService {
       )
     ) {
       return 'El método de pago seleccionado no es válido.';
+    }
+
+    if (
+      mensajeNormalizado.includes(
+        'entidad del crédito'
+      ) ||
+      mensajeNormalizado.includes(
+        'entidad de crédito'
+      )
+    ) {
+      return 'Selecciona DS o Deyfor para la venta a crédito.';
+    }
+
+    if (
+      mensajeNormalizado.includes(
+        'proyecto del crédito'
+      )
+    ) {
+      return 'Ingresa el proyecto para la venta a crédito.';
     }
 
     if (

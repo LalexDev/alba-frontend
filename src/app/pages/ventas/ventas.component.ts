@@ -13,6 +13,8 @@ import {
 } from '../../core/services/venta.service';
 import { SupabaseService } from '../../core/services/supabase.service';
 import {
+  DatosCreditoVenta,
+  EntidadCreditoVenta,
   ItemVenta,
   TipoObsequioVenta,
   VentaRegistrada
@@ -127,6 +129,11 @@ export class VentasComponent implements AfterViewInit {
      ===================================================== */
 
   metodoPago: MetodoPago = 'EFECTIVO';
+
+  entidadCredito:
+    EntidadCreditoVenta | '' = '';
+
+  proyectoCredito = '';
 
   descuentoManual = 0;
   aCuenta = 0;
@@ -514,6 +521,9 @@ export class VentasComponent implements AfterViewInit {
     this.metodoPago =
       'EFECTIVO';
 
+    this.entidadCredito = '';
+    this.proyectoCredito = '';
+
     this.reiniciarCliente();
 
     this.mensaje = '';
@@ -692,6 +702,13 @@ export class VentasComponent implements AfterViewInit {
   }
 
   aplicarPagoTotal(): void {
+    if (this.pagoPorCredito) {
+      this.aCuenta = 0;
+      this.mensaje =
+        'El crédito se cobra posteriormente a DS o Deyfor.';
+      return;
+    }
+
     this.aCuenta =
       this.totalFinal();
   }
@@ -699,6 +716,21 @@ export class VentasComponent implements AfterViewInit {
   get pagoPorSeguro(): boolean {
     return this.metodoPago ===
       'SEGURO';
+  }
+
+  get pagoPorCredito(): boolean {
+    return this.metodoPago ===
+      'CREDITO';
+  }
+
+  get medidasCreditoVista(): string {
+    return this.obtenerMedidasCredito() ||
+      'Sin medida registrada';
+  }
+
+  get monturaCreditoVista(): string {
+    return this.obtenerMonturaCredito() ||
+      'Sin montura identificada';
   }
 
   actualizarDescuento(): void {
@@ -716,6 +748,11 @@ export class VentasComponent implements AfterViewInit {
   }
 
   actualizarACuenta(): void {
+    if (this.pagoPorCredito) {
+      this.aCuenta = 0;
+      return;
+    }
+
     if (this.pagoPorSeguro) {
       this.aCuenta =
         this.totalFinal();
@@ -777,9 +814,17 @@ export class VentasComponent implements AfterViewInit {
 
     this.metodoPago = metodo;
 
-    if (
-      metodo === 'SEGURO'
-    ) {
+    if (metodo === 'CREDITO') {
+      this.aCuenta = 0;
+      this.mensaje =
+        'Crédito mensual: selecciona DS o Deyfor e ingresa el proyecto.';
+      return;
+    }
+
+    this.entidadCredito = '';
+    this.proyectoCredito = '';
+
+    if (metodo === 'SEGURO') {
       this.aCuenta =
         this.totalFinal();
 
@@ -986,45 +1031,46 @@ export class VentasComponent implements AfterViewInit {
   async cambiarLiquidoGratis(
     event: Event
   ): Promise<void> {
+    const posicionScroll =
+      window.scrollY;
+
     const checkbox =
       event.target as
         HTMLInputElement;
 
-    if (!checkbox.checked) {
-      this.carrito =
-        this.carrito.filter(
-          item =>
-            !(
-              item.esObsequio &&
-              !item.tipoObsequio &&
-              this.esLiquido(
-                item.producto
-              )
-            )
-        );
-
-      this.ajustarMontosAlTotal();
-
-      this.mensaje =
-        'Líquido gratuito retirado.';
-
-      this.focusInput();
-      return;
-    }
-
-    if (
-      !this.hayMonturaEnCarrito()
-    ) {
-      checkbox.checked = false;
-
-      this.mensaje =
-        'Primero agrega una montura a la venta.';
-
-      this.focusInput();
-      return;
-    }
-
     try {
+      if (!checkbox.checked) {
+        this.carrito =
+          this.carrito.filter(
+            item =>
+              !(
+                item.esObsequio &&
+                !item.tipoObsequio &&
+                this.esLiquido(
+                  item.producto
+                )
+              )
+          );
+
+        this.ajustarMontosAlTotal();
+
+        this.mensaje =
+          'Líquido gratuito retirado.';
+
+        return;
+      }
+
+      if (
+        !this.hayMonturaEnCarrito()
+      ) {
+        checkbox.checked = false;
+
+        this.mensaje =
+          'Primero agrega una montura a la venta.';
+
+        return;
+      }
+
       const producto =
         await this.buscarProductoEspecial(
           'LIQUIDO'
@@ -1060,7 +1106,14 @@ export class VentasComponent implements AfterViewInit {
           ? error.message
           : 'No se pudo agregar el líquido gratuito.';
     } finally {
-      this.focusInput();
+      /*
+       * No enfocamos el escáner aquí.
+       * El focus del código de barras hacía que el navegador
+       * volviera a la parte superior de la página.
+       */
+      this.restaurarPosicionScroll(
+        posicionScroll
+      );
     }
   }
 
@@ -1069,43 +1122,46 @@ export class VentasComponent implements AfterViewInit {
       TipoObsequioVenta,
     event: Event
   ): Promise<void> {
+    const posicionScroll =
+      window.scrollY;
+
     const checkbox =
       event.target as
         HTMLInputElement;
 
-    if (!checkbox.checked) {
-      this.carrito =
-        this.carrito.filter(
-          item =>
-            !(
-              item.esObsequio &&
-              item.tipoObsequio ===
-                tipo
-            )
-        );
-
-      this.ajustarMontosAlTotal();
-
-      this.mensaje =
-        tipo === 'MICROFIBRA'
-          ? 'Microfibra gratuita retirada.'
-          : 'Estuche gratuito retirado.';
-
-      return;
-    }
-
-    if (
-      !this.hayMonturaEnCarrito()
-    ) {
-      checkbox.checked = false;
-
-      this.mensaje =
-        'Primero agrega una montura a la venta.';
-
-      return;
-    }
-
     try {
+      if (!checkbox.checked) {
+        this.carrito =
+          this.carrito.filter(
+            item =>
+              !(
+                item.esObsequio &&
+                item.tipoObsequio ===
+                  tipo
+              )
+          );
+
+        this.ajustarMontosAlTotal();
+
+        this.mensaje =
+          tipo === 'MICROFIBRA'
+            ? 'Microfibra gratuita retirada.'
+            : 'Estuche gratuito retirado.';
+
+        return;
+      }
+
+      if (
+        !this.hayMonturaEnCarrito()
+      ) {
+        checkbox.checked = false;
+
+        this.mensaje =
+          'Primero agrega una montura a la venta.';
+
+        return;
+      }
+
       const producto =
         await this.buscarProductoEspecial(
           tipo
@@ -1139,6 +1195,10 @@ export class VentasComponent implements AfterViewInit {
         error instanceof Error
           ? error.message
           : 'No se pudo agregar el obsequio.';
+    } finally {
+      this.restaurarPosicionScroll(
+        posicionScroll
+      );
     }
   }
 
@@ -1766,11 +1826,13 @@ export class VentasComponent implements AfterViewInit {
       );
 
     const adelanto =
-      this.pagoPorSeguro
-        ? totalVenta
-        : Number(
-            this.aCuenta || 0
-          );
+      this.pagoPorCredito
+        ? 0
+        : this.pagoPorSeguro
+          ? totalVenta
+          : Number(
+              this.aCuenta || 0
+            );
 
     if (
       !Number.isFinite(descuento) ||
@@ -1803,11 +1865,57 @@ export class VentasComponent implements AfterViewInit {
       return;
     }
 
+    let datosCredito:
+      DatosCreditoVenta | null = null;
+
+    if (this.pagoPorCredito) {
+      if (!this.clienteId) {
+        this.mensaje =
+          'Selecciona un cliente antes de registrar el crédito.';
+        return;
+      }
+
+      if (!this.entidadCredito) {
+        this.mensaje =
+          'Selecciona DS o Deyfor.';
+        return;
+      }
+
+      const proyecto =
+        String(
+          this.proyectoCredito || ''
+        )
+          .replace(/\s+/g, ' ')
+          .trim();
+
+      if (proyecto.length < 2) {
+        this.mensaje =
+          'Ingresa el proyecto del crédito.';
+        return;
+      }
+
+      datosCredito = {
+        entidad:
+          this.entidadCredito,
+        proyecto,
+        medidas:
+          this.obtenerMedidasCredito(),
+        montura:
+          this.obtenerMonturaCredito()
+      };
+    }
+
     const metodoRecibo =
       this.metodoPago;
 
     const observacionesRecibo =
       this.observaciones;
+
+    const entidadCreditoRecibo =
+      this.entidadCredito;
+
+    const proyectoCreditoRecibo =
+      this.proyectoCredito;
 
     const itemsRecibo =
       this.carrito.map(
@@ -1863,7 +1971,8 @@ export class VentasComponent implements AfterViewInit {
         adelanto,
         this.observaciones,
         this.clienteId,
-        descuento
+        descuento,
+        datosCredito
       )
       .pipe(
         finalize(() => {
@@ -1885,7 +1994,9 @@ export class VentasComponent implements AfterViewInit {
                 clienteRecibo,
                 resumenRecibo,
                 metodoRecibo,
-                observacionesRecibo
+                observacionesRecibo,
+                entidadCreditoRecibo,
+                proyectoCreditoRecibo
               );
             }
 
@@ -1897,6 +2008,10 @@ export class VentasComponent implements AfterViewInit {
             this.observaciones = '';
             this.metodoPago =
               'EFECTIVO';
+
+            this.entidadCredito = '';
+            this.proyectoCredito = '';
+
             this.productosCache =
               null;
 
@@ -1933,6 +2048,67 @@ export class VentasComponent implements AfterViewInit {
                 : 'No se pudo registrar la venta.';
           }
       });
+  }
+
+  private obtenerMedidasCredito(): string {
+    const medidaReceta =
+      String(
+        this.recetaCliente?.medida ||
+        ''
+      ).trim();
+
+    if (medidaReceta) {
+      return medidaReceta;
+    }
+
+    const montura =
+      this.carrito.find(
+        item =>
+          !item.esObsequio &&
+          !item.esManual &&
+          this.esMontura(
+            item.producto
+          )
+      );
+
+    return String(
+      montura?.producto.medida ||
+      ''
+    ).trim();
+  }
+
+  private obtenerMonturaCredito(): string {
+    const item =
+      this.carrito.find(
+        fila =>
+          !fila.esObsequio &&
+          !fila.esManual &&
+          this.esMontura(
+            fila.producto
+          )
+      );
+
+    if (item) {
+      const producto =
+        item.producto;
+
+      return [
+        producto.marca?.nombre,
+        producto.modelo,
+        producto.color
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim() ||
+        producto.nombre;
+    }
+
+    return String(
+      this.recetaCliente
+        ?.tipo_montura ||
+      ''
+    ).trim();
   }
 
   /* =====================================================
@@ -2121,6 +2297,11 @@ export class VentasComponent implements AfterViewInit {
         this.maximoDescuentoManual();
     }
 
+    if (this.pagoPorCredito) {
+      this.aCuenta = 0;
+      return;
+    }
+
     if (this.pagoPorSeguro) {
       this.aCuenta =
         this.totalFinal();
@@ -2256,7 +2437,10 @@ export class VentasComponent implements AfterViewInit {
     cliente: string,
     resumen: ResumenRecibo,
     metodoPago: MetodoPago,
-    observacionesVenta: string
+    observacionesVenta: string,
+    entidadCredito:
+      EntidadCreditoVenta | '',
+    proyectoCredito: string
   ): Promise<void> {
     const logo =
       await this.obtenerLogoRecibo();
@@ -2268,7 +2452,9 @@ export class VentasComponent implements AfterViewInit {
           dateStyle:
             'short',
           timeStyle:
-            'short'
+            'short',
+          timeZone:
+            'America/Lima'
         }
       ).format(
         new Date()
@@ -2569,9 +2755,25 @@ export class VentasComponent implements AfterViewInit {
               <div>
                 <strong>Método:</strong>
                 ${this.escapeHtml(
-                  metodoPago
+                  metodoPago === 'CREDITO'
+                    ? `CRÉDITO ${entidadCredito || ''}`
+                    : metodoPago
                 )}
               </div>
+
+              ${
+                metodoPago === 'CREDITO'
+                  ? `
+                    <div>
+                      <strong>Proyecto:</strong>
+                      ${this.escapeHtml(
+                        proyectoCredito ||
+                        'Sin proyecto'
+                      )}
+                    </div>
+                  `
+                  : ''
+              }
 
               <div>
                 <strong>Estado:</strong>
@@ -2775,6 +2977,18 @@ export class VentasComponent implements AfterViewInit {
     this.codigo = '';
 
     this.focusInput();
+  }
+
+  private restaurarPosicionScroll(
+    posicion: number
+  ): void {
+    requestAnimationFrame(() => {
+      window.scrollTo({
+        top: posicion,
+        left: 0,
+        behavior: 'auto'
+      });
+    });
   }
 
   private focusInput(): void {

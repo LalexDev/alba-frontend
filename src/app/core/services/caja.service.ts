@@ -51,21 +51,56 @@ export class CajaService {
 
   cerrarCaja(request: CerrarCajaRequest): Observable<CajaActual> {
     return defer(async () => {
-      const monto = Number(request.montoCierreReal);
+      const efectivo =
+        Number(request.montoCierreReal);
 
-      if (!Number.isFinite(monto) || monto < 0) {
-        throw new Error('El efectivo contado no es válido.');
+      const yape =
+        Number(request.montoYapeConfirmado);
+
+      if (
+        !Number.isFinite(efectivo) ||
+        efectivo < 0
+      ) {
+        throw new Error(
+          'El efectivo contado no es válido.'
+        );
+      }
+
+      if (
+        !Number.isFinite(yape) ||
+        yape < 0
+      ) {
+        throw new Error(
+          'El monto confirmado de Yape no es válido.'
+        );
       }
 
       const { error } =
-        await this.supabaseService.client.rpc('cerrar_caja', {
-          p_monto_cierre_real: Number(monto.toFixed(2)),
-          p_observaciones:
-            String(request.observaciones || '').trim() || null
-        });
+        await this.supabaseService.client.rpc(
+          'cerrar_caja',
+          {
+            p_monto_cierre_real:
+              Number(
+                efectivo.toFixed(2)
+              ),
+            p_monto_yape_confirmado:
+              Number(
+                yape.toFixed(2)
+              ),
+            p_observaciones:
+              String(
+                request.observaciones ||
+                ''
+              ).trim() || null
+          }
+        );
 
       if (error) {
-        throw new Error(this.traducirError(error.message));
+        throw new Error(
+          this.traducirError(
+            error.message
+          )
+        );
       }
 
       return await this.obtenerCajaActualInterna();
@@ -174,6 +209,24 @@ export class CajaService {
             item['diferencia'] === undefined
               ? null
               : this.numero(item['diferencia']),
+          yapeEsperado:
+            this.numero(
+              item['yape_esperado']
+            ),
+          yapeConfirmado:
+            item['yape_confirmado'] === null ||
+            item['yape_confirmado'] === undefined
+              ? null
+              : this.numero(
+                  item['yape_confirmado']
+                ),
+          diferenciaYape:
+            item['diferencia_yape'] === null ||
+            item['diferencia_yape'] === undefined
+              ? null
+              : this.numero(
+                  item['diferencia_yape']
+                ),
           estado:
             String(item['estado'] || 'CERRADA') === 'ABIERTA'
               ? 'ABIERTA'
@@ -247,7 +300,30 @@ export class CajaService {
         seguro: this.numero(resumen['seguro']),
         ingresosManuales: this.numero(resumen['ingresos_manuales']),
         egresosManuales: this.numero(resumen['egresos_manuales']),
-        efectivoEsperado: this.numero(resumen['efectivo_esperado'])
+        efectivoEsperado:
+          this.numero(
+            resumen['efectivo_esperado']
+          ),
+        yapeEsperado:
+          this.numero(
+            resumen['yape_esperado']
+          ),
+        creditoDsGenerado:
+          this.numero(
+            resumen['credito_ds_generado']
+          ),
+        creditoDeyforGenerado:
+          this.numero(
+            resumen['credito_deyfor_generado']
+          ),
+        creditoGeneradoTotal:
+          this.numero(
+            resumen['credito_generado_total']
+          ),
+        creditosCobradosHoy:
+          this.numero(
+            resumen['creditos_cobrados_hoy']
+          )
       }
     };
   }
@@ -262,12 +338,26 @@ export class CajaService {
   private traducirError(mensaje: string): string {
     const texto = String(mensaje || '').toLowerCase();
 
-    if (texto.includes('ya tienes una caja abierta')) {
-      return 'Ya tienes una caja abierta.';
+    if (
+      texto.includes(
+        'ya existe una caja general abierta'
+      ) ||
+      texto.includes(
+        'ya tienes una caja abierta'
+      )
+    ) {
+      return 'Ya existe una caja general abierta para la jornada.';
     }
 
-    if (texto.includes('no tienes una caja abierta')) {
-      return 'No tienes una caja abierta.';
+    if (
+      texto.includes(
+        'no existe una caja general abierta'
+      ) ||
+      texto.includes(
+        'no tienes una caja abierta'
+      )
+    ) {
+      return 'No existe una caja general abierta.';
     }
 
     if (texto.includes('debes abrir caja')) {
@@ -285,7 +375,7 @@ export class CajaService {
       texto.includes('could not find the function') ||
       texto.includes('schema cache')
     ) {
-      return 'Falta ejecutar 36_cierre_caja_diario.sql en Supabase.';
+      return 'Falta ejecutar 43_caja_general_compartida_yape.sql y luego 44_credito_ds_deyfor.sql en Supabase.';
     }
 
     return mensaje || 'No se pudo procesar la operación de caja.';

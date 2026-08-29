@@ -510,13 +510,6 @@
   }
 }
 
-/* INFO CARD */
-.info-card p {
-  margin: 14px 0 0;
-  color: #333;
-  line-height: 1.6;
-}
-
 /* BUTTONS */
 .btn-primary {
   border: 0;
@@ -2018,5 +2011,181 @@
 
   .recipe-text-block {
     margin-inline: 12px;
+  }
+}
+
+
+/* =====================================================
+   CRÉDITO DS / DEYFOR
+   ===================================================== */
+
+.metodos-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metodo-credito {
+  border-style: dashed;
+}
+
+.metodo-ayuda {
+  display: block;
+  color: #667085;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.metodo-btn.active .metodo-ayuda {
+  color: #0e78a5;
+}
+
+.credit-sale-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #8fd1ec;
+  border-radius: 16px;
+  background: #f7fcff;
+}
+
+.credit-sale-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.credit-sale-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  color: #fff;
+  background: #1593c7;
+}
+
+.credit-sale-header strong,
+.credit-sale-header small {
+  display: block;
+}
+
+.credit-sale-header strong {
+  color: #000;
+  font-size: 14px;
+}
+
+.credit-sale-header small {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.credit-entities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.credit-entities button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 1px solid #8fd1ec;
+  border-radius: 12px;
+  color: #0e78a5;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.credit-entities button.active {
+  color: #fff;
+  border-color: #1593c7;
+  background: #1593c7;
+}
+
+.credit-project-field {
+  display: grid;
+  gap: 7px;
+}
+
+.credit-project-field label {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.credit-project-field input {
+  width: 100%;
+  height: 48px;
+  padding: 0 13px;
+  border: 1px solid #8fd1ec;
+  border-radius: 12px;
+  outline: none;
+  color: #000;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.credit-project-field input:focus {
+  border-color: #1593c7;
+  box-shadow: 0 0 0 3px rgba(21,147,199,.12);
+}
+
+.credit-snapshot {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.credit-snapshot > div {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #d7edf7;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.credit-snapshot small,
+.credit-snapshot strong {
+  display: block;
+}
+
+.credit-snapshot small {
+  color: #667085;
+  font-size: 10px;
+}
+
+.credit-snapshot strong {
+  margin-top: 4px;
+  color: #000;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.credit-client-warning {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #fec84b;
+  border-radius: 10px;
+  color: #b54708;
+  background: #fff6e8;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+@media (max-width: 560px) {
+  .credit-entities,
+  .credit-snapshot {
+    grid-template-columns: 1fr;
   }
 }

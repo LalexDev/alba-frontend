@@ -1,5 +1,16 @@
 import { Producto } from './producto.model';
 
+export type EntidadCreditoVenta =
+  | 'DS'
+  | 'DEYFOR';
+
+export interface DatosCreditoVenta {
+  entidad: EntidadCreditoVenta;
+  proyecto: string;
+  medidas: string;
+  montura: string;
+}
+
 export type TipoObsequioVenta =
   | 'MICROFIBRA'
   | 'ESTUCHE';
@@ -61,6 +72,11 @@ export interface VentaListado {
   metodoPago: string;
   estadoPago: string;
   estadoVenta: string;
+
+  entidadCredito?: EntidadCreditoVenta | null;
+  proyectoCredito?: string;
+  medidasCredito?: string;
+  monturaCredito?: string;
 
   observaciones?: string;
 }

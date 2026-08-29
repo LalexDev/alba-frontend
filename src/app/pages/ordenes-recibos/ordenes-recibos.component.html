@@ -136,6 +136,7 @@
             Transferencia
           </option>
           <option value="SEGURO">Seguro</option>
+          <option value="CREDITO">Crédito</option>
         </select>
       </div>
     </div>
@@ -181,6 +182,49 @@
   </div>
 
   <ng-container *ngIf="!cargando">
+    <section class="credit-tabs-card">
+      <div class="credit-tabs-copy">
+        <span class="page-kicker">
+          CRÉDITOS INSTITUCIONALES
+        </span>
+
+        <strong>
+          Separa las órdenes de DS y Deyfor
+        </strong>
+      </div>
+
+      <div class="credit-tabs">
+        <button
+          type="button"
+          [class.active]="vistaListado === 'TODAS'"
+          (click)="seleccionarVistaListado('TODAS')"
+        >
+          <i class="bi bi-collection" aria-hidden="true"></i>
+          Todas
+        </button>
+
+        <button
+          type="button"
+          [class.active]="vistaListado === 'DS'"
+          (click)="seleccionarVistaListado('DS')"
+        >
+          <i class="bi bi-building" aria-hidden="true"></i>
+          Crédito DS
+          <span>{{ cantidadCreditoDS }}</span>
+        </button>
+
+        <button
+          type="button"
+          [class.active]="vistaListado === 'DEYFOR'"
+          (click)="seleccionarVistaListado('DEYFOR')"
+        >
+          <i class="bi bi-buildings" aria-hidden="true"></i>
+          Crédito Deyfor
+          <span>{{ cantidadCreditoDeyfor }}</span>
+        </button>
+      </div>
+    </section>
+
     <section class="stats-grid">
       <article class="stat-card">
         <span class="stat-icon total">
@@ -237,10 +281,19 @@
           <span class="page-kicker">
             DOCUMENTOS REGISTRADOS
           </span>
-          <h2>Listado de órdenes y recibos</h2>
+          <h2>
+            {{
+              vistaListado === 'DS'
+                ? 'Créditos DS'
+                : vistaListado === 'DEYFOR'
+                  ? 'Créditos Deyfor'
+                  : 'Listado de órdenes y recibos'
+            }}
+          </h2>
         </div>
 
         <button
+          *ngIf="vistaListado === 'TODAS'"
           type="button"
           class="excel-button"
           (click)="exportarExcel()"
@@ -255,6 +308,34 @@
               ? 'Exportando...'
               : 'Exportar Excel'
           }}
+        </button>
+
+        <button
+          *ngIf="vistaListado === 'DS'"
+          type="button"
+          class="excel-button credit-excel"
+          (click)="exportarExcelCredito('DS')"
+          [disabled]="
+            exportando ||
+            ordenesFiltradas.length === 0
+          "
+        >
+          <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+          Descargar Excel DS
+        </button>
+
+        <button
+          *ngIf="vistaListado === 'DEYFOR'"
+          type="button"
+          class="excel-button credit-excel"
+          (click)="exportarExcelCredito('DEYFOR')"
+          [disabled]="
+            exportando ||
+            ordenesFiltradas.length === 0
+          "
+        >
+          <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+          Descargar Excel Deyfor
         </button>
       </header>
 
@@ -289,7 +370,23 @@
                 <strong class="order-number">
                   {{ orden.numeroOrden }}
                 </strong>
-                <small>{{ orden.metodoPago }}</small>
+                <small>
+                  {{
+                    orden.metodoPago === 'CREDITO'
+                      ? (
+                          'CRÉDITO ' +
+                          (orden.entidadCredito || '')
+                        )
+                      : orden.metodoPago
+                  }}
+                </small>
+
+                <span
+                  class="credit-project-mini"
+                  *ngIf="orden.metodoPago === 'CREDITO'"
+                >
+                  {{ orden.proyectoCredito || 'Sin proyecto' }}
+                </span>
               </td>
 
               <td>
@@ -562,6 +659,33 @@
                 {{ ordenSeleccionada.metodoPago }}
               </strong>
             </div>
+            <div
+              *ngIf="ordenSeleccionada.metodoPago === 'CREDITO'"
+            >
+              <span>
+                <i class="bi bi-building"></i>
+                Entidad / proyecto
+              </span>
+              <strong>
+                {{ ordenSeleccionada.entidadCredito || '—' }}
+                ·
+                {{ ordenSeleccionada.proyectoCredito || 'Sin proyecto' }}
+              </strong>
+            </div>
+
+            <div
+              *ngIf="ordenSeleccionada.metodoPago === 'CREDITO'"
+            >
+              <span>
+                <i class="bi bi-rulers"></i>
+                Medidas / montura
+              </span>
+              <strong>
+                {{ ordenSeleccionada.medidasCredito || '—' }}
+                ·
+                {{ ordenSeleccionada.monturaCredito || '—' }}
+              </strong>
+            </div>
             <div>
               <span>
                 <i class="bi bi-credit-card-2-front"></i>
@@ -786,8 +910,87 @@
           </section>
 
           <section
+            class="credit-payment-card"
+            *ngIf="
+              ordenAcciones.metodoPago === 'CREDITO' &&
+              ordenAcciones.saldo > 0.009
+            "
+          >
+            <div class="payment-section-title">
+              <div>
+                <span class="section-icon">
+                  <i class="bi bi-calendar2-check" aria-hidden="true"></i>
+                </span>
+
+                <div>
+                  <strong>
+                    Liquidar crédito {{ ordenAcciones.entidadCredito }}
+                  </strong>
+                  <small>
+                    Registra el pago cuando DS o Deyfor depositen el crédito mensual.
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <div class="credit-payment-grid">
+              <div class="payment-input-field">
+                <label for="metodoCobroCredito">
+                  Medio recibido
+                </label>
+
+                <select
+                  id="metodoCobroCredito"
+                  [(ngModel)]="metodoCobroCredito"
+                  [disabled]="actualizando"
+                >
+                  <option value="TRANSFERENCIA">Transferencia</option>
+                  <option value="YAPE">Yape</option>
+                  <option value="EFECTIVO">Efectivo</option>
+                </select>
+              </div>
+
+              <div class="payment-input-field">
+                <label for="montoCobroCredito">
+                  Importe recibido
+                </label>
+
+                <div class="money-input">
+                  <span>S/</span>
+                  <input
+                    id="montoCobroCredito"
+                    type="number"
+                    min="0.01"
+                    [max]="ordenAcciones.saldo"
+                    step="0.01"
+                    [(ngModel)]="montoCobroCredito"
+                    [disabled]="actualizando"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="register-credit-payment"
+              (click)="registrarPagoCredito()"
+              [disabled]="actualizando"
+            >
+              <i class="bi bi-check2-circle" aria-hidden="true"></i>
+              Registrar pago de crédito
+            </button>
+
+            <small class="credit-cash-note">
+              El pago ingresa a la caja general del día usando el medio seleccionado.
+            </small>
+          </section>
+
+          <section
             class="additional-payment-card"
-            *ngIf="ordenAcciones.saldo > 0.009"
+            *ngIf="
+              ordenAcciones.saldo > 0.009 &&
+              ordenAcciones.metodoPago !== 'CREDITO'
+            "
           >
             <div class="payment-section-title">
               <div>

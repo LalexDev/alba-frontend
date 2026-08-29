@@ -47,6 +47,7 @@ export class CajaComponent implements OnInit {
 
   montoApertura = 0;
   montoContado: number | null = null;
+  montoYapeConfirmado: number | null = null;
   observacionesCierre = '';
 
   mostrarMovimiento = false;
@@ -107,6 +108,50 @@ export class CajaComponent implements OnInit {
       : 'SOBRANTE';
   }
 
+
+  get diferenciaYapePrevia(): number {
+    if (
+      !this.cajaAbierta ||
+      this.montoYapeConfirmado === null ||
+      !Number.isFinite(
+        Number(
+          this.montoYapeConfirmado
+        )
+      )
+    ) {
+      return 0;
+    }
+
+    return Number(
+      (
+        Number(
+          this.montoYapeConfirmado
+        ) -
+        Number(
+          this.caja?.resumen
+            .yapeEsperado ||
+          0
+        )
+      ).toFixed(2)
+    );
+  }
+
+  get estadoDiferenciaYape():
+    'CUADRADA' | 'FALTANTE' | 'SOBRANTE' {
+
+    if (
+      Math.abs(
+        this.diferenciaYapePrevia
+      ) < 0.01
+    ) {
+      return 'CUADRADA';
+    }
+
+    return this.diferenciaYapePrevia < 0
+      ? 'FALTANTE'
+      : 'SOBRANTE';
+  }
+
   cargarTodo(): void {
     this.cargando = true;
     this.error = '';
@@ -133,6 +178,7 @@ export class CajaComponent implements OnInit {
           } else {
             this.movimientos = [];
             this.montoContado = null;
+            this.montoYapeConfirmado = null;
           }
         },
         error: (error: unknown) => {
@@ -181,23 +227,52 @@ export class CajaComponent implements OnInit {
   }
 
   cerrarCaja(): void {
-    if (!this.cajaAbierta || this.cerrando) {
+    if (
+      !this.cajaAbierta ||
+      this.cerrando
+    ) {
       return;
     }
 
-    const contado = Number(this.montoContado);
+    const efectivo =
+      Number(
+        this.montoContado
+      );
+
+    const yape =
+      Number(
+        this.montoYapeConfirmado
+      );
 
     if (
       this.montoContado === null ||
-      !Number.isFinite(contado) ||
-      contado < 0
+      !Number.isFinite(
+        efectivo
+      ) ||
+      efectivo < 0
     ) {
       this.error =
         'Cuenta el efectivo físico e ingresa el monto antes de cerrar.';
       return;
     }
 
-    const diferenciaAntes = this.diferenciaPrevia;
+    if (
+      this.montoYapeConfirmado === null ||
+      !Number.isFinite(
+        yape
+      ) ||
+      yape < 0
+    ) {
+      this.error =
+        'Verifica Yape e ingresa el monto confirmado antes de cerrar.';
+      return;
+    }
+
+    const diferenciaEfectivo =
+      this.diferenciaPrevia;
+
+    const diferenciaYape =
+      this.diferenciaYapePrevia;
 
     this.cerrando = true;
     this.error = '';
@@ -205,8 +280,12 @@ export class CajaComponent implements OnInit {
 
     this.cajaService
       .cerrarCaja({
-        montoCierreReal: contado,
-        observaciones: this.observacionesCierre
+        montoCierreReal:
+          efectivo,
+        montoYapeConfirmado:
+          yape,
+        observaciones:
+          this.observacionesCierre
       })
       .pipe(
         finalize(() => {
@@ -215,21 +294,73 @@ export class CajaComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.ok =
-            Math.abs(diferenciaAntes) < 0.01
-              ? 'Caja cerrada correctamente y sin diferencias.'
-              : diferenciaAntes < 0
-                ? `Caja cerrada con un faltante de S/ ${Math.abs(diferenciaAntes).toFixed(2)}.`
-                : `Caja cerrada con un sobrante de S/ ${diferenciaAntes.toFixed(2)}.`;
+          const efectivoCuadra =
+            Math.abs(
+              diferenciaEfectivo
+            ) < 0.01;
 
-          this.montoContado = null;
-          this.observacionesCierre = '';
+          const yapeCuadra =
+            Math.abs(
+              diferenciaYape
+            ) < 0.01;
+
+          if (
+            efectivoCuadra &&
+            yapeCuadra
+          ) {
+            this.ok =
+              'Caja cerrada correctamente. Efectivo y Yape cuadran.';
+          } else {
+            const incidencias:
+              string[] = [];
+
+            if (!efectivoCuadra) {
+              incidencias.push(
+                diferenciaEfectivo < 0
+                  ? `faltante de efectivo S/ ${Math.abs(
+                      diferenciaEfectivo
+                    ).toFixed(2)}`
+                  : `sobrante de efectivo S/ ${diferenciaEfectivo.toFixed(2)}`
+              );
+            }
+
+            if (!yapeCuadra) {
+              incidencias.push(
+                diferenciaYape < 0
+                  ? `faltante en Yape S/ ${Math.abs(
+                      diferenciaYape
+                    ).toFixed(2)}`
+                  : `sobrante en Yape S/ ${diferenciaYape.toFixed(2)}`
+              );
+            }
+
+            this.ok =
+              `Caja cerrada con ${incidencias.join(
+                ' y '
+              )}.`;
+          }
+
+          this.montoContado =
+            null;
+
+          this.montoYapeConfirmado =
+            null;
+
+          this.observacionesCierre =
+            '';
+
           this.movimientos = [];
 
           this.cargarTodo();
         },
-        error: (error: unknown) => {
-          this.error = this.obtenerMensaje(error);
+
+        error: (
+          error: unknown
+        ) => {
+          this.error =
+            this.obtenerMensaje(
+              error
+            );
         }
       });
   }
@@ -371,7 +502,10 @@ export class CajaComponent implements OnInit {
       'Egresos manuales': item.egresosManuales,
       'Efectivo esperado': item.montoEsperado,
       'Efectivo contado': item.montoCierreReal ?? '',
-      Diferencia: item.diferencia ?? '',
+      'Diferencia efectivo': item.diferencia ?? '',
+      'Yape esperado': item.yapeEsperado,
+      'Yape confirmado': item.yapeConfirmado ?? '',
+      'Diferencia Yape': item.diferenciaYape ?? '',
       Observaciones: item.observaciones
     }));
 
@@ -447,9 +581,12 @@ export class CajaComponent implements OnInit {
         'Yape',
         'Transf.',
         'Seguro',
-        'Esperado',
-        'Contado',
-        'Diferencia'
+        'Efec. esp.',
+        'Efec. cont.',
+        'Dif. efec.',
+        'Yape esp.',
+        'Yape conf.',
+        'Dif. Yape'
       ]],
       body: this.historial.map((item) => [
         this.fechaTexto(item.fechaApertura),
@@ -466,7 +603,14 @@ export class CajaComponent implements OnInit {
           : this.moneda(item.montoCierreReal),
         item.diferencia === null
           ? '—'
-          : this.moneda(item.diferencia)
+          : this.moneda(item.diferencia),
+        this.moneda(item.yapeEsperado),
+        item.yapeConfirmado === null
+          ? '—'
+          : this.moneda(item.yapeConfirmado),
+        item.diferenciaYape === null
+          ? '—'
+          : this.moneda(item.diferenciaYape)
       ]),
       styles: {
         fontSize: 7
@@ -493,7 +637,8 @@ export class CajaComponent implements OnInit {
       'es-PE',
       {
         dateStyle: 'short',
-        timeStyle: 'short'
+        timeStyle: 'short',
+        timeZone: 'America/Lima'
       }
     ).format(fecha);
   }
@@ -551,22 +696,67 @@ export class CajaComponent implements OnInit {
   }
 
   private fechaActual(): string {
-    return this.fechaInput(new Date());
+    return this.fechaPeru(
+      new Date()
+    );
   }
 
-  private fechaHaceDias(dias: number): string {
-    const fecha = new Date();
-    fecha.setDate(fecha.getDate() - dias);
-    return this.fechaInput(fecha);
+  private fechaHaceDias(
+    dias: number
+  ): string {
+    const actual =
+      new Date();
+
+    actual.setUTCDate(
+      actual.getUTCDate() -
+      dias
+    );
+
+    return this.fechaPeru(
+      actual
+    );
   }
 
-  private fechaInput(fecha: Date): string {
+  private fechaPeru(
+    fecha: Date
+  ): string {
+    const partes =
+      new Intl.DateTimeFormat(
+        'en-US',
+        {
+          timeZone:
+            'America/Lima',
+          year:
+            'numeric',
+          month:
+            '2-digit',
+          day:
+            '2-digit'
+        }
+      )
+        .formatToParts(
+          fecha
+        );
+
+    const valor =
+      (
+        tipo:
+          'year' |
+          'month' |
+          'day'
+      ): string =>
+        partes.find(
+          parte =>
+            parte.type === tipo
+        )?.value || '';
+
     return [
-      fecha.getFullYear(),
-      String(fecha.getMonth() + 1).padStart(2, '0'),
-      String(fecha.getDate()).padStart(2, '0')
+      valor('year'),
+      valor('month'),
+      valor('day')
     ].join('-');
   }
+
 
   private obtenerMensaje(error: unknown): string {
     return error instanceof Error
