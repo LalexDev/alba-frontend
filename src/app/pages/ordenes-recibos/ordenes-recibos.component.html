@@ -922,6 +922,215 @@
             </div>
           </section>
 
+          <section class="payment-history-card">
+            <div class="payment-section-title">
+              <div>
+                <span class="section-icon">
+                  <i
+                    class="bi bi-clock-history"
+                    aria-hidden="true"
+                  ></i>
+                </span>
+
+                <div>
+                  <strong>Pagos registrados</strong>
+                  <small>
+                    Corrige el método si se eligió un medio de pago por error.
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="payment-history-loading"
+              *ngIf="cargandoPagosOrden"
+            >
+              <i
+                class="bi bi-arrow-repeat spin-icon"
+                aria-hidden="true"
+              ></i>
+              Cargando pagos...
+            </div>
+
+            <div
+              class="payment-history-list"
+              *ngIf="
+                !cargandoPagosOrden &&
+                pagosOrden.length > 0
+              "
+            >
+              <article
+                class="payment-history-item"
+                *ngFor="let pago of pagosOrden"
+              >
+                <div class="payment-history-main">
+                  <span
+                    class="payment-method-badge"
+                    [ngClass]="
+                      pago.metodoPago.toLowerCase()
+                    "
+                  >
+                    {{ pago.metodoPago }}
+                  </span>
+
+                  <div>
+                    <strong>
+                      S/ {{ pago.monto | number:'1.2-2' }}
+                    </strong>
+                    <small>
+                      {{ fechaPagoTexto(pago.fechaPago) }}
+                      · Caja #{{ pago.idCaja || '—' }}
+                    </small>
+                  </div>
+                </div>
+
+                <div class="payment-history-actions">
+                  <span
+                    class="cash-status-open"
+                    *ngIf="pago.cajaAbierta"
+                  >
+                    <i class="bi bi-unlock-fill" aria-hidden="true"></i>
+                    Caja abierta
+                  </span>
+
+                  <span
+                    class="cash-status-closed"
+                    *ngIf="!pago.cajaAbierta"
+                  >
+                    <i class="bi bi-lock-fill" aria-hidden="true"></i>
+                    Caja cerrada
+                  </span>
+
+                  <button
+                    type="button"
+                    class="correct-payment-button"
+                    (click)="iniciarCorreccionPago(pago)"
+                    [disabled]="
+                      !pago.puedeCorregir ||
+                      actualizando ||
+                      corrigiendoMetodoPago
+                    "
+                  >
+                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                    Corregir método
+                  </button>
+                </div>
+              </article>
+            </div>
+
+            <p
+              class="payment-history-empty"
+              *ngIf="
+                !cargandoPagosOrden &&
+                pagosOrden.length === 0
+              "
+            >
+              No se encontraron pagos individuales para esta orden.
+            </p>
+
+            <div
+              class="payment-correction-panel"
+              *ngIf="pagoCorreccion"
+            >
+              <div class="payment-correction-title">
+                <div>
+                  <strong>Corregir método de pago</strong>
+                  <small>
+                    S/ {{ pagoCorreccion.monto | number:'1.2-2' }}
+                    · registrado como {{ pagoCorreccion.metodoPago }}
+                  </small>
+                </div>
+
+                <button
+                  type="button"
+                  (click)="cancelarCorreccionPago()"
+                  [disabled]="corrigiendoMetodoPago"
+                  aria-label="Cancelar corrección"
+                >
+                  <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              <div class="payment-correction-grid">
+                <label>
+                  <span>Método correcto *</span>
+
+                  <select
+                    [(ngModel)]="metodoPagoCorreccion"
+                    [disabled]="corrigiendoMetodoPago"
+                  >
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="YAPE">Yape</option>
+                    <option value="TRANSFERENCIA">Transferencia</option>
+                    <option value="SEGURO">Seguro</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Motivo *</span>
+
+                  <input
+                    type="text"
+                    maxlength="200"
+                    [(ngModel)]="motivoCorreccionPago"
+                    [disabled]="corrigiendoMetodoPago"
+                    placeholder="Ej. Se marcó Yape, pero pagó en efectivo"
+                  />
+                </label>
+              </div>
+
+              <div class="payment-correction-effect">
+                <i class="bi bi-calculator" aria-hidden="true"></i>
+                <span>
+                  El importe no cambia. Se moverá
+                  <strong>
+                    S/ {{ pagoCorreccion.monto | number:'1.2-2' }}
+                  </strong>
+                  del método incorrecto al correcto dentro de la misma caja.
+                </span>
+              </div>
+
+              <button
+                type="button"
+                class="confirm-payment-correction"
+                (click)="confirmarCorreccionPago()"
+                [disabled]="corrigiendoMetodoPago"
+              >
+                <i
+                  class="bi"
+                  [ngClass]="
+                    corrigiendoMetodoPago
+                      ? 'bi-arrow-repeat spin-icon'
+                      : 'bi-check2-circle'
+                  "
+                  aria-hidden="true"
+                ></i>
+
+                {{
+                  corrigiendoMetodoPago
+                    ? 'Corrigiendo...'
+                    : 'Confirmar corrección'
+                }}
+              </button>
+            </div>
+
+            <p
+              class="payment-correction-success"
+              *ngIf="mensajeCorreccionPago"
+            >
+              <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+              {{ mensajeCorreccionPago }}
+            </p>
+
+            <p
+              class="payment-correction-error"
+              *ngIf="errorCorreccionPago"
+            >
+              <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+              {{ errorCorreccionPago }}
+            </p>
+          </section>
+
           <section
             class="credit-payment-card"
             *ngIf="

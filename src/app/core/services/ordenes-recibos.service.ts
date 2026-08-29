@@ -4,12 +4,16 @@ import { defer, Observable } from 'rxjs';
 import type {
   CambioMonturaRequest,
   CambioMonturaResultado,
+  CorreccionMetodoPagoRequest,
+  CorreccionMetodoPagoResultado,
   DetalleOrdenItem,
   EstadoOrden,
   EstadoPagoOrden,
   OrdenRecibo,
   OrdenReciboDetalle,
   PagoCreditoRequest,
+  PagoOrdenHistorial,
+  MetodoPagoAbonoOrden,
   MonturaCambioOption,
   PagoCreditoResultado,
   RevisionPagoEstadoRequest,
@@ -553,6 +557,244 @@ export class OrdenesRecibosService {
           )
         );
       }
+    });
+  }
+
+  listarPagosOrden(
+    idVenta: number
+  ): Observable<PagoOrdenHistorial[]> {
+    return defer(async () => {
+      if (
+        !Number.isInteger(idVenta) ||
+        idVenta <= 0
+      ) {
+        throw new Error(
+          'La orden seleccionada no es válida.'
+        );
+      }
+
+      const {
+        data,
+        error
+      } =
+        await this.supabaseService.client
+          .rpc(
+            'listar_pagos_orden',
+            {
+              p_id_venta:
+                idVenta
+            }
+          );
+
+      if (error) {
+        throw new Error(
+          this.traducirError(
+            error.message
+          )
+        );
+      }
+
+      const filas =
+        Array.isArray(data)
+          ? data
+          : [];
+
+      return filas.map(
+        (fila): PagoOrdenHistorial => {
+          const item =
+            fila as
+              Record<string, unknown>;
+
+          const metodoRaw =
+            String(
+              item['metodo_pago'] ||
+              'EFECTIVO'
+            )
+              .trim()
+              .toUpperCase();
+
+          const metodoPago:
+            MetodoPagoAbonoOrden =
+              metodoRaw === 'YAPE' ||
+              metodoRaw === 'TRANSFERENCIA' ||
+              metodoRaw === 'SEGURO'
+                ? metodoRaw
+                : 'EFECTIVO';
+
+          return {
+            idPagoVenta:
+              Number(
+                item[
+                  'id_pago_venta'
+                ] || 0
+              ),
+            idVenta:
+              Number(
+                item['id_venta'] ||
+                idVenta
+              ),
+            idCaja:
+              item['id_caja'] === null ||
+              item['id_caja'] === undefined
+                ? null
+                : Number(
+                    item['id_caja']
+                  ),
+            metodoPago,
+            monto:
+              this.numero(
+                item['monto'] as
+                  number |
+                  string |
+                  null
+              ),
+            fechaPago:
+              String(
+                item['fecha_pago'] ||
+                ''
+              ),
+            observaciones:
+              String(
+                item[
+                  'observaciones'
+                ] || ''
+              ),
+            cajaAbierta:
+              Boolean(
+                item[
+                  'caja_abierta'
+                ]
+              ),
+            puedeCorregir:
+              Boolean(
+                item[
+                  'puede_corregir'
+                ]
+              )
+          };
+        }
+      );
+    });
+  }
+
+  corregirMetodoPago(
+    request:
+      CorreccionMetodoPagoRequest
+  ): Observable<CorreccionMetodoPagoResultado> {
+    return defer(async () => {
+      const motivo =
+        String(
+          request.motivo || ''
+        )
+          .replace(
+            /\s+/g,
+            ' '
+          )
+          .trim();
+
+      if (
+        !Number.isInteger(
+          request.idPagoVenta
+        ) ||
+        request.idPagoVenta <= 0
+      ) {
+        throw new Error(
+          'El pago seleccionado no es válido.'
+        );
+      }
+
+      if (motivo.length < 4) {
+        throw new Error(
+          'Escribe el motivo de la corrección.'
+        );
+      }
+
+      const {
+        data,
+        error
+      } =
+        await this.supabaseService.client
+          .rpc(
+            'corregir_metodo_pago_orden',
+            {
+              p_id_pago_venta:
+                request.idPagoVenta,
+              p_metodo_nuevo:
+                request.metodoNuevo,
+              p_motivo:
+                motivo
+            }
+          );
+
+      if (error) {
+        throw new Error(
+          this.traducirError(
+            error.message
+          )
+        );
+      }
+
+      const resultado =
+        (data || {}) as
+          Record<string, unknown>;
+
+      return {
+        idPagoVenta:
+          Number(
+            resultado[
+              'id_pago_venta'
+            ] ||
+            request.idPagoVenta
+          ),
+        idVenta:
+          Number(
+            resultado[
+              'id_venta'
+            ] || 0
+          ),
+        idCaja:
+          Number(
+            resultado[
+              'id_caja'
+            ] || 0
+          ),
+        monto:
+          this.numero(
+            resultado['monto'] as
+              number |
+              string |
+              null
+          ),
+        metodoAnterior:
+          String(
+            resultado[
+              'metodo_anterior'
+            ] || 'EFECTIVO'
+          ) as
+            CorreccionMetodoPagoResultado[
+              'metodoAnterior'
+            ],
+        metodoNuevo:
+          String(
+            resultado[
+              'metodo_nuevo'
+            ] ||
+            request.metodoNuevo
+          ) as
+            CorreccionMetodoPagoResultado[
+              'metodoNuevo'
+            ],
+        metodoVentaActual:
+          String(
+            resultado[
+              'metodo_venta_actual'
+            ] ||
+            request.metodoNuevo
+          ) as
+            CorreccionMetodoPagoResultado[
+              'metodoVentaActual'
+            ]
+      };
     });
   }
 
@@ -1118,6 +1360,33 @@ export class OrdenesRecibosService {
       )
     ) {
       return 'El vendedor solo puede eliminar órdenes que él mismo registró.';
+    }
+
+    if (
+      texto.includes(
+        'listar_pagos_orden'
+      ) ||
+      texto.includes(
+        'corregir_metodo_pago_orden'
+      )
+    ) {
+      return 'Falta ejecutar 48_corregir_metodo_pago_caja.sql en Supabase.';
+    }
+
+    if (
+      texto.includes(
+        'caja del pago ya está cerrada'
+      )
+    ) {
+      return 'Ese pago pertenece a una caja ya cerrada y no puede corregirse desde el cierre normal.';
+    }
+
+    if (
+      texto.includes(
+        'método nuevo es igual'
+      )
+    ) {
+      return 'Selecciona un método diferente al registrado.';
     }
 
     if (

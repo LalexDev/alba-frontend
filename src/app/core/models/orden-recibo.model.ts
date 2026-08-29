@@ -175,3 +175,37 @@ export interface CambioMonturaResultado {
   monturaAnterior: string;
   monturaNueva: string;
 }
+
+
+/* ============================================================
+   CORRECCIÓN DE MÉTODO DE PAGO
+   ============================================================ */
+
+export interface PagoOrdenHistorial {
+  idPagoVenta: number;
+  idVenta: number;
+  idCaja: number | null;
+  metodoPago: MetodoPagoAbonoOrden;
+  monto: number;
+  fechaPago: string;
+  observaciones: string;
+  cajaAbierta: boolean;
+  puedeCorregir: boolean;
+}
+
+export interface CorreccionMetodoPagoRequest {
+  idPagoVenta: number;
+  metodoNuevo: MetodoPagoAbonoOrden;
+  motivo: string;
+}
+
+export interface CorreccionMetodoPagoResultado {
+  idPagoVenta: number;
+  idVenta: number;
+  idCaja: number;
+  monto: number;
+  metodoAnterior: MetodoPagoAbonoOrden;
+  metodoNuevo: MetodoPagoAbonoOrden;
+  metodoVentaActual:
+    MetodoPagoOrden;
+}

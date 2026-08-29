@@ -12,6 +12,7 @@ import {
 
 import type {
   CambioMonturaResultado,
+  CorreccionMetodoPagoResultado,
   DetalleOrdenItem,
   EstadoOrden,
   EstadoPagoOrden,
@@ -21,6 +22,7 @@ import type {
   MetodoPagoAbonoOrden,
   MonturaCambioOption,
   OrdenRecibo,
+  PagoOrdenHistorial,
   OrdenReciboDetalle,
   ResumenOrdenes
 } from '../../core/models/orden-recibo.model';
@@ -68,6 +70,27 @@ export class OrdenesRecibosComponent
       'EFECTIVO';
 
   pagoRevisado = false;
+
+  pagosOrden:
+    PagoOrdenHistorial[] = [];
+
+  cargandoPagosOrden = false;
+
+  pagoCorreccion:
+    PagoOrdenHistorial | null = null;
+
+  metodoPagoCorreccion:
+    MetodoPagoAbonoOrden =
+      'EFECTIVO';
+
+  motivoCorreccionPago = '';
+
+  corrigiendoMetodoPago = false;
+
+  errorCorreccionPago = '';
+
+  mensajeCorreccionPago = '';
+
   errorAcciones = '';
   confirmandoEliminacion = false;
 
@@ -829,10 +852,17 @@ export class OrdenesRecibosComponent
         : 0;
 
     this.mostrarAcciones = true;
+
+    this.cargarPagosOrden(
+      orden.idVenta
+    );
   }
 
   cerrarAcciones(): void {
-    if (this.actualizando) {
+    if (
+      this.actualizando ||
+      this.corrigiendoMetodoPago
+    ) {
       return;
     }
 
@@ -847,6 +877,240 @@ export class OrdenesRecibosComponent
     this.metodoCobroCredito =
       'TRANSFERENCIA';
     this.montoCobroCredito = 0;
+
+    this.pagosOrden = [];
+    this.cargandoPagosOrden = false;
+    this.pagoCorreccion = null;
+    this.metodoPagoCorreccion =
+      'EFECTIVO';
+    this.motivoCorreccionPago = '';
+    this.errorCorreccionPago = '';
+    this.mensajeCorreccionPago = '';
+  }
+
+
+  private cargarPagosOrden(
+    idVenta: number
+  ): void {
+    this.cargandoPagosOrden =
+      true;
+
+    this.errorCorreccionPago =
+      '';
+
+    this.ordenesService
+      .listarPagosOrden(
+        idVenta
+      )
+      .pipe(
+        finalize(() => {
+          this.cargandoPagosOrden =
+            false;
+        })
+      )
+      .subscribe({
+        next: pagos => {
+          this.pagosOrden =
+            pagos;
+        },
+
+        error: (
+          error: unknown
+        ) => {
+          this.errorCorreccionPago =
+            error instanceof Error
+              ? error.message
+              : 'No se pudo cargar el historial de pagos.';
+        }
+      });
+  }
+
+  iniciarCorreccionPago(
+    pago:
+      PagoOrdenHistorial
+  ): void {
+    if (
+      !pago.puedeCorregir ||
+      this.corrigiendoMetodoPago
+    ) {
+      return;
+    }
+
+    this.pagoCorreccion =
+      pago;
+
+    this.metodoPagoCorreccion =
+      pago.metodoPago;
+
+    this.motivoCorreccionPago =
+      '';
+
+    this.errorCorreccionPago =
+      '';
+
+    this.mensajeCorreccionPago =
+      '';
+  }
+
+  cancelarCorreccionPago(): void {
+    if (
+      this.corrigiendoMetodoPago
+    ) {
+      return;
+    }
+
+    this.pagoCorreccion = null;
+    this.metodoPagoCorreccion =
+      'EFECTIVO';
+    this.motivoCorreccionPago =
+      '';
+    this.errorCorreccionPago =
+      '';
+  }
+
+  confirmarCorreccionPago(): void {
+    if (
+      !this.pagoCorreccion ||
+      !this.ordenAcciones ||
+      this.corrigiendoMetodoPago
+    ) {
+      return;
+    }
+
+    if (
+      this.metodoPagoCorreccion ===
+      this.pagoCorreccion.metodoPago
+    ) {
+      this.errorCorreccionPago =
+        'Selecciona un método diferente al registrado.';
+      return;
+    }
+
+    const motivo =
+      String(
+        this.motivoCorreccionPago ||
+        ''
+      )
+        .replace(
+          /\s+/g,
+          ' '
+        )
+        .trim();
+
+    if (motivo.length < 4) {
+      this.errorCorreccionPago =
+        'Escribe el motivo de la corrección.';
+      return;
+    }
+
+    this.corrigiendoMetodoPago =
+      true;
+
+    this.errorCorreccionPago =
+      '';
+
+    this.mensajeCorreccionPago =
+      '';
+
+    const idVenta =
+      this.ordenAcciones.idVenta;
+
+    this.ordenesService
+      .corregirMetodoPago({
+        idPagoVenta:
+          this.pagoCorreccion
+            .idPagoVenta,
+        metodoNuevo:
+          this.metodoPagoCorreccion,
+        motivo
+      })
+      .pipe(
+        finalize(() => {
+          this.corrigiendoMetodoPago =
+            false;
+        })
+      )
+      .subscribe({
+        next: (
+          resultado:
+            CorreccionMetodoPagoResultado
+        ) => {
+          this.mensajeCorreccionPago =
+            `Método corregido correctamente: ${resultado.metodoAnterior} → ${resultado.metodoNuevo}. Caja actualizada por S/ ${resultado.monto.toFixed(2)}.`;
+
+          if (
+            this.ordenAcciones &&
+            this.ordenAcciones
+              .metodoPago !==
+                'CREDITO'
+          ) {
+            this.ordenAcciones =
+              {
+                ...this.ordenAcciones,
+                metodoPago:
+                  resultado
+                    .metodoVentaActual
+              };
+          }
+
+          this.pagoCorreccion =
+            null;
+
+          this.metodoPagoCorreccion =
+            'EFECTIVO';
+
+          this.motivoCorreccionPago =
+            '';
+
+          this.cargarPagosOrden(
+            idVenta
+          );
+
+          this.cargar();
+        },
+
+        error: (
+          error: unknown
+        ) => {
+          this.errorCorreccionPago =
+            error instanceof Error
+              ? error.message
+              : 'No se pudo corregir el método de pago.';
+        }
+      });
+  }
+
+  fechaPagoTexto(
+    valor: string
+  ): string {
+    const fecha =
+      new Date(valor);
+
+    if (
+      Number.isNaN(
+        fecha.getTime()
+      )
+    ) {
+      return valor;
+    }
+
+    return new Intl.DateTimeFormat(
+      'es-PE',
+      {
+        timeZone:
+          'America/Lima',
+        day:
+          '2-digit',
+        month:
+          '2-digit',
+        year:
+          'numeric',
+        hour:
+          '2-digit',
+        minute:
+          '2-digit'
+      }
+    ).format(fecha);
   }
 
   get nuevoMontoCancelado(): number {
