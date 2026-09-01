@@ -1433,6 +1433,18 @@ export class OrdenesRecibosService {
     }
 
     if (
+      texto.includes('no admiten pagos parciales')
+    ) {
+      return 'Seguro y Crédito deben cancelarse por el saldo completo; no se permiten pagos parciales.';
+    }
+
+    if (
+      texto.includes('seguro no es un medio')
+    ) {
+      return 'Selecciona el medio realmente recibido: efectivo, Yape o transferencia.';
+    }
+
+    if (
       texto.includes(
         'no corresponde a una venta a crédito'
       )

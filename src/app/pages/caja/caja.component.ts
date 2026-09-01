@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
 
 import {
@@ -14,8 +15,7 @@ import autoTable from 'jspdf-autotable';
 import {
   CajaActual,
   CajaHistorial,
-  MovimientoCaja,
-  TipoMovimientoCaja
+  MovimientoCaja
 } from '../../core/models/caja.model';
 
 import { CajaService } from '../../core/services/caja.service';
@@ -26,7 +26,8 @@ import { TokenService } from '../../core/services/token.service';
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule
+    FormsModule,
+    RouterModule
   ],
   templateUrl: './caja.component.html',
   styleUrls: ['./caja.component.css']
@@ -46,12 +47,9 @@ export class CajaComponent implements OnInit {
   error = '';
 
   montoApertura = 0;
-  montoContado: number | null = null;
-  montoYapeConfirmado: number | null = null;
   observacionesCierre = '';
 
   mostrarMovimiento = false;
-  tipoMovimiento: TipoMovimientoCaja = 'EGRESO';
   conceptoMovimiento = '';
   montoMovimiento: number | null = null;
 
@@ -79,79 +77,6 @@ export class CajaComponent implements OnInit {
     return Boolean(this.caja?.abierta);
   }
 
-  get diferenciaPrevia(): number {
-    if (
-      !this.cajaAbierta ||
-      this.montoContado === null ||
-      !Number.isFinite(Number(this.montoContado))
-    ) {
-      return 0;
-    }
-
-    return Number(
-      (
-        Number(this.montoContado) -
-        Number(this.caja?.resumen.efectivoEsperado || 0)
-      ).toFixed(2)
-    );
-  }
-
-  get estadoDiferencia():
-    'CUADRADA' | 'FALTANTE' | 'SOBRANTE' {
-
-    if (Math.abs(this.diferenciaPrevia) < 0.01) {
-      return 'CUADRADA';
-    }
-
-    return this.diferenciaPrevia < 0
-      ? 'FALTANTE'
-      : 'SOBRANTE';
-  }
-
-
-  get diferenciaYapePrevia(): number {
-    if (
-      !this.cajaAbierta ||
-      this.montoYapeConfirmado === null ||
-      !Number.isFinite(
-        Number(
-          this.montoYapeConfirmado
-        )
-      )
-    ) {
-      return 0;
-    }
-
-    return Number(
-      (
-        Number(
-          this.montoYapeConfirmado
-        ) -
-        Number(
-          this.caja?.resumen
-            .yapeEsperado ||
-          0
-        )
-      ).toFixed(2)
-    );
-  }
-
-  get estadoDiferenciaYape():
-    'CUADRADA' | 'FALTANTE' | 'SOBRANTE' {
-
-    if (
-      Math.abs(
-        this.diferenciaYapePrevia
-      ) < 0.01
-    ) {
-      return 'CUADRADA';
-    }
-
-    return this.diferenciaYapePrevia < 0
-      ? 'FALTANTE'
-      : 'SOBRANTE';
-  }
-
   cargarTodo(): void {
     this.cargando = true;
     this.error = '';
@@ -177,8 +102,6 @@ export class CajaComponent implements OnInit {
             this.cargarMovimientos();
           } else {
             this.movimientos = [];
-            this.montoContado = null;
-            this.montoYapeConfirmado = null;
           }
         },
         error: (error: unknown) => {
@@ -234,56 +157,12 @@ export class CajaComponent implements OnInit {
       return;
     }
 
-    const efectivo =
-      Number(
-        this.montoContado
-      );
-
-    const yape =
-      Number(
-        this.montoYapeConfirmado
-      );
-
-    if (
-      this.montoContado === null ||
-      !Number.isFinite(
-        efectivo
-      ) ||
-      efectivo < 0
-    ) {
-      this.error =
-        'Cuenta el efectivo físico e ingresa el monto antes de cerrar.';
-      return;
-    }
-
-    if (
-      this.montoYapeConfirmado === null ||
-      !Number.isFinite(
-        yape
-      ) ||
-      yape < 0
-    ) {
-      this.error =
-        'Verifica Yape e ingresa el monto confirmado antes de cerrar.';
-      return;
-    }
-
-    const diferenciaEfectivo =
-      this.diferenciaPrevia;
-
-    const diferenciaYape =
-      this.diferenciaYapePrevia;
-
     this.cerrando = true;
     this.error = '';
     this.ok = '';
 
     this.cajaService
       .cerrarCaja({
-        montoCierreReal:
-          efectivo,
-        montoYapeConfirmado:
-          yape,
         observaciones:
           this.observacionesCierre
       })
@@ -294,57 +173,8 @@ export class CajaComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          const efectivoCuadra =
-            Math.abs(
-              diferenciaEfectivo
-            ) < 0.01;
-
-          const yapeCuadra =
-            Math.abs(
-              diferenciaYape
-            ) < 0.01;
-
-          if (
-            efectivoCuadra &&
-            yapeCuadra
-          ) {
-            this.ok =
-              'Caja cerrada correctamente. Efectivo y Yape cuadran.';
-          } else {
-            const incidencias:
-              string[] = [];
-
-            if (!efectivoCuadra) {
-              incidencias.push(
-                diferenciaEfectivo < 0
-                  ? `faltante de efectivo S/ ${Math.abs(
-                      diferenciaEfectivo
-                    ).toFixed(2)}`
-                  : `sobrante de efectivo S/ ${diferenciaEfectivo.toFixed(2)}`
-              );
-            }
-
-            if (!yapeCuadra) {
-              incidencias.push(
-                diferenciaYape < 0
-                  ? `faltante en Yape S/ ${Math.abs(
-                      diferenciaYape
-                    ).toFixed(2)}`
-                  : `sobrante en Yape S/ ${diferenciaYape.toFixed(2)}`
-              );
-            }
-
-            this.ok =
-              `Caja cerrada con ${incidencias.join(
-                ' y '
-              )}.`;
-          }
-
-          this.montoContado =
-            null;
-
-          this.montoYapeConfirmado =
-            null;
+          this.ok =
+            'Caja cerrada correctamente con los importes calculados desde los movimientos registrados.';
 
           this.observacionesCierre =
             '';
@@ -403,12 +233,14 @@ export class CajaComponent implements OnInit {
     this.error = '';
     this.ok = '';
 
-    this.cajaService
-      .registrarMovimiento({
-        tipo: this.tipoMovimiento,
+    const operacion =
+      this.cajaService.registrarMovimiento({
+        tipo: 'EGRESO',
         concepto,
         monto
-      })
+      });
+
+    operacion
       .pipe(
         finalize(() => {
           this.guardandoMovimiento = false;
@@ -416,10 +248,7 @@ export class CajaComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.ok =
-            this.tipoMovimiento === 'INGRESO'
-              ? 'Ingreso de caja registrado.'
-              : 'Egreso de caja registrado.';
+          this.ok = 'Egreso de caja registrado.';
 
           this.mostrarMovimiento = false;
           this.limpiarMovimiento();
@@ -497,15 +326,18 @@ export class CajaComponent implements OnInit {
       Yape: item.yape,
       Transferencia: item.transferencia,
       Seguro: item.seguro,
+      'Seguro pendiente': item.seguroPendiente,
+      'Seguros cobrados hoy': item.segurosCobradosHoy,
+      'Cobros de cuentas manuales': item.pagosExternos,
+      'Cuentas manuales efectivo': item.pagosExternosEfectivo,
+      'Cuentas manuales Yape': item.pagosExternosYape,
+      'Cuentas manuales transferencia': item.pagosExternosTransferencia,
       'Saldo pendiente': item.saldoPendiente,
-      'Ingresos manuales': item.ingresosManuales,
       'Egresos manuales': item.egresosManuales,
       'Efectivo esperado': item.montoEsperado,
-      'Efectivo contado': item.montoCierreReal ?? '',
-      'Diferencia efectivo': item.diferencia ?? '',
+      'Efectivo al cierre automático': item.montoCierreReal ?? '',
       'Yape esperado': item.yapeEsperado,
-      'Yape confirmado': item.yapeConfirmado ?? '',
-      'Diferencia Yape': item.diferenciaYape ?? '',
+      'Yape al cierre automático': item.yapeConfirmado ?? '',
       Observaciones: item.observaciones
     }));
 
@@ -690,7 +522,6 @@ export class CajaComponent implements OnInit {
   }
 
   private limpiarMovimiento(): void {
-    this.tipoMovimiento = 'EGRESO';
     this.conceptoMovimiento = '';
     this.montoMovimiento = null;
   }

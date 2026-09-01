@@ -12,6 +12,9 @@ import { MovimientosInventarioComponent } from './pages/movimientos-inventario/m
 import { OrdenesRecibosComponent } from './pages/ordenes-recibos/ordenes-recibos.component';
 import { UsuariosRolesComponent } from './pages/usuarios-roles/usuarios-roles.component';
 import { CajaComponent } from './pages/caja/caja.component';
+import {
+  CuentasManualesComponent
+} from './pages/cuentas-manuales/cuentas-manuales.component';
 
 import { AdminLayoutComponent } from './layout/admin-layout/admin-layout.component';
 import { AuthGuard } from './core/guards/auth.guard';
@@ -56,6 +59,10 @@ const routes: Routes = [
       {
         path: 'caja',
         component: CajaComponent
+      },
+      {
+        path: 'cuentas-manuales',
+        component: CuentasManualesComponent
       },
       {
         path: 'proveedores',
@@ -110,6 +117,10 @@ const routes: Routes = [
       {
         path: 'caja',
         component: CajaComponent
+      },
+      {
+        path: 'cuentas-manuales',
+        component: CuentasManualesComponent
       },
       {
         path: '',

@@ -851,6 +851,16 @@ export class OrdenesRecibosComponent
           )
         : 0;
 
+    if (
+      orden.metodoPago === 'SEGURO' &&
+      orden.saldo > 0.009
+    ) {
+      this.pagoAdicional =
+        Number(orden.saldo.toFixed(2));
+      this.metodoPagoAdicional =
+        'TRANSFERENCIA';
+    }
+
     this.mostrarAcciones = true;
 
     this.cargarPagosOrden(
@@ -1172,11 +1182,20 @@ export class OrdenesRecibosComponent
         this.pagoAdicional || 0
       );
 
+    const requierePagoCompleto =
+      this.ordenAcciones.metodoPago === 'SEGURO';
+
     return (
       Number.isFinite(pago) &&
       pago >= 0 &&
-      pago <=
-        this.ordenAcciones.saldo
+      pago <= this.ordenAcciones.saldo &&
+      (
+        !requierePagoCompleto ||
+        pago <= 0.009 ||
+        Math.abs(
+          pago - this.ordenAcciones.saldo
+        ) < 0.01
+      )
     );
   }
 
@@ -1249,6 +1268,18 @@ export class OrdenesRecibosComponent
     ) {
       this.errorAcciones =
         `El pago adicional no puede superar el saldo de S/ ${this.ordenAcciones.saldo.toFixed(2)}.`;
+      return;
+    }
+
+    if (
+      this.ordenAcciones.metodoPago === 'SEGURO' &&
+      pago > 0.009 &&
+      Math.abs(
+        pago - this.ordenAcciones.saldo
+      ) >= 0.01
+    ) {
+      this.errorAcciones =
+        `El seguro no admite pagos parciales. Debes cancelar el saldo completo de S/ ${this.ordenAcciones.saldo.toFixed(2)}.`;
     }
   }
 
@@ -1262,20 +1293,19 @@ export class OrdenesRecibosComponent
       return;
     }
 
-    const monto =
-      Number(
-        this.montoCobroCredito ||
-        0
-      );
+    const monto = Number(
+      this.ordenAcciones.saldo.toFixed(2)
+    );
 
     if (
       !Number.isFinite(monto) ||
       monto <= 0 ||
-      monto >
-        this.ordenAcciones.saldo
+      Math.abs(
+        monto - this.ordenAcciones.saldo
+      ) >= 0.01
     ) {
       this.errorAcciones =
-        `El pago debe ser mayor a S/ 0.00 y no superar S/ ${this.ordenAcciones.saldo.toFixed(2)}.`;
+        `El crédito debe cancelarse por el saldo completo de S/ ${this.ordenAcciones.saldo.toFixed(2)}.`;
       return;
     }
 
@@ -1508,9 +1538,7 @@ export class OrdenesRecibosComponent
       orden.metodoPago ===
         'YAPE' ||
       orden.metodoPago ===
-        'TRANSFERENCIA' ||
-      orden.metodoPago ===
-        'SEGURO'
+        'TRANSFERENCIA'
     ) {
       return orden.metodoPago;
     }

@@ -1062,7 +1062,6 @@
                     <option value="EFECTIVO">Efectivo</option>
                     <option value="YAPE">Yape</option>
                     <option value="TRANSFERENCIA">Transferencia</option>
-                    <option value="SEGURO">Seguro</option>
                   </select>
                 </label>
 
@@ -1174,7 +1173,7 @@
 
               <div class="payment-input-field">
                 <label for="montoCobroCredito">
-                  Importe recibido
+                  Importe completo a cancelar
                 </label>
 
                 <div class="money-input">
@@ -1186,7 +1185,7 @@
                     [max]="ordenAcciones.saldo"
                     step="0.01"
                     [(ngModel)]="montoCobroCredito"
-                    [disabled]="actualizando"
+                    [disabled]="true"
                   />
                 </div>
               </div>
@@ -1199,7 +1198,7 @@
               [disabled]="actualizando"
             >
               <i class="bi bi-check2-circle" aria-hidden="true"></i>
-              Registrar pago de crédito
+              Cancelar crédito completo
             </button>
 
             <small class="credit-cash-note">
@@ -1220,9 +1219,19 @@
                   <i class="bi bi-cash-coin" aria-hidden="true"></i>
                 </span>
                 <div>
-                  <strong>Pago adicional</strong>
+                  <strong>
+                    {{
+                      ordenAcciones.metodoPago === 'SEGURO'
+                        ? 'Cancelación completa del seguro'
+                        : 'Pago adicional'
+                    }}
+                  </strong>
                   <small>
-                    Registra un abono antes de cambiar el estado.
+                    {{
+                      ordenAcciones.metodoPago === 'SEGURO'
+                        ? 'El seguro se registra en un único pago, sin abonos parciales.'
+                        : 'Registra un abono antes de cambiar el estado.'
+                    }}
                   </small>
                 </div>
               </div>
@@ -1234,7 +1243,11 @@
                 [disabled]="actualizando"
               >
                 <i class="bi bi-check2-all" aria-hidden="true"></i>
-                Pagar saldo
+                {{
+                  ordenAcciones.metodoPago === 'SEGURO'
+                    ? 'Usar saldo completo'
+                    : 'Pagar saldo'
+                }}
               </button>
             </div>
 
@@ -1257,9 +1270,6 @@
                   </option>
                   <option value="TRANSFERENCIA">
                     Transferencia
-                  </option>
-                  <option value="SEGURO">
-                    Seguro
                   </option>
                 </select>
 
@@ -1284,7 +1294,10 @@
                     step="0.01"
                     [(ngModel)]="pagoAdicional"
                     (ngModelChange)="validarPagoAdicional()"
-                    [disabled]="actualizando"
+                    [disabled]="
+                      actualizando ||
+                      ordenAcciones.metodoPago === 'SEGURO'
+                    "
                   />
                 </div>
 

@@ -267,13 +267,10 @@ export class VentaService {
     );
 
     const adelanto =
-      metodo === 'CREDITO'
+      metodo === 'CREDITO' ||
+      metodo === 'SEGURO'
         ? 0
-        : metodo === 'SEGURO'
-          ? totalCarrito
-          : Number(
-              aCuenta || 0
-            );
+        : Number(aCuenta || 0);
 
     if (
       !Number.isFinite(adelanto) ||
@@ -500,6 +497,10 @@ export class VentaService {
       .from('ventas')
       .select(`
         id_venta,
+        total,
+        a_cuenta,
+        saldo,
+        estado_pago,
         metodo_pago,
         entidad_credito,
         estado_venta
@@ -547,13 +548,15 @@ export class VentaService {
       numeroVenta:
         String(resultado.numero_venta),
       total:
-        Number(resultado.total),
+        Number(ventaConfirmada.total),
       aCuenta:
-        Number(resultado.a_cuenta),
+        Number(ventaConfirmada.a_cuenta),
       saldo:
-        Number(resultado.saldo),
+        Number(ventaConfirmada.saldo),
       estadoPago:
-        resultado.estado_pago
+        String(
+          ventaConfirmada.estado_pago
+        ) as VentaRegistrada['estadoPago']
     };
   }
 

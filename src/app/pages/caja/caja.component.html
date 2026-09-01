@@ -159,7 +159,7 @@
           <strong>
             S/ {{ caja.resumen.totalCobrado | number:'1.2-2' }}
           </strong>
-          <span>Dinero/cobertura registrada</span>
+          <span>Dinero realmente recibido</span>
         </div>
       </article>
 
@@ -173,7 +173,7 @@
           <strong>
             S/ {{ caja.resumen.saldoPendiente | number:'1.2-2' }}
           </strong>
-          <span>Pendiente de clientes</span>
+          <span>Clientes, seguros y créditos pendientes</span>
         </div>
       </article>
 
@@ -234,10 +234,14 @@
           <i class="bi bi-shield-check"></i>
         </span>
         <div>
-          <small>Seguro</small>
+          <small>Seguro pendiente</small>
           <strong>
-            S/ {{ caja.resumen.seguro | number:'1.2-2' }}
+            S/ {{ caja.resumen.seguroPendiente | number:'1.2-2' }}
           </strong>
+          <span>
+            Cobrado hoy: S/
+            {{ caja.resumen.segurosCobradosHoy | number:'1.2-2' }}
+          </span>
         </div>
       </article>
     </section>
@@ -306,39 +310,42 @@
         <header class="panel-header">
           <div>
             <span class="section-kicker">MOVIMIENTOS</span>
-            <h2>Ingresos y egresos</h2>
+            <h2>Cuentas manuales y egresos</h2>
           </div>
 
-          <button
-            type="button"
-            class="secondary-button"
-            (click)="alternarMovimiento()"
-          >
-            <i
-              class="bi"
-              [ngClass]="
-                mostrarMovimiento
-                  ? 'bi-x-lg'
-                  : 'bi-plus-circle-fill'
+          <div class="panel-actions">
+            <a
+              class="secondary-button"
+              [routerLink]="
+                esVendedor
+                  ? '/vendedor/cuentas-manuales'
+                  : '/admin/cuentas-manuales'
               "
-              aria-hidden="true"
-            ></i>
-            {{ mostrarMovimiento ? 'Cancelar' : 'Nuevo movimiento' }}
-          </button>
+            >
+              <i class="bi bi-journal-text" aria-hidden="true"></i>
+              Cuentas manuales
+            </a>
+
+            <button
+              type="button"
+              class="secondary-button"
+              (click)="alternarMovimiento()"
+            >
+              <i
+                class="bi"
+                [ngClass]="
+                  mostrarMovimiento
+                    ? 'bi-x-lg'
+                    : 'bi-dash-circle-fill'
+                "
+                aria-hidden="true"
+              ></i>
+              {{ mostrarMovimiento ? 'Cancelar' : 'Registrar egreso' }}
+            </button>
+          </div>
         </header>
 
         <div class="movement-form" *ngIf="mostrarMovimiento">
-          <div class="field">
-            <label for="tipoMovimiento">Tipo</label>
-            <select
-              id="tipoMovimiento"
-              [(ngModel)]="tipoMovimiento"
-            >
-              <option value="INGRESO">Ingreso</option>
-              <option value="EGRESO">Egreso / gasto</option>
-            </select>
-          </div>
-
           <div class="field movement-concept">
             <label for="conceptoMovimiento">Motivo</label>
             <input
@@ -377,13 +384,17 @@
             ></i>
             Guardar
           </button>
+
+          <small class="external-payment-note">
+            Los cobros de ventas antiguas se registran desde Cuentas manuales.
+          </small>
         </div>
 
         <div class="movement-summary">
           <span>
-            Ingresos manuales:
+            Cobros de cuentas manuales:
             <strong>
-              S/ {{ caja.resumen.ingresosManuales | number:'1.2-2' }}
+              S/ {{ caja.resumen.pagosExternos | number:'1.2-2' }}
             </strong>
           </span>
 
@@ -429,8 +440,19 @@
                     class="origin-badge"
                     [class.auto]="movimiento.automatico"
                   >
-                    {{ movimiento.automatico ? 'Venta' : 'Manual' }}
+                    {{
+                      movimiento.idCuentaManual
+                        ? 'Cuenta manual'
+                        : movimiento.pagoExterno
+                          ? 'Pago externo'
+                          : movimiento.automatico
+                            ? 'Venta'
+                            : 'Manual'
+                    }}
                   </span>
+                  <small *ngIf="movimiento.metodoPago">
+                    {{ movimiento.metodoPago }}
+                  </small>
                 </td>
 
                 <td>
@@ -468,128 +490,48 @@
           </span>
         </header>
 
-        <div class="closing-checks-grid">
+        <p class="automatic-close-note">
+          El sistema tomará automáticamente todos los movimientos registrados.
+          No necesitas ingresar montos de efectivo, Yape ni transferencia.
+        </p>
+
+        <div class="closing-checks-grid automatic-close-grid">
           <section class="closing-check cash-check">
             <div class="expected-box">
-              <span>Efectivo esperado</span>
+              <span>Efectivo calculado</span>
               <strong>
                 S/ {{ caja.resumen.efectivoEsperado | number:'1.2-2' }}
               </strong>
               <small>
-                Monto inicial + efectivo cobrado
-                + ingresos manuales - egresos.
+                Apertura + cobros en efectivo
+                + cobros de cuentas manuales en efectivo - egresos.
               </small>
-            </div>
-
-            <div class="field">
-              <label for="montoContado">
-                Efectivo físico contado *
-              </label>
-
-              <div class="money-input large">
-                <span>S/</span>
-                <input
-                  id="montoContado"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  [(ngModel)]="montoContado"
-                />
-              </div>
-            </div>
-
-            <div
-              class="difference-box"
-              *ngIf="montoContado !== null"
-              [ngClass]="estadoDiferencia.toLowerCase()"
-            >
-              <div>
-                <span>Diferencia efectivo</span>
-                <strong>
-                  {{ diferenciaPrevia >= 0 ? '+ ' : '- ' }}
-                  S/
-                  {{
-                    (
-                      diferenciaPrevia >= 0
-                        ? diferenciaPrevia
-                        : -diferenciaPrevia
-                    )
-                      | number:'1.2-2'
-                  }}
-                </strong>
-              </div>
-
-              <p>
-                {{
-                  estadoDiferencia === 'CUADRADA'
-                    ? 'Efectivo cuadrado.'
-                    : estadoDiferencia === 'FALTANTE'
-                      ? 'Existe un faltante de efectivo.'
-                      : 'Existe un sobrante de efectivo.'
-                }}
-              </p>
             </div>
           </section>
 
           <section class="closing-check yape-check">
             <div class="expected-box yape-expected">
-              <span>Yape esperado</span>
+              <span>Yape calculado</span>
               <strong>
                 S/ {{ caja.resumen.yapeEsperado | number:'1.2-2' }}
               </strong>
               <small>
-                Verifica el monto recibido en la cuenta Yape
-                durante esta caja.
+                Incluye ventas, cancelaciones mensuales
+                y cobros de cuentas manuales recibidos por Yape.
               </small>
             </div>
+          </section>
 
-            <div class="field">
-              <label for="montoYapeConfirmado">
-                Yape confirmado *
-              </label>
-
-              <div class="money-input large">
-                <span>S/</span>
-                <input
-                  id="montoYapeConfirmado"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  [(ngModel)]="montoYapeConfirmado"
-                />
-              </div>
-            </div>
-
-            <div
-              class="difference-box"
-              *ngIf="montoYapeConfirmado !== null"
-              [ngClass]="estadoDiferenciaYape.toLowerCase()"
-            >
-              <div>
-                <span>Diferencia Yape</span>
-                <strong>
-                  {{ diferenciaYapePrevia >= 0 ? '+ ' : '- ' }}
-                  S/
-                  {{
-                    (
-                      diferenciaYapePrevia >= 0
-                        ? diferenciaYapePrevia
-                        : -diferenciaYapePrevia
-                    )
-                      | number:'1.2-2'
-                  }}
-                </strong>
-              </div>
-
-              <p>
-                {{
-                  estadoDiferenciaYape === 'CUADRADA'
-                    ? 'Yape cuadrado.'
-                    : estadoDiferenciaYape === 'FALTANTE'
-                      ? 'Faltan cobros por confirmar en Yape.'
-                      : 'Hay un monto mayor al esperado en Yape.'
-                }}
-              </p>
+          <section class="closing-check transfer-check">
+            <div class="expected-box">
+              <span>Transferencias calculadas</span>
+              <strong>
+                S/ {{ caja.resumen.transferencia | number:'1.2-2' }}
+              </strong>
+              <small>
+                Incluye ventas, cancelaciones mensuales
+                y cobros de cuentas manuales por transferencia.
+              </small>
             </div>
           </section>
         </div>
@@ -611,9 +553,7 @@
           class="close-cash-button"
           (click)="cerrarCaja()"
           [disabled]="
-            cerrando ||
-            montoContado === null ||
-            montoYapeConfirmado === null
+            cerrando
           "
         >
           <i
@@ -718,11 +658,10 @@
             <th>Total cobrado</th>
             <th>Efectivo</th>
             <th>Efec. esperado</th>
-            <th>Efec. contado</th>
-            <th>Dif. efectivo</th>
+            <th>Cierre efectivo</th>
             <th>Yape</th>
-            <th>Yape confirmado</th>
-            <th>Dif. Yape</th>
+            <th>Cierre Yape</th>
+            <th>Cuentas manuales</th>
             <th>Estado</th>
           </tr>
         </thead>
@@ -757,22 +696,6 @@
             </td>
 
             <td>
-              <span
-                class="difference-badge"
-                [ngClass]="classDiferencia(item.diferencia)"
-                *ngIf="item.diferencia !== null; else sinDiferencia"
-              >
-                {{ signoDiferencia(item.diferencia) }}
-                S/
-                {{
-                  diferenciaAbsoluta(item.diferencia)
-                    | number:'1.2-2'
-                }}
-              </span>
-              <ng-template #sinDiferencia>—</ng-template>
-            </td>
-
-            <td>
               S/ {{ item.yape | number:'1.2-2' }}
             </td>
 
@@ -783,21 +706,7 @@
               <ng-template #sinYapeConfirmado>—</ng-template>
             </td>
 
-            <td>
-              <span
-                class="difference-badge"
-                [ngClass]="classDiferencia(item.diferenciaYape)"
-                *ngIf="item.diferenciaYape !== null; else sinDiferenciaYape"
-              >
-                {{ signoDiferencia(item.diferenciaYape) }}
-                S/
-                {{
-                  diferenciaAbsoluta(item.diferenciaYape)
-                    | number:'1.2-2'
-                }}
-              </span>
-              <ng-template #sinDiferenciaYape>—</ng-template>
-            </td>
+            <td>S/ {{ item.pagosExternos | number:'1.2-2' }}</td>
 
             <td>
               <span

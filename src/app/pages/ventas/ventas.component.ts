@@ -702,10 +702,12 @@ export class VentasComponent implements AfterViewInit {
   }
 
   aplicarPagoTotal(): void {
-    if (this.pagoPorCredito) {
+    if (this.pagoPorCredito || this.pagoPorSeguro) {
       this.aCuenta = 0;
       this.mensaje =
-        'El crédito se cobra posteriormente a DS o Deyfor.';
+        this.pagoPorCredito
+          ? 'El crédito se cobra posteriormente a DS o Deyfor.'
+          : 'El seguro se cancela posteriormente en un único pago.';
       return;
     }
 
@@ -754,9 +756,7 @@ export class VentasComponent implements AfterViewInit {
     }
 
     if (this.pagoPorSeguro) {
-      this.aCuenta =
-        this.totalFinal();
-
+      this.aCuenta = 0;
       return;
     }
 
@@ -825,11 +825,10 @@ export class VentasComponent implements AfterViewInit {
     this.proyectoCredito = '';
 
     if (metodo === 'SEGURO') {
-      this.aCuenta =
-        this.totalFinal();
+      this.aCuenta = 0;
 
       this.mensaje =
-        'El seguro cubrirá la totalidad de la venta.';
+        'El seguro queda pendiente y se cancelará completo a fin de mes.';
     }
   }
 
@@ -1821,13 +1820,9 @@ export class VentasComponent implements AfterViewInit {
       );
 
     const adelanto =
-      this.pagoPorCredito
+      this.pagoPorCredito || this.pagoPorSeguro
         ? 0
-        : this.pagoPorSeguro
-          ? totalVenta
-          : Number(
-              this.aCuenta || 0
-            );
+        : Number(this.aCuenta || 0);
 
     if (
       !Number.isFinite(descuento) ||
@@ -2298,9 +2293,7 @@ export class VentasComponent implements AfterViewInit {
     }
 
     if (this.pagoPorSeguro) {
-      this.aCuenta =
-        this.totalFinal();
-
+      this.aCuenta = 0;
       return;
     }
 

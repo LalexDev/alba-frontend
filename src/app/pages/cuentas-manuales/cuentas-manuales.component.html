@@ -1,0 +1,947 @@
+<div class="manual-accounts-page">
+
+  <header class="page-header">
+    <div class="header-copy">
+      <span class="header-icon" aria-hidden="true">
+        <i class="bi bi-journal-text"></i>
+      </span>
+
+      <div>
+        <span class="eyebrow">VENTAS FUERA DEL SISTEMA</span>
+        <h1>Cuentas manuales</h1>
+        <p>
+          Registra ventas hechas en boletas u órdenes manuales,
+          controla lo cancelado y cobra el saldo sin modificar inventario.
+        </p>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="primary-button header-action"
+      (click)="abrirFormulario()"
+    >
+      <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>
+      Nueva cuenta manual
+    </button>
+  </header>
+
+  <section
+    class="cash-banner"
+    [class.open]="cajaAbierta"
+    [class.closed]="!cajaAbierta"
+  >
+    <span class="cash-banner-icon" aria-hidden="true">
+      <i
+        class="bi"
+        [ngClass]="
+          cajaAbierta
+            ? 'bi-unlock-fill'
+            : 'bi-lock-fill'
+        "
+      ></i>
+    </span>
+
+    <div>
+      <strong>
+        {{ cajaAbierta ? 'Caja abierta' : 'Caja cerrada' }}
+      </strong>
+      <span *ngIf="cajaAbierta">
+        Los pagos recibidos ahora ingresarán automáticamente
+        a la caja actual.
+      </span>
+      <span *ngIf="!cajaAbierta">
+        Puedes registrar deudas, pero debes abrir Caja antes de cobrar.
+      </span>
+    </div>
+
+    <small *ngIf="cajaAbierta && cajaFechaApertura">
+      Desde {{ fechaHoraTexto(cajaFechaApertura) }}
+    </small>
+  </section>
+
+  <p class="message success" *ngIf="mensaje">
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>{{ mensaje }}</span>
+  </p>
+
+  <p class="message error" *ngIf="error">
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+    <span>{{ error }}</span>
+  </p>
+
+  <section class="stats-grid">
+    <article class="stat-card">
+      <span class="stat-icon total" aria-hidden="true">
+        <i class="bi bi-receipt-cutoff"></i>
+      </span>
+      <div>
+        <small>Total registrado</small>
+        <strong>{{ moneda(totalRegistrado) }}</strong>
+        <span>{{ cuentas.length }} cuentas manuales</span>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-icon paid" aria-hidden="true">
+        <i class="bi bi-check2-circle"></i>
+      </span>
+      <div>
+        <small>Total cancelado</small>
+        <strong>{{ moneda(totalCancelado) }}</strong>
+        <span>Histórico más cobros registrados</span>
+      </div>
+    </article>
+
+    <article class="stat-card emphasized">
+      <span class="stat-icon pending" aria-hidden="true">
+        <i class="bi bi-hourglass-split"></i>
+      </span>
+      <div>
+        <small>Saldo por cobrar</small>
+        <strong>{{ moneda(totalPendiente) }}</strong>
+        <span>{{ cuentasPendientes }} cuentas pendientes</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="filters-card">
+    <div class="search-box">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <input
+        type="search"
+        [(ngModel)]="buscar"
+        (ngModelChange)="aplicarFiltros()"
+        placeholder="Buscar cliente, montura, teléfono o boleta..."
+        autocomplete="off"
+      />
+      <button
+        type="button"
+        *ngIf="buscar"
+        (click)="buscar = ''"
+        aria-label="Limpiar búsqueda"
+      >
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="filter-field">
+      <label for="estadoCuentaManual">Estado</label>
+      <select
+        id="estadoCuentaManual"
+        [(ngModel)]="filtroEstado"
+        (ngModelChange)="aplicarFiltros()"
+      >
+        <option value="TODAS">Todas las cuentas</option>
+        <option value="PENDIENTE">Pendientes</option>
+        <option value="PAGADA">Pagadas</option>
+      </select>
+    </div>
+
+    <button
+      type="button"
+      class="ghost-button"
+      (click)="limpiarFiltros()"
+    >
+      <i class="bi bi-funnel-x" aria-hidden="true"></i>
+      Limpiar
+    </button>
+  </section>
+
+  <div class="loading-panel" *ngIf="cargando">
+    <i class="bi bi-arrow-repeat spin" aria-hidden="true"></i>
+    <span>Cargando cuentas manuales...</span>
+  </div>
+
+  <ng-container *ngIf="!cargando">
+    <section
+      class="accounts-panel"
+      *ngIf="cuentasFiltradas.length; else sinCuentas"
+    >
+      <header class="panel-header">
+        <div>
+          <span class="eyebrow">SEGUIMIENTO DE SALDOS</span>
+          <h2>Ventas manuales registradas</h2>
+        </div>
+        <span class="result-count">
+          {{ cuentasFiltradas.length }} resultados
+        </span>
+      </header>
+
+      <div class="table-wrap">
+        <table class="accounts-table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Venta manual</th>
+              <th>Montura</th>
+              <th>Precio montura</th>
+              <th>Total</th>
+              <th>Cancelado</th>
+              <th>Debe</th>
+              <th>Estado</th>
+              <th class="actions-column">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let cuenta of cuentasFiltradas">
+              <td>
+                <div class="client-cell">
+                  <span class="avatar">
+                    {{ iniciales(cuenta.clienteNombre) }}
+                  </span>
+                  <div>
+                    <strong>{{ cuenta.clienteNombre }}</strong>
+                    <small>
+                      {{ cuenta.clienteTelefono || 'Sin teléfono' }}
+                    </small>
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                <strong>{{ cuenta.referencia || 'Sin referencia' }}</strong>
+                <small>{{ fechaTexto(cuenta.fechaVenta) }}</small>
+              </td>
+
+              <td>
+                <span class="frame-name">{{ cuenta.montura }}</span>
+              </td>
+
+              <td>{{ moneda(cuenta.precioVenta) }}</td>
+              <td><strong>{{ moneda(cuenta.totalVenta) }}</strong></td>
+              <td class="amount-paid">
+                {{ moneda(cuenta.montoCancelado) }}
+              </td>
+              <td class="amount-due">
+                {{ moneda(cuenta.saldoPendiente) }}
+              </td>
+
+              <td>
+                <span
+                  class="status-badge"
+                  [class.paid]="cuenta.estado === 'PAGADA'"
+                  [class.pending]="cuenta.estado === 'PENDIENTE'"
+                >
+                  <i
+                    class="bi"
+                    [ngClass]="
+                      cuenta.estado === 'PAGADA'
+                        ? 'bi-check-circle-fill'
+                        : 'bi-clock-fill'
+                    "
+                    aria-hidden="true"
+                  ></i>
+                  {{ cuenta.estado === 'PAGADA' ? 'Pagada' : 'Pendiente' }}
+                </span>
+              </td>
+
+              <td>
+                <div class="row-actions">
+                  <button
+                    type="button"
+                    class="pay-button"
+                    *ngIf="cuenta.estado === 'PENDIENTE'"
+                    (click)="abrirPago(cuenta)"
+                  >
+                    <i class="bi bi-cash-coin" aria-hidden="true"></i>
+                    Registrar pago
+                  </button>
+
+                  <button
+                    type="button"
+                    class="icon-button"
+                    (click)="abrirHistorial(cuenta)"
+                    title="Ver historial"
+                    [attr.aria-label]="
+                      'Ver historial de ' + cuenta.clienteNombre
+                    "
+                  >
+                    <i class="bi bi-clock-history" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-account-list">
+        <article
+          class="account-card"
+          *ngFor="let cuenta of cuentasFiltradas"
+        >
+          <header>
+            <div class="client-cell">
+              <span class="avatar">
+                {{ iniciales(cuenta.clienteNombre) }}
+              </span>
+              <div>
+                <strong>{{ cuenta.clienteNombre }}</strong>
+                <small>
+                  {{ cuenta.referencia || fechaTexto(cuenta.fechaVenta) }}
+                </small>
+              </div>
+            </div>
+
+            <span
+              class="status-badge"
+              [class.paid]="cuenta.estado === 'PAGADA'"
+              [class.pending]="cuenta.estado === 'PENDIENTE'"
+            >
+              {{ cuenta.estado === 'PAGADA' ? 'Pagada' : 'Pendiente' }}
+            </span>
+          </header>
+
+          <div class="mobile-frame">
+            <small>Montura</small>
+            <strong>{{ cuenta.montura }}</strong>
+          </div>
+
+          <div class="mobile-amounts">
+            <div>
+              <small>Precio montura</small>
+              <strong>{{ moneda(cuenta.precioVenta) }}</strong>
+            </div>
+            <div>
+              <small>Total</small>
+              <strong>{{ moneda(cuenta.totalVenta) }}</strong>
+            </div>
+            <div>
+              <small>Cancelado</small>
+              <strong class="amount-paid">
+                {{ moneda(cuenta.montoCancelado) }}
+              </strong>
+            </div>
+            <div>
+              <small>Debe</small>
+              <strong class="amount-due">
+                {{ moneda(cuenta.saldoPendiente) }}
+              </strong>
+            </div>
+          </div>
+
+          <footer>
+            <button
+              type="button"
+              class="pay-button"
+              *ngIf="cuenta.estado === 'PENDIENTE'"
+              (click)="abrirPago(cuenta)"
+            >
+              <i class="bi bi-cash-coin" aria-hidden="true"></i>
+              Registrar pago
+            </button>
+            <button
+              type="button"
+              class="ghost-button"
+              (click)="abrirHistorial(cuenta)"
+            >
+              <i class="bi bi-clock-history" aria-hidden="true"></i>
+              Historial
+            </button>
+          </footer>
+        </article>
+      </div>
+    </section>
+  </ng-container>
+
+  <ng-template #sinCuentas>
+    <section class="empty-state" *ngIf="!cargando">
+      <span aria-hidden="true">
+        <i class="bi bi-journal-x"></i>
+      </span>
+      <h2>No hay cuentas para mostrar</h2>
+      <p>
+        Registra la primera venta manual o modifica los filtros de búsqueda.
+      </p>
+      <button
+        type="button"
+        class="primary-button"
+        (click)="abrirFormulario()"
+      >
+        <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>
+        Nueva cuenta manual
+      </button>
+    </section>
+  </ng-template>
+
+  <!-- FORMULARIO DE NUEVA CUENTA -->
+  <div
+    class="modal-backdrop"
+    *ngIf="mostrarFormulario"
+    (click)="cerrarFormulario()"
+  >
+    <section
+      class="modal-card account-form-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tituloNuevaCuenta"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal-header">
+        <div>
+          <span class="eyebrow">NUEVA VENTA MANUAL</span>
+          <h2 id="tituloNuevaCuenta">Registrar cuenta por cobrar</h2>
+          <p>
+            Esta ficha no crea una venta ni modifica el inventario.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="close-button"
+          (click)="cerrarFormulario()"
+          aria-label="Cerrar formulario"
+        >
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <div class="modal-body">
+        <p class="inline-error" *ngIf="errorFormulario">
+          <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+          {{ errorFormulario }}
+        </p>
+
+        <section class="form-section">
+          <header>
+            <span class="step-number">1</span>
+            <div>
+              <h3>Cliente y documento manual</h3>
+              <p>Datos para encontrar la deuda posteriormente.</p>
+            </div>
+          </header>
+
+          <div class="form-grid three-columns">
+            <div class="field span-two">
+              <label for="manualCliente">
+                Nombre del cliente <em>*</em>
+              </label>
+              <input
+                id="manualCliente"
+                type="text"
+                [(ngModel)]="form.clienteNombre"
+                placeholder="Nombres y apellidos"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="field">
+              <label for="manualTelefono">Teléfono</label>
+              <input
+                id="manualTelefono"
+                type="tel"
+                [(ngModel)]="form.clienteTelefono"
+                placeholder="Ej. 987 654 321"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="field span-two">
+              <label for="manualReferencia">
+                Boleta u orden manual
+              </label>
+              <input
+                id="manualReferencia"
+                type="text"
+                [(ngModel)]="form.referencia"
+                placeholder="Ej. Boleta B001-000123"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="field">
+              <label for="manualFechaVenta">
+                Fecha de venta <em>*</em>
+              </label>
+              <input
+                id="manualFechaVenta"
+                type="date"
+                [(ngModel)]="form.fechaVenta"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <header>
+            <span class="step-number">2</span>
+            <div>
+              <h3>Montura e importes</h3>
+              <p>El saldo se calcula automáticamente.</p>
+            </div>
+          </header>
+
+          <div class="form-grid three-columns">
+            <div class="field span-three">
+              <label for="manualMontura">
+                Montura vendida <em>*</em>
+              </label>
+              <input
+                id="manualMontura"
+                type="text"
+                [(ngModel)]="form.montura"
+                placeholder="Marca, modelo, color o descripción"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="field">
+              <label for="manualPrecio">
+                Precio de la montura <em>*</em>
+              </label>
+              <div class="money-field">
+                <span>S/</span>
+                <input
+                  id="manualPrecio"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [(ngModel)]="form.precioVenta"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="manualTotal">
+                Total de la venta <em>*</em>
+              </label>
+              <div class="money-field">
+                <span>S/</span>
+                <input
+                  id="manualTotal"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  [(ngModel)]="form.totalVenta"
+                  (ngModelChange)="ajustarTotalFormulario()"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div class="field historical-field">
+              <label for="manualHistorico">
+                Ya cancelado anteriormente
+              </label>
+              <div class="money-field">
+                <span>S/</span>
+                <input
+                  id="manualHistorico"
+                  type="number"
+                  min="0"
+                  [max]="form.totalVenta || null"
+                  step="0.01"
+                  [(ngModel)]="form.montoCanceladoHistorico"
+                  (ngModelChange)="ajustarCanceladoHistorico()"
+                />
+              </div>
+              <small>No ingresa a la caja de hoy.</small>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section today-payment-section">
+          <header>
+            <span class="step-number">3</span>
+            <div>
+              <h3>Pago recibido hoy</h3>
+              <p>
+                Solo este monto se registrará en la caja abierta.
+              </p>
+            </div>
+          </header>
+
+          <div class="form-grid payment-columns">
+            <div class="field">
+              <label for="manualPagoHoy">Monto recibido hoy</label>
+              <div class="money-field">
+                <span>S/</span>
+                <input
+                  id="manualPagoHoy"
+                  type="number"
+                  min="0"
+                  [max]="maximoPagoHoy"
+                  step="0.01"
+                  [(ngModel)]="form.pagoRecibidoHoy"
+                  (ngModelChange)="ajustarPagoHoy()"
+                />
+              </div>
+              <small>
+                Máximo disponible: {{ moneda(maximoPagoHoy) }}
+              </small>
+            </div>
+
+            <div class="field">
+              <label for="manualMetodoHoy">Medio recibido</label>
+              <select
+                id="manualMetodoHoy"
+                [(ngModel)]="form.metodoPagoHoy"
+                [disabled]="!form.pagoRecibidoHoy"
+              >
+                <option value="EFECTIVO">Efectivo</option>
+                <option value="YAPE">Yape</option>
+                <option value="TRANSFERENCIA">Transferencia</option>
+              </select>
+            </div>
+
+            <div class="field span-two">
+              <label for="manualObservaciones">Observaciones</label>
+              <textarea
+                id="manualObservaciones"
+                rows="2"
+                [(ngModel)]="form.observaciones"
+                placeholder="Detalle adicional de la venta manual"
+              ></textarea>
+            </div>
+          </div>
+
+          <p
+            class="cash-closed-note"
+            *ngIf="!cajaAbierta && form.pagoRecibidoHoy"
+          >
+            <i class="bi bi-lock-fill" aria-hidden="true"></i>
+            Abre la caja para registrar un pago recibido hoy.
+          </p>
+        </section>
+
+        <section class="form-totals">
+          <div>
+            <small>Total venta</small>
+            <strong>{{ moneda(form.totalVenta || 0) }}</strong>
+          </div>
+          <div>
+            <small>Total cancelado</small>
+            <strong class="paid-text">
+              {{ moneda(canceladoFormulario) }}
+            </strong>
+          </div>
+          <div class="due-total">
+            <small>Cuánto debe</small>
+            <strong>{{ moneda(saldoFormulario) }}</strong>
+          </div>
+        </section>
+      </div>
+
+      <footer class="modal-footer">
+        <button
+          type="button"
+          class="ghost-button"
+          (click)="cerrarFormulario()"
+          [disabled]="guardando"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="primary-button"
+          (click)="guardarCuenta()"
+          [disabled]="guardando"
+        >
+          <i
+            class="bi"
+            [ngClass]="
+              guardando
+                ? 'bi-arrow-repeat spin'
+                : 'bi-floppy-fill'
+            "
+            aria-hidden="true"
+          ></i>
+          {{ guardando ? 'Guardando...' : 'Guardar cuenta' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+
+  <!-- REGISTRAR PAGO -->
+  <div
+    class="modal-backdrop"
+    *ngIf="mostrarPago"
+    (click)="cerrarPago()"
+  >
+    <section
+      class="modal-card payment-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tituloPagoCuenta"
+      (click)="$event.stopPropagation()"
+    >
+      <ng-container *ngIf="cuentaSeleccionada as cuenta">
+        <header class="modal-header compact">
+          <div>
+            <span class="eyebrow">COBRO DE SALDO</span>
+            <h2 id="tituloPagoCuenta">Registrar pago</h2>
+            <p>{{ cuenta.clienteNombre }} · {{ cuenta.montura }}</p>
+          </div>
+          <button
+            type="button"
+            class="close-button"
+            (click)="cerrarPago()"
+            aria-label="Cerrar pago"
+          >
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="modal-body">
+          <p class="inline-error" *ngIf="errorPago">
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+            {{ errorPago }}
+          </p>
+
+          <div class="payment-summary">
+            <div>
+              <small>Total venta</small>
+              <strong>{{ moneda(cuenta.totalVenta) }}</strong>
+            </div>
+            <div>
+              <small>Ya canceló</small>
+              <strong class="paid-text">
+                {{ moneda(cuenta.montoCancelado) }}
+              </strong>
+            </div>
+            <div class="due-total">
+              <small>Saldo actual</small>
+              <strong>{{ moneda(cuenta.saldoPendiente) }}</strong>
+            </div>
+          </div>
+
+          <div class="form-grid payment-form-grid">
+            <div class="field">
+              <label for="cuentaMontoPago">Monto recibido</label>
+              <div class="money-field large">
+                <span>S/</span>
+                <input
+                  id="cuentaMontoPago"
+                  type="number"
+                  min="0.01"
+                  [max]="cuenta.saldoPendiente"
+                  step="0.01"
+                  [(ngModel)]="montoPago"
+                  (ngModelChange)="ajustarMontoPago()"
+                />
+              </div>
+              <button
+                type="button"
+                class="full-balance-button"
+                (click)="pagarSaldoCompleto()"
+              >
+                Usar saldo completo
+              </button>
+            </div>
+
+            <div class="field">
+              <label for="cuentaMetodoPago">Medio recibido</label>
+              <select
+                id="cuentaMetodoPago"
+                [(ngModel)]="metodoPago"
+              >
+                <option value="EFECTIVO">Efectivo</option>
+                <option value="YAPE">Yape</option>
+                <option value="TRANSFERENCIA">Transferencia</option>
+              </select>
+            </div>
+
+            <div class="field span-two">
+              <label for="cuentaObservacionPago">
+                Observación del pago
+              </label>
+              <textarea
+                id="cuentaObservacionPago"
+                rows="2"
+                [(ngModel)]="observacionesPago"
+                placeholder="Ej. cancelación del saldo de la boleta manual"
+              ></textarea>
+            </div>
+          </div>
+
+          <p
+            class="payment-destination"
+            [class.closed]="!cajaAbierta"
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                cajaAbierta
+                  ? 'bi-cash-stack'
+                  : 'bi-lock-fill'
+              "
+              aria-hidden="true"
+            ></i>
+            {{
+              cajaAbierta
+                ? 'Este monto ingresará ahora a la caja abierta y no modificará inventario.'
+                : 'La caja está cerrada. Ábrela antes de guardar el pago.'
+            }}
+          </p>
+        </div>
+
+        <footer class="modal-footer">
+          <button
+            type="button"
+            class="ghost-button"
+            (click)="cerrarPago()"
+            [disabled]="guardandoPago"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="primary-button"
+            (click)="registrarPago()"
+            [disabled]="guardandoPago || !cajaAbierta"
+          >
+            <i
+              class="bi"
+              [ngClass]="
+                guardandoPago
+                  ? 'bi-arrow-repeat spin'
+                  : 'bi-check2-circle'
+              "
+              aria-hidden="true"
+            ></i>
+            {{ guardandoPago ? 'Registrando...' : 'Confirmar pago' }}
+          </button>
+        </footer>
+      </ng-container>
+    </section>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div
+    class="modal-backdrop"
+    *ngIf="mostrarHistorial"
+    (click)="cerrarHistorial()"
+  >
+    <section
+      class="modal-card history-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tituloHistorialCuenta"
+      (click)="$event.stopPropagation()"
+    >
+      <ng-container *ngIf="cuentaSeleccionada as cuenta">
+        <header class="modal-header compact">
+          <div>
+            <span class="eyebrow">TRAZABILIDAD DE COBROS</span>
+            <h2 id="tituloHistorialCuenta">Historial de pagos</h2>
+            <p>{{ cuenta.clienteNombre }} · {{ cuenta.referencia || cuenta.montura }}</p>
+          </div>
+          <button
+            type="button"
+            class="close-button"
+            (click)="cerrarHistorial()"
+            aria-label="Cerrar historial"
+          >
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="modal-body">
+          <p class="inline-error" *ngIf="errorPago">
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+            {{ errorPago }}
+          </p>
+
+          <div class="history-account-summary">
+            <span>
+              Total <strong>{{ moneda(cuenta.totalVenta) }}</strong>
+            </span>
+            <span>
+              Cancelado
+              <strong class="paid-text">
+                {{ moneda(cuenta.montoCancelado) }}
+              </strong>
+            </span>
+            <span>
+              Debe
+              <strong class="amount-due">
+                {{ moneda(cuenta.saldoPendiente) }}
+              </strong>
+            </span>
+          </div>
+
+          <div class="history-loading" *ngIf="cargandoHistorial">
+            <i class="bi bi-arrow-repeat spin" aria-hidden="true"></i>
+            Consultando pagos...
+          </div>
+
+          <div class="payment-timeline" *ngIf="!cargandoHistorial">
+            <article
+              class="timeline-item historical"
+              *ngIf="cuenta.montoCanceladoHistorico > 0"
+            >
+              <span class="timeline-icon" aria-hidden="true">
+                <i class="bi bi-archive-fill"></i>
+              </span>
+              <div>
+                <header>
+                  <strong>Monto cancelado anteriormente</strong>
+                  <b>{{ moneda(cuenta.montoCanceladoHistorico) }}</b>
+                </header>
+                <p>
+                  Importe histórico declarado al crear la ficha.
+                  No ingresó a una caja del sistema.
+                </p>
+              </div>
+            </article>
+
+            <article
+              class="timeline-item"
+              *ngFor="let pago of pagosSeleccionados"
+            >
+              <span class="timeline-icon" aria-hidden="true">
+                <i class="bi bi-cash-coin"></i>
+              </span>
+              <div>
+                <header>
+                  <strong>{{ fechaHoraTexto(pago.fechaPago) }}</strong>
+                  <b>{{ moneda(pago.monto) }}</b>
+                </header>
+                <p>
+                  {{ metodoTexto(pago.metodoPago) | titlecase }}
+                  · Caja #{{ pago.idCaja }}
+                  · {{ pago.usuario }}
+                </p>
+                <small *ngIf="pago.observaciones">
+                  {{ pago.observaciones }}
+                </small>
+              </div>
+            </article>
+
+            <div
+              class="no-payments"
+              *ngIf="
+                !pagosSeleccionados.length &&
+                cuenta.montoCanceladoHistorico === 0
+              "
+            >
+              <i class="bi bi-clock-history" aria-hidden="true"></i>
+              <p>Todavía no se registraron pagos para esta cuenta.</p>
+            </div>
+          </div>
+        </div>
+
+        <footer class="modal-footer">
+          <button
+            type="button"
+            class="ghost-button"
+            (click)="cerrarHistorial()"
+          >
+            Cerrar
+          </button>
+          <button
+            type="button"
+            class="primary-button"
+            *ngIf="cuenta.estado === 'PENDIENTE'"
+            (click)="mostrarHistorial = false; abrirPago(cuenta)"
+          >
+            <i class="bi bi-cash-coin" aria-hidden="true"></i>
+            Registrar pago
+          </button>
+        </footer>
+      </ng-container>
+    </section>
+  </div>
+</div>

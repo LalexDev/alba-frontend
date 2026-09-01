@@ -267,13 +267,10 @@ export class VentaService {
     );
 
     const adelanto =
-      metodo === 'CREDITO'
+      metodo === 'CREDITO' ||
+      metodo === 'SEGURO'
         ? 0
-        : metodo === 'SEGURO'
-          ? totalCarrito
-          : Number(
-              aCuenta || 0
-            );
+        : Number(aCuenta || 0);
 
     if (
       !Number.isFinite(adelanto) ||
@@ -483,11 +480,17 @@ export class VentaService {
       total:
         Number(resultado.total),
       aCuenta:
-        Number(resultado.a_cuenta),
+        metodo === 'SEGURO'
+          ? 0
+          : Number(resultado.a_cuenta),
       saldo:
-        Number(resultado.saldo),
+        metodo === 'SEGURO'
+          ? Number(resultado.total)
+          : Number(resultado.saldo),
       estadoPago:
-        resultado.estado_pago
+        metodo === 'SEGURO'
+          ? 'PENDIENTE'
+          : resultado.estado_pago
     };
   }
 

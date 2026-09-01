@@ -5,7 +5,9 @@ import {
   CajaActual,
   CajaHistorial,
   CerrarCajaRequest,
+  MetodoCaja,
   MovimientoCaja,
+  RegistrarPagoExternoCajaRequest,
   RegistrarMovimientoCajaRequest
 } from '../models/caja.model';
 
@@ -51,42 +53,10 @@ export class CajaService {
 
   cerrarCaja(request: CerrarCajaRequest): Observable<CajaActual> {
     return defer(async () => {
-      const efectivo =
-        Number(request.montoCierreReal);
-
-      const yape =
-        Number(request.montoYapeConfirmado);
-
-      if (
-        !Number.isFinite(efectivo) ||
-        efectivo < 0
-      ) {
-        throw new Error(
-          'El efectivo contado no es válido.'
-        );
-      }
-
-      if (
-        !Number.isFinite(yape) ||
-        yape < 0
-      ) {
-        throw new Error(
-          'El monto confirmado de Yape no es válido.'
-        );
-      }
-
       const { error } =
         await this.supabaseService.client.rpc(
-          'cerrar_caja',
+          'cerrar_caja_automatico',
           {
-            p_monto_cierre_real:
-              Number(
-                efectivo.toFixed(2)
-              ),
-            p_monto_yape_confirmado:
-              Number(
-                yape.toFixed(2)
-              ),
             p_observaciones:
               String(
                 request.observaciones ||
@@ -104,6 +74,42 @@ export class CajaService {
       }
 
       return await this.obtenerCajaActualInterna();
+    });
+  }
+
+  registrarPagoExterno(
+    request: RegistrarPagoExternoCajaRequest
+  ): Observable<void> {
+    return defer(async () => {
+      const concepto = String(request.concepto || '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const monto = Number(request.monto);
+
+      if (concepto.length < 4) {
+        throw new Error(
+          'Escribe el concepto del pago externo.'
+        );
+      }
+
+      if (!Number.isFinite(monto) || monto <= 0) {
+        throw new Error('El monto debe ser mayor que cero.');
+      }
+
+      const { error } =
+        await this.supabaseService.client.rpc(
+          'registrar_pago_externo_caja',
+          {
+            p_concepto: concepto,
+            p_monto: Number(monto.toFixed(2)),
+            p_metodo_pago: request.metodoPago
+          }
+        );
+
+      if (error) {
+        throw new Error(this.traducirError(error.message));
+      }
     });
   }
 
@@ -160,6 +166,11 @@ export class CajaService {
             item['id_venta'] === null || item['id_venta'] === undefined
               ? null
               : Number(item['id_venta']),
+          idCuentaManual:
+            item['id_cuenta_manual'] === null ||
+            item['id_cuenta_manual'] === undefined
+              ? null
+              : Number(item['id_cuenta_manual']),
           tipo:
             String(item['tipo'] || 'INGRESO') === 'EGRESO'
               ? 'EGRESO'
@@ -167,7 +178,10 @@ export class CajaService {
           concepto: String(item['concepto'] || ''),
           monto: this.numero(item['monto']),
           fecha: String(item['fecha'] || ''),
-          automatico: Boolean(item['automatico'])
+          automatico: Boolean(item['automatico']),
+          pagoExterno: Boolean(item['pago_externo']),
+          metodoPago:
+            this.metodoCaja(item['metodo_pago'])
         })
       );
     });
@@ -240,6 +254,15 @@ export class CajaService {
           yape: this.numero(item['yape']),
           transferencia: this.numero(item['transferencia']),
           seguro: this.numero(item['seguro']),
+          seguroPendiente: this.numero(item['seguro_pendiente']),
+          segurosCobradosHoy: this.numero(item['seguros_cobrados_hoy']),
+          pagosExternos: this.numero(item['pagos_externos']),
+          pagosExternosEfectivo:
+            this.numero(item['pagos_externos_efectivo']),
+          pagosExternosYape:
+            this.numero(item['pagos_externos_yape']),
+          pagosExternosTransferencia:
+            this.numero(item['pagos_externos_transferencia']),
           ingresosManuales: this.numero(item['ingresos_manuales']),
           egresosManuales: this.numero(item['egresos_manuales'])
         })
@@ -298,6 +321,18 @@ export class CajaService {
         yape: this.numero(resumen['yape']),
         transferencia: this.numero(resumen['transferencia']),
         seguro: this.numero(resumen['seguro']),
+        seguroPendiente:
+          this.numero(resumen['seguro_pendiente']),
+        segurosCobradosHoy:
+          this.numero(resumen['seguros_cobrados_hoy']),
+        pagosExternos:
+          this.numero(resumen['pagos_externos']),
+        pagosExternosEfectivo:
+          this.numero(resumen['pagos_externos_efectivo']),
+        pagosExternosYape:
+          this.numero(resumen['pagos_externos_yape']),
+        pagosExternosTransferencia:
+          this.numero(resumen['pagos_externos_transferencia']),
         ingresosManuales: this.numero(resumen['ingresos_manuales']),
         egresosManuales: this.numero(resumen['egresos_manuales']),
         efectivoEsperado:
@@ -333,6 +368,16 @@ export class CajaService {
     return Number.isFinite(numero)
       ? Number(numero.toFixed(2))
       : 0;
+  }
+
+  private metodoCaja(valor: unknown): MetodoCaja | null {
+    const metodo = String(valor || '').toUpperCase();
+
+    return metodo === 'EFECTIVO' ||
+      metodo === 'YAPE' ||
+      metodo === 'TRANSFERENCIA'
+        ? metodo as MetodoCaja
+        : null;
   }
 
   private traducirError(mensaje: string): string {
@@ -375,7 +420,7 @@ export class CajaService {
       texto.includes('could not find the function') ||
       texto.includes('schema cache')
     ) {
-      return 'Falta ejecutar 43_caja_general_compartida_yape.sql y luego 44_credito_ds_deyfor.sql en Supabase.';
+      return 'Falta ejecutar 49_cierre_automatico_pagos_institucionales.sql en Supabase.';
     }
 
     return mensaje || 'No se pudo procesar la operación de caja.';

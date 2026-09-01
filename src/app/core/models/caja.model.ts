@@ -6,6 +6,11 @@ export type TipoMovimientoCaja =
   'INGRESO' |
   'EGRESO';
 
+export type MetodoCaja =
+  'EFECTIVO' |
+  'YAPE' |
+  'TRANSFERENCIA';
+
 export interface CajaResumen {
   cantidadVentas: number;
   totalVendido: number;
@@ -16,6 +21,14 @@ export interface CajaResumen {
   yape: number;
   transferencia: number;
   seguro: number;
+
+  seguroPendiente: number;
+  segurosCobradosHoy: number;
+
+  pagosExternos: number;
+  pagosExternosEfectivo: number;
+  pagosExternosYape: number;
+  pagosExternosTransferencia: number;
 
   ingresosManuales: number;
   egresosManuales: number;
@@ -41,8 +54,6 @@ export interface CajaActual {
 }
 
 export interface CerrarCajaRequest {
-  montoCierreReal: number;
-  montoYapeConfirmado: number;
   observaciones: string;
 }
 
@@ -52,15 +63,24 @@ export interface RegistrarMovimientoCajaRequest {
   monto: number;
 }
 
+export interface RegistrarPagoExternoCajaRequest {
+  concepto: string;
+  monto: number;
+  metodoPago: MetodoCaja;
+}
+
 export interface MovimientoCaja {
   idMovimiento: number;
   idCaja: number;
   idVenta: number | null;
+  idCuentaManual: number | null;
   tipo: TipoMovimientoCaja;
   concepto: string;
   monto: number;
   fecha: string;
   automatico: boolean;
+  pagoExterno: boolean;
+  metodoPago: MetodoCaja | null;
 }
 
 export interface CajaHistorial {
@@ -91,6 +111,14 @@ export interface CajaHistorial {
   yape: number;
   transferencia: number;
   seguro: number;
+
+  seguroPendiente: number;
+  segurosCobradosHoy: number;
+
+  pagosExternos: number;
+  pagosExternosEfectivo: number;
+  pagosExternosYape: number;
+  pagosExternosTransferencia: number;
 
   ingresosManuales: number;
   egresosManuales: number;

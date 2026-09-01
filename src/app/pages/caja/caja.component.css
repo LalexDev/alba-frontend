@@ -605,6 +605,18 @@ button:disabled {
   margin-bottom: 18px;
 }
 
+.panel-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.panel-actions a.secondary-button {
+  text-decoration: none;
+}
+
 .panel-header h2,
 .history-header h2 {
   margin: 0;
@@ -615,7 +627,7 @@ button:disabled {
 
 .movement-form {
   display: grid;
-  grid-template-columns: 150px minmax(220px, 1fr) 150px auto;
+  grid-template-columns: minmax(220px, 1fr) 150px auto;
   align-items: end;
   gap: 12px;
   margin-bottom: 16px;
@@ -623,6 +635,13 @@ button:disabled {
   border: 1px solid var(--blue-border);
   border-radius: 14px;
   background: var(--blue-soft);
+}
+
+.external-payment-note {
+  grid-column: 1 / -1;
+  color: var(--blue-dark);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .movement-save {
@@ -713,6 +732,14 @@ button:disabled {
 .origin-badge.auto {
   color: var(--blue-dark);
   background: var(--blue-soft);
+}
+
+.origin-badge + small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
 }
 
 .movement-badge {
@@ -1015,6 +1042,19 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .panel-header {
+    flex-direction: column;
+  }
+
+  .panel-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .panel-actions .secondary-button {
+    flex: 1 1 180px;
+  }
+
   .history-actions {
     width: 100%;
   }
@@ -1090,6 +1130,26 @@ textarea:focus-visible {
   gap: 14px;
 }
 
+.automatic-close-note {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid #8fd1ec;
+  border-radius: 13px;
+  color: var(--blue-dark);
+  background: #f0f9ff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.automatic-close-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.transfer-check {
+  border-color: #b8c4d8;
+}
+
 .closing-check {
   min-width: 0;
   padding: 13px;
@@ -1116,7 +1176,8 @@ textarea:focus-visible {
 }
 
 @media (max-width: 1500px) {
-  .closing-checks-grid {
+  .closing-checks-grid,
+  .automatic-close-grid {
     grid-template-columns: 1fr;
   }
 }
