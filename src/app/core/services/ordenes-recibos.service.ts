@@ -7,6 +7,8 @@ import type {
   CorreccionMetodoPagoRequest,
   CorreccionMetodoPagoResultado,
   DetalleOrdenItem,
+  EditarOrdenClienteMonturaRequest,
+  EditarOrdenClienteMonturaResultado,
   EstadoOrden,
   EstadoPagoOrden,
   OrdenRecibo,
@@ -27,8 +29,11 @@ interface ClienteDb {
   nombres?: string | null;
   apellidos?: string | null;
   razon_social?: string | null;
+  tipo_documento?: string | null;
   telefono?: string | null;
   numero_documento?: string | null;
+  email?: string | null;
+  direccion?: string | null;
 }
 
 interface VentaDb {
@@ -71,6 +76,7 @@ interface ProductoDb {
   color?: string | null;
   medida?: string | null;
   material?: string | null;
+  precio_venta?: number | string | null;
   stock_actual?: number | string | null;
   codigo_barras?: string | null;
   activo?: boolean | null;
@@ -133,8 +139,11 @@ export class OrdenesRecibosService {
               nombres,
               apellidos,
               razon_social,
+              tipo_documento,
               telefono,
-              numero_documento
+              numero_documento,
+              email,
+              direccion
             )
           `)
           .eq(
@@ -191,8 +200,11 @@ export class OrdenesRecibosService {
                 nombres,
                 apellidos,
                 razon_social,
+                tipo_documento,
                 telefono,
-                numero_documento
+                numero_documento,
+                email,
+                direccion
               )
             `)
             .eq('id_venta', idVenta)
@@ -302,6 +314,7 @@ export class OrdenesRecibosService {
         modelo,
         color,
         medida,
+        precio_venta,
         stock_actual,
         activo,
         marca:marcas (
@@ -521,6 +534,170 @@ export class OrdenesRecibosService {
               'montura_nueva'
             ] || ''
           )
+      };
+    });
+  }
+
+  editarOrdenClienteMontura(
+    request: EditarOrdenClienteMonturaRequest
+  ): Observable<EditarOrdenClienteMonturaResultado> {
+    return defer(async () => {
+      const nombres = String(
+        request.nombres || ''
+      ).replace(/\s+/g, ' ').trim();
+
+      const apellidos = String(
+        request.apellidos || ''
+      ).replace(/\s+/g, ' ').trim();
+
+      if (
+        !Number.isInteger(request.idVenta) ||
+        request.idVenta <= 0
+      ) {
+        throw new Error(
+          'La orden seleccionada no es válida.'
+        );
+      }
+
+      if (!nombres) {
+        throw new Error(
+          'Ingresa los nombres del cliente.'
+        );
+      }
+
+      const precioMontura =
+        request.idProductoMontura
+          ? Number(request.precioMontura || 0)
+          : null;
+
+      if (
+        request.idProductoMontura &&
+        (
+          !Number.isFinite(precioMontura) ||
+          Number(precioMontura) <= 0
+        )
+      ) {
+        throw new Error(
+          'El precio de venta de la montura debe ser mayor que cero.'
+        );
+      }
+
+      const { data, error } =
+        await this.supabaseService.client.rpc(
+          'editar_orden_cliente_montura',
+          {
+            p_id_venta: request.idVenta,
+            p_nombres: nombres,
+            p_apellidos: apellidos || null,
+            p_tipo_documento:
+              request.tipoDocumento,
+            p_numero_documento:
+              String(
+                request.numeroDocumento || ''
+              ).trim() || null,
+            p_telefono:
+              String(
+                request.telefono || ''
+              ).trim() || null,
+            p_email:
+              String(
+                request.correo || ''
+              ).trim().toLowerCase() || null,
+            p_direccion:
+              String(
+                request.direccion || ''
+              ).trim() || null,
+            p_id_detalle_montura:
+              request.idDetalleMontura || null,
+            p_id_producto_montura:
+              request.idProductoMontura || null,
+            p_precio_montura:
+              precioMontura === null
+                ? null
+                : Number(
+                    precioMontura.toFixed(2)
+                  ),
+            p_motivo:
+              String(
+                request.motivo || ''
+              ).trim() || null
+          }
+        );
+
+      if (error) {
+        throw new Error(
+          this.traducirError(error.message)
+        );
+      }
+
+      const resultado =
+        (data || {}) as Record<string, unknown>;
+
+      return {
+        idVenta: Number(
+          resultado['id_venta'] ||
+          request.idVenta
+        ),
+        idCliente: Number(
+          resultado['id_cliente'] || 0
+        ),
+        totalAnterior: this.numero(
+          resultado['total_anterior'] as
+            number | string | null
+        ),
+        totalNuevo: this.numero(
+          resultado['total_nuevo'] as
+            number | string | null
+        ),
+        montoCancelado: this.numero(
+          resultado['monto_cancelado'] as
+            number | string | null
+        ),
+        saldo: this.numero(
+          resultado['saldo'] as
+            number | string | null
+        ),
+        estadoPago: this.estadoPagoSeguro(
+          String(
+            resultado['estado_pago'] || ''
+          )
+        ),
+        estadoOrden: this.estadoSeguro(
+          String(
+            resultado['estado_orden'] || ''
+          )
+        ),
+        monturaModificada: Boolean(
+          resultado['montura_modificada']
+        ),
+        idProductoAnterior:
+          resultado['id_producto_anterior'] === null ||
+          resultado['id_producto_anterior'] === undefined
+            ? null
+            : Number(
+                resultado['id_producto_anterior']
+              ),
+        idProductoNuevo:
+          resultado['id_producto_nuevo'] === null ||
+          resultado['id_producto_nuevo'] === undefined
+            ? null
+            : Number(
+                resultado['id_producto_nuevo']
+              ),
+        stockAnteriorDevuelto:
+          resultado['stock_anterior_devuelto'] === null ||
+          resultado['stock_anterior_devuelto'] === undefined
+            ? null
+            : Number(
+                resultado['stock_anterior_devuelto']
+              ),
+        stockNuevoRestante:
+          resultado['stock_nuevo_restante'] === null ||
+          resultado['stock_nuevo_restante'] === undefined
+            ? null
+            : Number(
+                resultado['stock_nuevo_restante']
+              )
       };
     });
   }
@@ -1042,10 +1219,27 @@ export class OrdenesRecibosService {
           ? null
           : Number(fila.id_cliente),
       cliente: nombreCliente,
+      nombresCliente:
+        cliente?.nombres ||
+        cliente?.razon_social ||
+        '',
+      apellidosCliente:
+        cliente?.apellidos || '',
+      tipoDocumento:
+        cliente?.tipo_documento === 'RUC' ||
+        cliente?.tipo_documento === 'CE' ||
+        cliente?.tipo_documento === 'PASAPORTE' ||
+        cliente?.tipo_documento === 'SIN_DOCUMENTO'
+          ? cliente.tipo_documento
+          : 'DNI',
       telefono:
         cliente?.telefono || '',
       documento:
         cliente?.numero_documento || '',
+      correo:
+        cliente?.email || '',
+      direccion:
+        cliente?.direccion || '',
       fechaVenta: fila.fecha_venta,
       fechaEntrega:
         fila.fecha_entrega ?? null,
@@ -1225,6 +1419,10 @@ export class OrdenesRecibosService {
           fila.medida ||
           ''
         ),
+      precioVenta:
+        this.numero(
+          fila.precio_venta
+        ),
       stockActual:
         this.numero(
           fila.stock_actual
@@ -1323,6 +1521,30 @@ export class OrdenesRecibosService {
     const texto = String(
       mensaje || ''
     ).toLowerCase();
+
+    if (
+      texto.includes(
+        'editar_orden_cliente_montura'
+      )
+    ) {
+      return 'Falta ejecutar 51_editar_orden_cliente_montura.sql en Supabase.';
+    }
+
+    if (
+      texto.includes(
+        'documento del cliente ya está registrado'
+      )
+    ) {
+      return 'El documento ingresado ya pertenece a otro cliente.';
+    }
+
+    if (
+      texto.includes(
+        'total actualizado no puede ser menor'
+      )
+    ) {
+      return 'El nuevo total no puede quedar por debajo de lo que el cliente ya pagó.';
+    }
 
     if (
       texto.includes(

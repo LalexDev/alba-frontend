@@ -34,13 +34,25 @@ export type MetodoPagoAbonoOrden =
   | 'TRANSFERENCIA'
   | 'SEGURO';
 
+export type TipoDocumentoOrden =
+  | 'DNI'
+  | 'RUC'
+  | 'CE'
+  | 'PASAPORTE'
+  | 'SIN_DOCUMENTO';
+
 export interface OrdenRecibo {
   idVenta: number;
   numeroOrden: string;
   idCliente: number | null;
   cliente: string;
+  nombresCliente: string;
+  apellidosCliente: string;
+  tipoDocumento: TipoDocumentoOrden;
   telefono: string;
   documento: string;
+  correo: string;
+  direccion: string;
   fechaVenta: string;
   fechaEntrega?: string | null;
   tipo: TipoDocumentoInterno;
@@ -154,6 +166,7 @@ export interface MonturaCambioOption {
   modelo: string;
   color: string;
   medida: string;
+  precioVenta: number;
   stockActual: number;
 }
 
@@ -174,6 +187,37 @@ export interface CambioMonturaResultado {
   stockNuevoRestante: number;
   monturaAnterior: string;
   monturaNueva: string;
+}
+
+export interface EditarOrdenClienteMonturaRequest {
+  idVenta: number;
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: TipoDocumentoOrden;
+  numeroDocumento?: string;
+  telefono?: string;
+  correo?: string;
+  direccion?: string;
+  idDetalleMontura?: number | null;
+  idProductoMontura?: number | null;
+  precioMontura?: number | null;
+  motivo?: string;
+}
+
+export interface EditarOrdenClienteMonturaResultado {
+  idVenta: number;
+  idCliente: number;
+  totalAnterior: number;
+  totalNuevo: number;
+  montoCancelado: number;
+  saldo: number;
+  estadoPago: EstadoPagoOrden;
+  estadoOrden: EstadoOrden;
+  monturaModificada: boolean;
+  idProductoAnterior: number | null;
+  idProductoNuevo: number | null;
+  stockAnteriorDevuelto: number | null;
+  stockNuevoRestante: number | null;
 }
 
 

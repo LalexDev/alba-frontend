@@ -501,11 +501,11 @@
                     type="button"
                     class="change-frame-action"
                     (click)="abrirCambioMontura(orden)"
-                    title="Cambiar montura"
-                    aria-label="Cambiar montura"
+                    title="Editar cliente o montura"
+                    aria-label="Editar cliente o montura"
                   >
                     <i
-                      class="bi bi-arrow-left-right"
+                      class="bi bi-pencil-square"
                       aria-hidden="true"
                     ></i>
                   </button>
@@ -1545,7 +1545,7 @@
           </span>
 
           <h2 id="tituloCambioMontura">
-            Cambiar montura
+            Editar orden
           </h2>
 
           <p *ngIf="ordenCambioMontura">
@@ -1586,15 +1586,126 @@
           ordenCambioMontura
         "
       >
-        <section class="frame-change-step">
+        <section class="frame-change-step customer-edit-step">
           <div class="frame-step-title">
             <span>1</span>
             <div>
-              <strong>Montura que regresa al stock</strong>
+              <strong>Datos del cliente</strong>
               <small>
-                Selecciona la montura entregada originalmente.
+                Completa o corrige los datos que aparecerán en la nueva boleta.
               </small>
             </div>
+          </div>
+
+          <div class="customer-edit-grid">
+            <label class="customer-edit-field full-width">
+              <span>Nombres completos *</span>
+              <input
+                type="text"
+                maxlength="180"
+                [(ngModel)]="nombreCompletoClienteEdicion"
+                [disabled]="guardandoCambioMontura"
+                placeholder="Nombres y apellidos del cliente"
+              />
+            </label>
+
+            <label class="customer-edit-field">
+              <span>Tipo de documento</span>
+              <select
+                [(ngModel)]="tipoDocumentoEdicion"
+                [disabled]="guardandoCambioMontura"
+              >
+                <option value="DNI">DNI</option>
+                <option value="RUC">RUC</option>
+                <option value="CE">Carné de extranjería</option>
+                <option value="PASAPORTE">Pasaporte</option>
+                <option value="SIN_DOCUMENTO">Sin documento</option>
+              </select>
+            </label>
+
+            <label class="customer-edit-field">
+              <span>Número de documento</span>
+              <input
+                type="text"
+                maxlength="20"
+                [(ngModel)]="documentoClienteEdicion"
+                [disabled]="
+                  guardandoCambioMontura ||
+                  tipoDocumentoEdicion === 'SIN_DOCUMENTO'
+                "
+                placeholder="DNI, RUC o documento"
+              />
+            </label>
+
+            <label class="customer-edit-field">
+              <span>Teléfono</span>
+              <input
+                type="tel"
+                maxlength="20"
+                [(ngModel)]="telefonoClienteEdicion"
+                [disabled]="guardandoCambioMontura"
+                placeholder="Número de contacto"
+              />
+            </label>
+
+            <label class="customer-edit-field">
+              <span>Correo</span>
+              <input
+                type="email"
+                maxlength="120"
+                [(ngModel)]="correoClienteEdicion"
+                [disabled]="guardandoCambioMontura"
+                placeholder="correo@ejemplo.com"
+              />
+            </label>
+
+            <label class="customer-edit-field full-width">
+              <span>Dirección</span>
+              <input
+                type="text"
+                maxlength="180"
+                [(ngModel)]="direccionClienteEdicion"
+                [disabled]="guardandoCambioMontura"
+                placeholder="Dirección del cliente (opcional)"
+              />
+            </label>
+          </div>
+
+          <p class="customer-match-note">
+            <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+            Si el documento ya existe, la orden se vinculará con ese cliente sin duplicarlo.
+          </p>
+        </section>
+
+        <section class="frame-change-step">
+          <div class="frame-step-title">
+            <span>2</span>
+            <div>
+              <strong>
+                {{
+                  esAgregarMontura
+                    ? 'Agregar una montura'
+                    : 'Montura actual de la orden'
+                }}
+              </strong>
+              <small>
+                {{
+                  esAgregarMontura
+                    ? 'La orden solo tiene lunas. Puedes añadir una montura del inventario.'
+                    : 'Selecciona la montura únicamente si deseas reemplazarla.'
+                }}
+              </small>
+            </div>
+          </div>
+
+          <div
+            class="no-frame-notice"
+            *ngIf="esAgregarMontura"
+          >
+            <i class="bi bi-eyeglasses" aria-hidden="true"></i>
+            <span>
+              No hay una montura registrada. La que elijas se agregará a la venta y descontará una unidad del inventario.
+            </span>
           </div>
 
           <div
@@ -1665,12 +1776,21 @@
 
         <section
           class="frame-change-step"
-          *ngIf="monturaVendidaSeleccionada"
+          *ngIf="
+            esAgregarMontura ||
+            monturaVendidaSeleccionada
+          "
         >
           <div class="frame-step-title">
-            <span>2</span>
+            <span>3</span>
             <div>
-              <strong>Buscar montura nueva</strong>
+              <strong>
+                {{
+                  esAgregarMontura
+                    ? 'Buscar montura para agregar'
+                    : 'Buscar montura de reemplazo'
+                }}
+              </strong>
               <small>
                 Escanea el código o escribe código, medida, nombre o modelo.
               </small>
@@ -1782,7 +1902,8 @@
               </div>
 
               <span class="replacement-stock">
-                Stock:
+                S/ {{ producto.precioVenta | number:'1.2-2' }}
+                · Stock:
                 <b>{{ producto.stockActual }}</b>
               </span>
             </button>
@@ -1794,17 +1915,29 @@
           *ngIf="monturaNuevaSeleccionada"
         >
           <div class="frame-step-title">
-            <span>3</span>
+            <span>4</span>
             <div>
-              <strong>Confirmar cambio</strong>
+              <strong>
+                {{
+                  esAgregarMontura
+                    ? 'Precio y nuevo saldo'
+                    : 'Precio y cambio de montura'
+                }}
+              </strong>
               <small>
-                El valor financiero de la venta no se modificará.
+                El total se recalcula automáticamente sin alterar los pagos anteriores.
               </small>
             </div>
           </div>
 
-          <div class="frame-change-summary">
-            <div class="frame-summary-card return">
+          <div
+            class="frame-change-summary"
+            [class.adding-frame]="esAgregarMontura"
+          >
+            <div
+              class="frame-summary-card return"
+              *ngIf="!esAgregarMontura"
+            >
               <small>Regresa al inventario</small>
               <strong>
                 {{
@@ -1822,6 +1955,7 @@
 
             <i
               class="bi bi-arrow-left-right"
+              *ngIf="!esAgregarMontura"
               aria-hidden="true"
             ></i>
 
@@ -1839,6 +1973,53 @@
                   1
                 }} unidad(es)
               </span>
+            </div>
+          </div>
+
+          <label class="frame-price-field">
+            <span>Precio de venta de la montura *</span>
+            <div>
+              <b>S/</b>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                [(ngModel)]="precioMonturaEdicion"
+                [disabled]="guardandoCambioMontura"
+              />
+            </div>
+            <small>
+              Puedes usar el precio del inventario o ingresar el precio acordado con el cliente.
+            </small>
+          </label>
+
+          <div class="order-edit-totals">
+            <div>
+              <small>Total anterior</small>
+              <strong>
+                S/ {{ ordenCambioMontura.total | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <div>
+              <small>Ya cancelado</small>
+              <strong class="paid">
+                S/ {{ ordenCambioMontura.montoCancelado | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <div>
+              <small>Nuevo total</small>
+              <strong>
+                S/ {{ totalDespuesEdicion | number:'1.2-2' }}
+              </strong>
+            </div>
+
+            <div>
+              <small>Nuevo saldo</small>
+              <strong class="balance">
+                S/ {{ saldoDespuesEdicion | number:'1.2-2' }}
+              </strong>
             </div>
           </div>
 
@@ -1861,9 +2042,9 @@
             ></i>
 
             <span>
-              Solo se cambia la montura y el inventario.
+              Los pagos anteriores se conservan.
               <strong>
-                El total, pagos y saldo de la orden permanecen iguales.
+                Si queda saldo, podrás registrarlo desde “Más acciones” y entrará a la caja abierta.
               </strong>
             </span>
           </div>
@@ -1897,8 +2078,7 @@
           (click)="confirmarCambioMontura()"
           [disabled]="
             guardandoCambioMontura ||
-            !monturaVendidaSeleccionada ||
-            !monturaNuevaSeleccionada
+            !nombreCompletoClienteEdicion.trim()
           "
         >
           <i
@@ -1906,15 +2086,15 @@
             [ngClass]="
               guardandoCambioMontura
                 ? 'bi-arrow-repeat spin-icon'
-                : 'bi-arrow-left-right'
+                : 'bi-floppy-fill'
             "
             aria-hidden="true"
           ></i>
 
           {{
             guardandoCambioMontura
-              ? 'Cambiando...'
-              : 'Confirmar cambio de montura'
+              ? 'Guardando...'
+              : 'Guardar cambios'
           }}
         </button>
       </footer>
@@ -1940,7 +2120,7 @@
       </strong>
 
       <small>
-        La montura anterior regresó al stock y la nueva fue descontada del inventario.
+        La nueva impresión mostrará los datos, productos, total cancelado y saldo actualizados.
       </small>
     </div>
   </div>

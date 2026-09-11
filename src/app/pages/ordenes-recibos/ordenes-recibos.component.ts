@@ -11,9 +11,9 @@ import {
 } from 'xlsx';
 
 import type {
-  CambioMonturaResultado,
   CorreccionMetodoPagoResultado,
   DetalleOrdenItem,
+  EditarOrdenClienteMonturaResultado,
   EstadoOrden,
   EstadoPagoOrden,
   EntidadCreditoOrden,
@@ -24,7 +24,8 @@ import type {
   OrdenRecibo,
   PagoOrdenHistorial,
   OrdenReciboDetalle,
-  ResumenOrdenes
+  ResumenOrdenes,
+  TipoDocumentoOrden
 } from '../../core/models/orden-recibo.model';
 
 import {
@@ -126,6 +127,15 @@ export class OrdenesRecibosComponent
 
   motivoCambioMontura = '';
   errorCambioMontura = '';
+
+  nombreCompletoClienteEdicion = '';
+  tipoDocumentoEdicion:
+    TipoDocumentoOrden = 'DNI';
+  documentoClienteEdicion = '';
+  telefonoClienteEdicion = '';
+  correoClienteEdicion = '';
+  direccionClienteEdicion = '';
+  precioMonturaEdicion = 0;
 
   mensajeCambioMonturaExitoso = '';
 
@@ -515,6 +525,13 @@ export class OrdenesRecibosComponent
     this.monturaNuevaSeleccionada =
       null;
     this.motivoCambioMontura = '';
+    this.nombreCompletoClienteEdicion = '';
+    this.tipoDocumentoEdicion = 'DNI';
+    this.documentoClienteEdicion = '';
+    this.telefonoClienteEdicion = '';
+    this.correoClienteEdicion = '';
+    this.direccionClienteEdicion = '';
+    this.precioMonturaEdicion = 0;
 
     this.ordenesService
       .obtenerDetalle(
@@ -531,16 +548,41 @@ export class OrdenesRecibosComponent
           this.ordenCambioMontura =
             detalle;
 
+          this.nombreCompletoClienteEdicion =
+            [
+              detalle.nombresCliente,
+              detalle.apellidosCliente
+            ]
+              .filter(Boolean)
+              .join(' ')
+              .replace(/\s+/g, ' ')
+              .trim() ||
+            (
+              detalle.cliente ===
+              'Cliente general'
+                ? ''
+                : detalle.cliente
+            );
+
+          this.tipoDocumentoEdicion =
+            detalle.tipoDocumento || 'DNI';
+
+          this.documentoClienteEdicion =
+            detalle.documento || '';
+
+          this.telefonoClienteEdicion =
+            detalle.telefono || '';
+
+          this.correoClienteEdicion =
+            detalle.correo || '';
+
+          this.direccionClienteEdicion =
+            detalle.direccion || '';
+
           const monturas =
             this.monturasVendidas(
               detalle
             );
-
-          if (!monturas.length) {
-            this.errorCambioMontura =
-              'Esta orden no contiene una montura de inventario que pueda cambiarse.';
-            return;
-          }
 
           if (monturas.length === 1) {
             this.monturaVendidaSeleccionada =
@@ -581,6 +623,13 @@ export class OrdenesRecibosComponent
       null;
     this.motivoCambioMontura = '';
     this.errorCambioMontura = '';
+    this.nombreCompletoClienteEdicion = '';
+    this.tipoDocumentoEdicion = 'DNI';
+    this.documentoClienteEdicion = '';
+    this.telefonoClienteEdicion = '';
+    this.correoClienteEdicion = '';
+    this.direccionClienteEdicion = '';
+    this.precioMonturaEdicion = 0;
   }
 
   get monturasVendidasCambio():
@@ -656,7 +705,7 @@ export class OrdenesRecibosComponent
             !this.monturasCambio.length
           ) {
             this.errorCambioMontura =
-              'No se encontró otra montura activa con stock para ese código o medida.';
+              'No se encontró una montura activa con stock para ese código o medida.';
           }
         },
 
@@ -684,22 +733,64 @@ export class OrdenesRecibosComponent
     this.monturaNuevaSeleccionada =
       producto;
 
+    this.precioMonturaEdicion =
+      this.monturaVendidaSeleccionada
+        ? Number(
+            this.monturaVendidaSeleccionada
+              .precioUnitario.toFixed(2)
+          )
+        : Number(
+            producto.precioVenta.toFixed(2)
+          );
+
     this.errorCambioMontura = '';
   }
 
   confirmarCambioMontura(): void {
     if (
       !this.ordenCambioMontura ||
-      !this.monturaVendidaSeleccionada ||
-      !this.monturaNuevaSeleccionada ||
       this.guardandoCambioMontura
     ) {
+      return;
+    }
+
+    const nombreCompleto = String(
+      this.nombreCompletoClienteEdicion || ''
+    ).replace(/\s+/g, ' ').trim();
+
+    const documento = String(
+      this.documentoClienteEdicion || ''
+    ).replace(/\s+/g, '').trim();
+
+    if (!nombreCompleto) {
       this.errorCambioMontura =
-        'Selecciona la montura vendida y la montura que la reemplazará.';
+        'Ingresa los nombres completos del cliente.';
       return;
     }
 
     if (
+      this.tipoDocumentoEdicion === 'DNI' &&
+      documento &&
+      !/^\d{8}$/.test(documento)
+    ) {
+      this.errorCambioMontura =
+        'El DNI debe contener 8 números.';
+      return;
+    }
+
+    if (
+      this.tipoDocumentoEdicion === 'RUC' &&
+      documento &&
+      !/^\d{11}$/.test(documento)
+    ) {
+      this.errorCambioMontura =
+        'El RUC debe contener 11 números.';
+      return;
+    }
+
+    if (
+      this.monturaVendidaSeleccionada &&
+      this.monturaNuevaSeleccionada &&
       this.monturaVendidaSeleccionada
         .idProducto ===
       this.monturaNuevaSeleccionada
@@ -711,13 +802,39 @@ export class OrdenesRecibosComponent
     }
 
     if (
+      this.monturaNuevaSeleccionada &&
       this.monturaNuevaSeleccionada
         .stockActual <
-      this.monturaVendidaSeleccionada
-        .cantidad
+      (
+        this.monturaVendidaSeleccionada
+          ?.cantidad || 1
+      )
     ) {
       this.errorCambioMontura =
         'La montura nueva no tiene stock suficiente.';
+      return;
+    }
+
+    if (
+      this.monturaNuevaSeleccionada &&
+      (
+        !Number.isFinite(
+          Number(this.precioMonturaEdicion)
+        ) ||
+        Number(this.precioMonturaEdicion) <= 0
+      )
+    ) {
+      this.errorCambioMontura =
+        'El precio de venta de la montura debe ser mayor que cero.';
+      return;
+    }
+
+    if (
+      this.totalDespuesEdicion + 0.009 <
+      this.ordenCambioMontura.montoCancelado
+    ) {
+      this.errorCambioMontura =
+        'El nuevo total no puede quedar por debajo de lo que el cliente ya pagó.';
       return;
     }
 
@@ -732,16 +849,38 @@ export class OrdenesRecibosComponent
         .numeroOrden;
 
     this.ordenesService
-      .cambiarMonturaOrden({
+      .editarOrdenClienteMontura({
         idVenta:
           this.ordenCambioMontura
             .idVenta,
-        idDetalleVenta:
+        idDetalleMontura:
           this.monturaVendidaSeleccionada
-            .idDetalle,
-        idProductoNuevo:
+            ?.idDetalle || null,
+        idProductoMontura:
           this.monturaNuevaSeleccionada
-            .idProducto,
+            ?.idProducto || null,
+        precioMontura:
+          this.monturaNuevaSeleccionada
+            ? Number(
+                Number(
+                  this.precioMonturaEdicion
+                ).toFixed(2)
+              )
+            : null,
+        nombres: nombreCompleto,
+        apellidos: '',
+        tipoDocumento:
+          documento
+            ? this.tipoDocumentoEdicion
+            : 'SIN_DOCUMENTO',
+        numeroDocumento:
+          documento,
+        telefono:
+          this.telefonoClienteEdicion,
+        correo:
+          this.correoClienteEdicion,
+        direccion:
+          this.direccionClienteEdicion,
         motivo:
           this.motivoCambioMontura
       })
@@ -754,21 +893,15 @@ export class OrdenesRecibosComponent
       .subscribe({
         next: (
           resultado:
-            CambioMonturaResultado
+            EditarOrdenClienteMonturaResultado
         ) => {
-          const anterior =
-            resultado.monturaAnterior ||
-            'Montura anterior';
-
-          const nueva =
-            resultado.monturaNueva ||
-            'Montura nueva';
-
           this.mensaje =
-            `${numero}: cambio de montura realizado correctamente.`;
+            `${numero}: orden actualizada. Total S/ ${resultado.totalNuevo.toFixed(2)}, cancelado S/ ${resultado.montoCancelado.toFixed(2)} y saldo S/ ${resultado.saldo.toFixed(2)}.`;
 
           this.mensajeCambioMonturaExitoso =
-            'Cambio realizado correctamente';
+            resultado.monturaModificada
+              ? 'Cliente, montura e importes actualizados'
+              : 'Datos del cliente actualizados';
 
           this.cerrarCambioMontura();
           this.cargar();
@@ -785,9 +918,60 @@ export class OrdenesRecibosComponent
           this.errorCambioMontura =
             error instanceof Error
               ? error.message
-              : 'No se pudo cambiar la montura.';
+              : 'No se pudo actualizar la orden.';
         }
       });
+  }
+
+  get totalDespuesEdicion(): number {
+    if (!this.ordenCambioMontura) {
+      return 0;
+    }
+
+    let total =
+      this.ordenCambioMontura.total;
+
+    if (this.monturaNuevaSeleccionada) {
+      const cantidad =
+        this.monturaVendidaSeleccionada
+          ?.cantidad || 1;
+
+      if (this.monturaVendidaSeleccionada) {
+        total -=
+          this.monturaVendidaSeleccionada
+            .subtotal;
+      }
+
+      total +=
+        Number(
+          this.precioMonturaEdicion || 0
+        ) * cantidad;
+    }
+
+    return Number(
+      Math.max(total, 0).toFixed(2)
+    );
+  }
+
+  get saldoDespuesEdicion(): number {
+    if (!this.ordenCambioMontura) {
+      return 0;
+    }
+
+    return Number(
+      Math.max(
+        this.totalDespuesEdicion -
+          this.ordenCambioMontura
+            .montoCancelado,
+        0
+      ).toFixed(2)
+    );
+  }
+
+  get esAgregarMontura(): boolean {
+    return (
+      this.monturasVendidasCambio.length === 0
+    );
   }
 
   private monturasVendidas(
