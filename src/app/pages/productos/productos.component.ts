@@ -59,6 +59,42 @@ interface ProductoInventario extends Producto {
 export class ProductosComponent
   implements OnInit {
 
+  // Each cache entry retains only its latest result. Replace arrays after mutations.
+  private readonly calculos = new Map<string, { dependencias: unknown[]; valor: unknown }>();
+
+  private memo<T>(clave: string, dependencias: unknown[], calcular: () => T): T {
+    const anterior = this.calculos.get(clave);
+    if (anterior && dependencias.length === anterior.dependencias.length &&
+        dependencias.every((valor, i) => Object.is(valor, anterior.dependencias[i]))) {
+      return anterior.valor as T;
+    }
+    const valor = calcular();
+    this.calculos.set(clave, { dependencias, valor });
+    return valor;
+  }
+
+  trackInventario(_indice: number, producto: ProductoInventario): string {
+    return producto.claveInventario;
+  }
+
+  trackProducto(_indice: number, producto: Producto): number {
+    return producto.id;
+  }
+
+  private incorporarProducto(producto: Producto): void {
+    // Use the server result, including its authoritative stock; never add stock twice.
+    const existe = this.productos.some(actual => actual.id === producto.id);
+    this.productos = existe
+      ? this.productos.map(actual => actual.id === producto.id ? producto : actual)
+      : [...this.productos, producto];
+    if (producto.categoria && !this.categorias.some(c => c.id === producto.categoria!.id)) {
+      this.categorias = [...this.categorias, producto.categoria];
+    }
+    if (producto.marca && !this.marcas.some(m => m.id === producto.marca!.id)) {
+      this.marcas = [...this.marcas, producto.marca];
+    }
+  }
+
   readonly categoriaOtros = 'OTROS';
 
   productos: Producto[] = [];
@@ -210,6 +246,7 @@ export class ProductosComponent
   }
 
   get inventarioPorMarca(): ProductoInventario[] {
+    return this.memo('inventarioPorMarca', [this.productos], () => {
     const grupos = new Map<
       string,
       Producto[]
@@ -269,6 +306,7 @@ export class ProductosComponent
           { sensitivity: 'base' }
         );
       });
+      });
   }
 
   /**
@@ -282,6 +320,7 @@ export class ProductosComponent
    * - 1890 unidades físicas en stock
    */
   get totalMonturasRegistradas(): number {
+    return this.memo('totalMonturasRegistradas', [this.productos], () => {
     return this.productos.filter(
       producto =>
         producto.estado &&
@@ -289,6 +328,7 @@ export class ProductosComponent
           producto
         )
     ).length;
+      });
   }
 
   /**
@@ -298,6 +338,7 @@ export class ProductosComponent
    * pertenecientes a la categoría Monturas.
    */
   get totalUnidadesMonturas(): number {
+    return this.memo('totalUnidadesMonturas', [this.productos], () => {
     return this.productos
       .filter(
         producto =>
@@ -321,6 +362,7 @@ export class ProductosComponent
           ),
         0
       );
+      });
   }
 
   /**
@@ -329,6 +371,7 @@ export class ProductosComponent
    * una misma marca cuando aparece en categorías diferentes.
    */
   get totalMarcasRegistradas(): number {
+    return this.memo('totalMarcasRegistradas', [this.productos], () => {
     return new Set(
       this.productos
         .filter(
@@ -344,6 +387,7 @@ export class ProductosComponent
         )
         .filter(Boolean)
     ).size;
+      });
   }
 
   get totalProductos(): number {
@@ -364,15 +408,18 @@ export class ProductosComponent
 
   get productosBajoStock():
     ProductoInventario[] {
+    return this.memo('productosBajoStock', [this.productos], () => {
     return this.inventarioPorMarca.filter(
       producto =>
         producto.estado &&
         Number(producto.stockActual) <=
         Number(producto.stockMinimo ?? 5)
     );
+      });
   }
 
   get marcasDisponibles(): string[] {
+    return this.memo('marcasDisponibles', [this.productos], () => {
     return Array.from(
       new Set(
         this.inventarioPorMarca
@@ -392,9 +439,11 @@ export class ProductosComponent
         { sensitivity: 'base' }
       )
     );
+      });
   }
 
   get marcasFormulario(): Marca[] {
+    return this.memo('marcasFormulario', [this.marcas], () => {
     const marcasUnicas = new Map<
       string,
       Marca
@@ -425,6 +474,7 @@ export class ProductosComponent
         { sensitivity: 'base' }
       )
     );
+      });
   }
 
   get marcaFormularioSeleccionada():
@@ -439,6 +489,7 @@ export class ProductosComponent
   }
 
   get categoriasFormulario(): Categoria[] {
+    return this.memo('categoriasFormulario', [this.categorias], () => {
     const categoriasUnicas = new Map<
       string,
       Categoria
@@ -475,9 +526,11 @@ export class ProductosComponent
         { sensitivity: 'base' }
       )
     );
+      });
   }
 
   get categoriasDisponibles(): string[] {
+    return this.memo('categoriasDisponibles', [this.productos], () => {
     return Array.from(
       new Set(
         this.inventarioPorMarca
@@ -497,6 +550,7 @@ export class ProductosComponent
         { sensitivity: 'base' }
       )
     );
+      });
   }
 
   get nombreCategoriaFormulario(): string {
@@ -578,6 +632,7 @@ export class ProductosComponent
   }
 
   get filtrados(): ProductoInventario[] {
+    return this.memo('filtrados', [this.productos, this.search, this.marcaSeleccionada, this.categoriaSeleccionada, this.mostrarSoloBajoStock], () => {
     const termino =
       this.normalizarTexto(this.search);
 
@@ -661,6 +716,7 @@ export class ProductosComponent
         );
       }
     );
+      });
   }
 
   get totalPaginas(): number {
@@ -1525,7 +1581,7 @@ export class ProductosComponent
           this.mostrarDetalle =
             true;
 
-          this.cargarTodo();
+          this.incorporarProducto(producto);
         },
 
         error: (error) => {
@@ -1622,7 +1678,7 @@ export class ProductosComponent
           this.mostrarDetalle =
             true;
 
-          this.cargarTodo();
+          this.incorporarProducto(producto);
         },
 
         error: (

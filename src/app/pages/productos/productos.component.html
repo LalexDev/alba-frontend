@@ -212,6 +212,16 @@
     </button>
 
     <button
+      class="clear-filter-button"
+      type="button"
+      (click)="cargarTodo()"
+      [disabled]="cargando || guardando || eliminando"
+    >
+      <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+      Actualizar inventario
+    </button>
+
+    <button
       *ngIf="esAdministrador"
       class="excel-button"
       type="button"
@@ -291,7 +301,7 @@
         <tbody>
           <ng-container
             *ngFor="
-              let producto of productosPaginados
+              let producto of productosPaginados; trackBy: trackInventario
             "
           >
             <tr
@@ -341,7 +351,7 @@
                 <div class="model-name-list">
                   <span
                     *ngFor="
-                      let modelo of producto.productosAgrupados
+                      let modelo of producto.productosAgrupados; trackBy: trackProducto
                     "
                   >
                     {{
@@ -453,7 +463,7 @@
                   <article
                     class="model-card"
                     *ngFor="
-                      let modelo of producto.productosAgrupados
+                      let modelo of producto.productosAgrupados; trackBy: trackProducto
                     "
                     [class.low]="
                       esBajoStockModelo(
