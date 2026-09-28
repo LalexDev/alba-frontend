@@ -480,7 +480,7 @@ export class ClienteService {
       const numeroDocumento =
         form.numeroDocumento.trim();
 
-      const { error } =
+      const { data, error } =
         await this.supabaseService.client
           .from('clientes')
           .update({
@@ -503,8 +503,9 @@ export class ClienteService {
             observaciones:
               form.observaciones.trim() || null
           })
-          .eq('id_cliente', idCliente);
+          .eq('id_cliente', idCliente).select('id_cliente').single();
 
+      if (!error && !data) { throw new Error("No se actualizó el paciente. Revisa los permisos."); }
       if (error) {
         throw new Error(
           this.traducirError(error.message)
@@ -876,8 +877,7 @@ export class ClienteService {
       valor =>
         valor !== null &&
         valor !== undefined &&
-        String(valor).trim() !== '' &&
-        String(valor).trim() !== '0'
+        String(valor).trim() !== ''
     );
   }
 
@@ -951,7 +951,7 @@ export class ClienteService {
       return null;
     }
 
-    const numero = Number(valor);
+    const numero = Number(String(valor).replace(',', '.'));
 
     return Number.isFinite(numero)
       ? numero
@@ -969,7 +969,7 @@ export class ClienteService {
       return null;
     }
 
-    const numero = Number(valor);
+    const numero = Number(String(valor).replace(',', '.'));
 
     return Number.isFinite(numero)
       ? numero
