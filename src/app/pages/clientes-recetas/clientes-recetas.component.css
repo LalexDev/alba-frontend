@@ -3863,3 +3863,6 @@ textarea:focus-visible {
 
 /* Confirmation remains visible after closing the form. */
 .message.success { position: sticky; top: 12px; z-index: 20; }
+
+/* Tabla completa sin panel de ficha rápida. */
+.clients-content-grid { grid-template-columns: minmax(0, 1fr); }
