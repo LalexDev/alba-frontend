@@ -253,7 +253,14 @@
               </td>
 
               <td class="rx-summary">
-                {{ resumenLejos(cliente.ultimaReceta) }}
+<ng-container *ngIf="cliente.ultimaReceta as receta; else sinMedidas"><div class="medida-bloque"><strong>Lejos</strong>
+<div><b>OD:</b> ESF {{ receta.lejosOdEsfera == null ? 'Sin registrar' : formatearGraduacion(receta.lejosOdEsfera) }} · CYL {{ receta.lejosOdCilindro == null ? 'Sin registrar' : formatearGraduacion(receta.lejosOdCilindro) }} · EJE {{ receta.lejosOdEje ?? 'Sin registrar' }}</div>
+<div><b>OI:</b> ESF {{ receta.lejosOiEsfera == null ? 'Sin registrar' : formatearGraduacion(receta.lejosOiEsfera) }} · CYL {{ receta.lejosOiCilindro == null ? 'Sin registrar' : formatearGraduacion(receta.lejosOiCilindro) }} · EJE {{ receta.lejosOiEje ?? 'Sin registrar' }}</div>
+<div>DIP: {{ receta.lejosDip ?? 'Sin registrar' }}</div></div>
+<div class="medida-bloque"><strong>Cerca</strong>
+<div><b>OD:</b> ESF {{ receta.cercaOdEsfera == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOdEsfera) }} · CYL {{ receta.cercaOdCilindro == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOdCilindro) }} · EJE {{ receta.cercaOdEje ?? 'Sin registrar' }}</div>
+<div><b>OI:</b> ESF {{ receta.cercaOiEsfera == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOiEsfera) }} · CYL {{ receta.cercaOiCilindro == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOiCilindro) }} · EJE {{ receta.cercaOiEje ?? 'Sin registrar' }}</div>
+<div>DIP: {{ receta.cercaDip ?? 'Sin registrar' }}</div></div></ng-container><ng-template #sinMedidas>Sin receta</ng-template>
               </td>
 
               <td>
