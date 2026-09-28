@@ -3866,3 +3866,8 @@ textarea:focus-visible {
 
 /* Tabla completa sin panel de ficha rápida. */
 .clients-content-grid { grid-template-columns: minmax(0, 1fr); }
+
+.clients-table .rx-summary { min-width: 290px; white-space: normal; }
+.medida-bloque { padding: 6px 0; line-height: 1.5; }
+.medida-bloque > strong { display: block; color: #007f96; }
+.medida-bloque + .medida-bloque { border-top: 1px solid #dce9ef; }
