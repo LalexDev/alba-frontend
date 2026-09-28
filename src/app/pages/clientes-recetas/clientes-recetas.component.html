@@ -171,13 +171,13 @@
     </button>
   </section>
 
-  <p class="message success" *ngIf="ok">
+  <p class="message success" role="status" aria-live="polite" *ngIf="ok">
     <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
     <span>{{ ok }}</span>
   </p>
 
   <p
-    class="message error"
+    class="message error" role="alert"
     *ngIf="error && !mostrarFormulario"
   >
     <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
@@ -714,6 +714,9 @@
           </span>
         </p>
 
+        <p class="sheet-text-block" style="overflow-wrap:anywhere">
+          <strong>Medidas registradas:</strong> {{ resumenMedidas(receta) }}
+        </p>
         <div class="physical-crystals">
           CRISTALES
         </div>
@@ -1329,7 +1332,7 @@
           </div>
         </section>
 
-        <p class="modal-error" *ngIf="error">
+        <p class="modal-error" role="alert" *ngIf="error">
           <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
           <span>{{ error }}</span>
         </p>
