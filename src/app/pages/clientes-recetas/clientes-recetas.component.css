@@ -3860,3 +3860,6 @@ textarea:focus-visible {
     width: 100%;
   }
 }
+
+/* Confirmation remains visible after closing the form. */
+.message.success { position: sticky; top: 12px; z-index: 20; }
