@@ -599,7 +599,7 @@ export class ClientesRecetasComponent
             font-family:Arial,sans-serif;
           "
         >
-          Preparando formato 70 × 70 mm...
+          Preparando formato 70 × 100 mm...
         </body>
       </html>
     `);
@@ -684,7 +684,7 @@ export class ClientesRecetasComponent
 
           <style>
             @page {
-              size: 70mm 70mm;
+              size: 70mm 100mm;
               margin: 0;
             }
 
@@ -695,7 +695,7 @@ export class ClientesRecetasComponent
             html,
             body {
               width: 70mm;
-              height: 70mm;
+              height: 100mm;
               margin: 0;
               padding: 0;
               overflow: hidden;
@@ -714,7 +714,7 @@ export class ClientesRecetasComponent
 
             .receta {
               width: 70mm;
-              height: 70mm;
+              height: 100mm;
               padding: 1.8mm;
               overflow: hidden;
               border: 0.45mm solid #000000;
@@ -1020,7 +1020,7 @@ export class ClientesRecetasComponent
               body,
               .receta {
                 width: 70mm !important;
-                height: 70mm !important;
+                height: 100mm !important;
               }
 
               body,
@@ -1223,6 +1223,10 @@ export class ClientesRecetasComponent
               )}
             </section>
 
+            <section class="linea" style="overflow:visible; overflow-wrap:anywhere">
+              <strong>Medidas registradas:</strong>
+              ${this.escapeHtml(this.resumenMedidas(receta))}
+            </section>
             <section class="linea observaciones">
               <strong>Observaciones:</strong>
               ${this.escapeHtml(
@@ -1254,7 +1258,7 @@ export class ClientesRecetasComponent
     this.ok =
       modo === 'PDF'
         ? 'Selecciona "Guardar como PDF" en el cuadro de impresión.'
-        : 'Formato 70 × 70 mm preparado para imprimir.';
+        : 'Formato 70 × 100 mm preparado para imprimir.';
   }
 
   private async obtenerLogoReceta():
@@ -1359,15 +1363,6 @@ export class ClientesRecetasComponent
       this.actualizarProximoControlDesdeEntrada();
     }
 
-    // Campos eliminados de la receta.
-    this.form.receta.profesional = '';
-    this.form.receta.cercaOdEsfera = null;
-    this.form.receta.cercaOdCilindro = null;
-    this.form.receta.cercaOdEje = null;
-    this.form.receta.cercaOiEsfera = null;
-    this.form.receta.cercaOiCilindro = null;
-    this.form.receta.cercaOiEje = null;
-    this.form.receta.cercaDip = null;
 
     if (
       this.modoFormulario !==
@@ -1434,6 +1429,20 @@ export class ClientesRecetasComponent
         this.form.incluirReceta
       )
     ) {
+      const campos = ['lejosOdEsfera', 'lejosOdCilindro', 'lejosOdEje',
+        'lejosOiEsfera', 'lejosOiCilindro', 'lejosOiEje', 'lejosDip',
+        'cercaOdEsfera', 'cercaOdCilindro', 'cercaOdEje', 'cercaOiEsfera',
+        'cercaOiCilindro', 'cercaOiEje', 'cercaDip', 'adicionOd', 'adicionOi'] as const;
+      for (const campo of campos) {
+        const valor = this.form.receta[campo];
+        if (valor !== null && valor !== undefined && String(valor).trim() !== '') {
+          const numero = this.numeroNullableFormulario(valor);
+          if (numero === null || (campo.endsWith('Eje') && !Number.isInteger(numero))) {
+            this.error = `Revisa la medida ${campo}: ingresa un número válido.`;
+            return;
+          }
+        }
+      }
       this.prepararMedida();
 
       const total = this.numeroFormulario(
@@ -1511,17 +1520,12 @@ export class ClientesRecetasComponent
             RecetaOptica |
             void
         ) => {
-          this.ok =
-            modoEjecutado ===
-              'NUEVO_CLIENTE'
-              ? 'Cliente registrado correctamente.'
-              : modoEjecutado ===
-                  'EDITAR_CLIENTE'
-                ? 'Datos del cliente actualizados correctamente.'
-                : modoEjecutado ===
-                    'EDITAR_RECETA'
-                  ? 'Receta actualizada correctamente.'
-                  : 'Receta registrada correctamente.';
+          const nombre = this.clienteSeleccionado?.nombreCompleto || this.form.nombres.trim();
+          this.ok = modoEjecutado === 'NUEVO_CLIENTE'
+            ? `Se registró correctamente al paciente ${this.form.nombres.trim()}.`
+            : modoEjecutado === 'NUEVA_RECETA'
+              ? `Se registró correctamente la receta del paciente ${nombre}.`
+              : `Actualización del paciente ${nombre} correcta${modoEjecutado === 'EDITAR_RECETA' ? ': receta y medidas guardadas' : ''}.`;
 
           if (
             resultado &&
@@ -2415,12 +2419,15 @@ export class ClientesRecetasComponent
     )}`;
   }
 
+  resumenMedidas(receta: RecetaOptica): string {
+    return this.construirMedida(receta) || receta.medida || 'Sin medidas registradas';
+  }
+
   private prepararMedida(): void {
-    if (!this.form.receta.medida.trim()) {
-      this.form.receta.medida =
-        this.construirMedida(
-          this.form.receta
-        );
+    const nueva = this.construirMedida(this.form.receta);
+    // Rebuild generated summaries; preserve legacy free text with no numeric fields.
+    if (nueva || /(?:OD ESF\.|OI ESF\.|OD CYL\.|OI CYL\.|DIP\.|ADIC\.|CERCA )/.test(this.form.receta.medida)) {
+      this.form.receta.medida = nueva;
     }
   }
 
@@ -2452,6 +2459,15 @@ export class ClientesRecetasComponent
     agregar('OI EJE.', receta.lejosOiEje);
     agregar('DIP.', receta.lejosDip);
 
+    agregar('ADIC. OD', receta.adicionOd);
+    agregar('ADIC. OI', receta.adicionOi);
+    agregar('CERCA OD ESF.', receta.cercaOdEsfera);
+    agregar('CERCA OD CYL.', receta.cercaOdCilindro);
+    agregar('CERCA OD EJE.', receta.cercaOdEje);
+    agregar('CERCA OI ESF.', receta.cercaOiEsfera);
+    agregar('CERCA OI CYL.', receta.cercaOiCilindro);
+    agregar('CERCA OI EJE.', receta.cercaOiEje);
+    agregar('CERCA DIP.', receta.cercaDip);
     return partes.join(' | ');
   }
 
@@ -2802,7 +2818,7 @@ export class ClientesRecetasComponent
         );
 
       const {
-        error
+        data, error
       } =
         await this.supabaseService.client
           .from(
@@ -2946,7 +2962,9 @@ export class ClientesRecetasComponent
           .eq(
             'id_cliente',
             this.clienteSeleccionado.id
-          );
+          ).select('id_receta').single();
+
+      if (!error && !data) { throw new Error("No se actualizó la receta. Revisa los permisos y vuelve a cargar el paciente."); }
 
       if (error) {
         if (
