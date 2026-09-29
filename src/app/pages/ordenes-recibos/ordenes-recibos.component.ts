@@ -1862,10 +1862,10 @@ export class OrdenesRecibosComponent
     }
   }
 
-  exportarExcel(): void {
+  async exportarExcel(): Promise<void> {
     if (
       this.exportando ||
-      !this.ordenesFiltradas.length
+      !this.ordenes.length
     ) {
       return;
     }
@@ -1874,7 +1874,8 @@ export class OrdenesRecibosComponent
     this.error = '';
 
     try {
-      const filas = this.ordenesFiltradas.map(orden => ({
+      const ordenes = await this.ordenesService.completarDatosExportacion(this.ordenes);
+      const filas = ordenes.map(orden => ({
         'N° de orden': orden.numeroOrden,
         'Cliente': orden.cliente,
         'Total': orden.total,
