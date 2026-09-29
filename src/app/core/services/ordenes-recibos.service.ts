@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { defer, Observable } from 'rxjs';
+import { defer, Observable, firstValueFrom } from 'rxjs';
 
 import type {
   CambioMonturaRequest,
@@ -167,6 +167,51 @@ export class OrdenesRecibosService {
           )
       );
     });
+  }
+
+  async completarDatosExportacion(ordenes: OrdenRecibo[]): Promise<OrdenRecibo[]> {
+    const resultado: OrdenRecibo[] = [];
+    for (let inicio = 0; inicio < ordenes.length; inicio += 4) {
+      const lote = await Promise.all(ordenes.slice(inicio, inicio + 4).map(async orden => {
+        const copia = { ...orden };
+        if (!copia.medidasCredito && orden.idCliente != null) {
+          const { data, error } = await this.supabaseService.client
+            .from('recetas_opticas').select('*')
+            .eq('id_cliente', orden.idCliente).eq('vigente', true)
+            .order('fecha_entrada', { ascending: false })
+            .order('id_receta', { ascending: false }).limit(1).maybeSingle();
+          if (error) throw new Error(error.message);
+          if (data) {
+            const partes: string[] = [];
+            for (const distancia of ['lejos', 'cerca']) {
+              for (const ojo of ['od', 'oi']) {
+                for (const [campo, etiqueta] of [['esfera', 'ESF'], ['cilindro', 'CYL'], ['eje', 'EJE']]) {
+                  const valor = data[`${distancia}_${ojo}_${campo}`];
+                  if (valor != null) partes.push(`${distancia.toUpperCase()} ${ojo.toUpperCase()} ${etiqueta}: ${valor}`);
+                }
+              }
+              if (data[`${distancia}_dip`] != null) partes.push(`${distancia.toUpperCase()} DIP: ${data[`${distancia}_dip`]}`);
+            }
+            for (const ojo of ['od', 'oi']) {
+              if (data[`adicion_${ojo}`] != null) partes.push(`ADIC ${ojo.toUpperCase()}: ${data[`adicion_${ojo}`]}`);
+            }
+            const medidas = partes.join(' | ') || data.medida || 'Sin medidas registradas';
+            copia.medidasCredito = `Receta actual ${data.numero_orden || ''}: ${medidas}`;
+          }
+        }
+        if (!copia.monturaCredito) {
+          const detalle = await firstValueFrom(this.obtenerDetalle(orden.idVenta));
+          copia.monturaCredito = detalle.items
+            .filter(item => /montura/i.test(item.categoria || '') || /montura/i.test(item.producto))
+            .map(item => [item.producto, item.marca, item.modelo, item.color].filter(Boolean).join(' / '))
+            .join(' | ') || 'Sin montura identificada en la venta';
+        }
+        copia.medidasCredito ||= 'Sin medidas registradas';
+        return copia;
+      }));
+      resultado.push(...lote);
+    }
+    return resultado;
   }
 
   obtenerDetalle(
