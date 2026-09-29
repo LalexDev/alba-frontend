@@ -260,7 +260,11 @@
 <div class="medida-bloque"><strong>Cerca</strong>
 <div><b>OD:</b> ESF {{ receta.cercaOdEsfera == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOdEsfera) }} · CYL {{ receta.cercaOdCilindro == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOdCilindro) }} · EJE {{ receta.cercaOdEje ?? 'Sin registrar' }}</div>
 <div><b>OI:</b> ESF {{ receta.cercaOiEsfera == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOiEsfera) }} · CYL {{ receta.cercaOiCilindro == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOiCilindro) }} · EJE {{ receta.cercaOiEje ?? 'Sin registrar' }}</div>
-<div>DIP: {{ receta.cercaDip ?? 'Sin registrar' }}</div></div></ng-container><ng-template #sinMedidas>Sin receta</ng-template>
+<div>DIP: {{ receta.cercaDip ?? 'Sin registrar' }}</div></div>
+<div class="medida-bloque"><strong>Adición</strong>
+<div><b>OD:</b> {{ receta.adicionOd == null ? 'Sin registrar' : formatearGraduacion(receta.adicionOd) }}</div>
+<div><b>OI:</b> {{ receta.adicionOi == null ? 'Sin registrar' : formatearGraduacion(receta.adicionOi) }}</div>
+</div></ng-container><ng-template #sinMedidas>Sin receta</ng-template>
               </td>
 
               <td>
@@ -1004,15 +1008,15 @@
 
                 <div class="rx-row">
                   <strong>OD</strong>
-                  <input name="lejosOdEsfera" type="number" step="0.25" [(ngModel)]="form.receta.lejosOdEsfera" />
-                  <input name="lejosOdCilindro" type="number" step="0.25" [(ngModel)]="form.receta.lejosOdCilindro" />
+                  <input name="lejosOdEsfera" type="text" inputmode="text" autocomplete="off" [(ngModel)]="form.receta.lejosOdEsfera" />
+                  <input name="lejosOdCilindro" type="text" inputmode="text" autocomplete="off" [(ngModel)]="form.receta.lejosOdCilindro" />
                   <input name="lejosOdEje" type="number" min="0" max="180" [(ngModel)]="form.receta.lejosOdEje" />
                 </div>
 
                 <div class="rx-row">
                   <strong>OI</strong>
-                  <input name="lejosOiEsfera" type="number" step="0.25" [(ngModel)]="form.receta.lejosOiEsfera" />
-                  <input name="lejosOiCilindro" type="number" step="0.25" [(ngModel)]="form.receta.lejosOiCilindro" />
+                  <input name="lejosOiEsfera" type="text" inputmode="text" autocomplete="off" [(ngModel)]="form.receta.lejosOiEsfera" />
+                  <input name="lejosOiCilindro" type="text" inputmode="text" autocomplete="off" [(ngModel)]="form.receta.lejosOiCilindro" />
                   <input name="lejosOiEje" type="number" min="0" max="180" [(ngModel)]="form.receta.lejosOiEje" />
                 </div>
 
@@ -1034,8 +1038,7 @@
               <input
                 id="adicionOd"
                 name="adicionOd"
-                type="number"
-                step="0.25"
+                type="text" inputmode="text" autocomplete="off"
                 [(ngModel)]="form.receta.adicionOd"
                 placeholder="Ej. +1.50"
               />
@@ -1049,8 +1052,7 @@
               <input
                 id="adicionOi"
                 name="adicionOi"
-                type="number"
-                step="0.25"
+                type="text" inputmode="text" autocomplete="off"
                 [(ngModel)]="form.receta.adicionOi"
                 placeholder="Ej. +1.50"
               />
