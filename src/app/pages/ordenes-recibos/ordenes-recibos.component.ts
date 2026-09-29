@@ -1809,68 +1809,28 @@ export class OrdenesRecibosComponent
     this.error = '';
 
     try {
-      const filas =
-        ordenes.map(
-          orden => ({
-            'N° de orden':
-              orden.numeroOrden,
-            'Cliente':
-              orden.cliente,
-            'Total':
-              orden.total,
-            'Medidas':
-              orden.medidasCredito ||
-              '',
-            'Montura':
-              orden.monturaCredito ||
-              '',
-            'Proyecto':
-              orden.proyectoCredito ||
-              '',
-            'Fecha':
-              this.formatearFechaCorta(
-                orden.fechaVenta
-              )
-          })
-        );
-
-      const hoja =
-        utils.json_to_sheet(
-          filas
-        );
-
+      const filas = ordenes.map(orden => ({
+        'N° de orden': orden.numeroOrden,
+        'Cliente': orden.cliente,
+        'Total': orden.total,
+        'Cancelado': orden.montoCancelado,
+        'Saldo': orden.saldo,
+        'Medidas': orden.medidasCredito || '',
+        'Montura': orden.monturaCredito || '',
+        'Proyecto': orden.proyectoCredito || '',
+        'Fecha': this.formatearFechaCorta(orden.fechaVenta)
+      }));
+      const hoja = utils.json_to_sheet(filas);
       hoja['!cols'] = [
-        { wch: 21 },
-        { wch: 34 },
-        { wch: 14 },
-        { wch: 24 },
-        { wch: 34 },
-        { wch: 30 },
-        { wch: 14 }
+        { wch: 23 }, { wch: 34 }, { wch: 16 },
+        { wch: 16 }, { wch: 16 }, { wch: 60 },
+        { wch: 34 }, { wch: 30 }, { wch: 14 }
       ];
-
-      const rango =
-        utils.decode_range(
-          hoja['!ref'] ||
-          'A1:G1'
-        );
-
-      for (
-        let fila = 1;
-        fila <= rango.e.r;
-        fila += 1
-      ) {
-        const celda =
-          hoja[
-            utils.encode_cell({
-              r: fila,
-              c: 2
-            })
-          ];
-
-        if (celda) {
-          celda.z =
-            'S/ #,##0.00';
+      const rango = utils.decode_range(hoja['!ref'] || 'A1:I1');
+      for (let fila = 1; fila <= rango.e.r; fila += 1) {
+        for (const columna of [2, 3, 4]) {
+          const celda = hoja[utils.encode_cell({ r: fila, c: columna })];
+          if (celda) celda.z = '"S/" #,##0.00';
         }
       }
 
@@ -1914,87 +1874,28 @@ export class OrdenesRecibosComponent
     this.error = '';
 
     try {
-      const filas =
-        this.ordenesFiltradas.map(
-          orden => ({
-            'N° de orden':
-              orden.numeroOrden,
-            'Cliente':
-              orden.cliente,
-            'Documento':
-              orden.documento,
-            'Teléfono':
-              orden.telefono,
-            'Fecha':
-              this.formatearFecha(
-                orden.fechaVenta
-              ),
-            'Tipo':
-              this.textoTipo(
-                orden.tipo
-              ),
-            'Total':
-              orden.total,
-            'Cancelado':
-              orden.montoCancelado,
-            'Saldo':
-              orden.saldo,
-            'Método de pago':
-              orden.metodoPago,
-            'Estado del pago':
-              this.textoEstadoPago(
-                orden.estadoPago
-              ),
-            'Estado de la orden':
-              this.textoEstado(
-                orden.estado
-              ),
-            'Observaciones':
-              orden.observaciones
-          })
-        );
-
-      const hoja =
-        utils.json_to_sheet(filas);
-
+      const filas = this.ordenesFiltradas.map(orden => ({
+        'N° de orden': orden.numeroOrden,
+        'Cliente': orden.cliente,
+        'Total': orden.total,
+        'Cancelado': orden.montoCancelado,
+        'Saldo': orden.saldo,
+        'Medidas': orden.medidasCredito || '',
+        'Montura': orden.monturaCredito || '',
+        'Proyecto': orden.proyectoCredito || '',
+        'Fecha': this.formatearFechaCorta(orden.fechaVenta)
+      }));
+      const hoja = utils.json_to_sheet(filas);
       hoja['!cols'] = [
-        { wch: 18 },
-        { wch: 34 },
-        { wch: 16 },
-        { wch: 15 },
-        { wch: 18 },
-        { wch: 20 },
-        { wch: 14 },
-        { wch: 14 },
-        { wch: 14 },
-        { wch: 20 },
-        { wch: 17 },
-        { wch: 18 },
-        { wch: 45 }
+        { wch: 23 }, { wch: 34 }, { wch: 16 },
+        { wch: 16 }, { wch: 16 }, { wch: 60 },
+        { wch: 34 }, { wch: 30 }, { wch: 14 }
       ];
-
-      const rango = utils.decode_range(
-        hoja['!ref'] || 'A1:M1'
-      );
-
-      for (
-        let fila = 1;
-        fila <= rango.e.r;
-        fila += 1
-      ) {
-        for (
-          const columna of [6, 7, 8]
-        ) {
-          const celda = hoja[
-            utils.encode_cell({
-              r: fila,
-              c: columna
-            })
-          ];
-
-          if (celda) {
-            celda.z = 'S/ #,##0.00';
-          }
+      const rango = utils.decode_range(hoja['!ref'] || 'A1:I1');
+      for (let fila = 1; fila <= rango.e.r; fila += 1) {
+        for (const columna of [2, 3, 4]) {
+          const celda = hoja[utils.encode_cell({ r: fila, c: columna })];
+          if (celda) celda.z = '"S/" #,##0.00';
         }
       }
 
