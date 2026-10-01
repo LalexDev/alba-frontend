@@ -1,3 +1,4 @@
+import { convertirMedida } from '../../core/utils/medida-numerica';
 import {
   Component,
   OnInit
@@ -79,6 +80,9 @@ export class ClientesRecetasComponent
     'NUEVO_CLIENTE';
 
   recetaEditandoId: number | null =
+    null;
+
+  private recetaOriginalEditando: RecetaOptica | null =
     null;
 
   paginaActual = 1;
@@ -292,6 +296,7 @@ export class ClientesRecetasComponent
   abrirNuevoCliente(): void {
     this.recetaEditandoId =
       null;
+    this.recetaOriginalEditando = null;
 
     this.modoFormulario =
       'NUEVO_CLIENTE';
@@ -309,6 +314,7 @@ export class ClientesRecetasComponent
   ): void {
     this.recetaEditandoId =
       null;
+    this.recetaOriginalEditando = null;
 
     this.modoFormulario =
       'EDITAR_CLIENTE';
@@ -356,6 +362,7 @@ export class ClientesRecetasComponent
 
     this.recetaEditandoId =
       null;
+    this.recetaOriginalEditando = null;
 
     this.modoFormulario =
       'NUEVA_RECETA';
@@ -440,6 +447,7 @@ export class ClientesRecetasComponent
 
           this.recetaEditandoId =
             receta.id;
+          this.recetaOriginalEditando = receta;
 
           this.modoFormulario =
             'EDITAR_RECETA';
@@ -1171,6 +1179,43 @@ export class ClientesRecetasComponent
               </span>
             </div>
 
+            <section class="graduacion">
+              <div class="lateral">
+                CERCA
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>ESF.</th>
+                    <th>CYL.</th>
+                    <th>EJE</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr>
+                    <th>OD:</th>
+                    <td>${graduacion(receta.cercaOdEsfera)}</td>
+                    <td>${graduacion(receta.cercaOdCilindro)}</td>
+                    <td>${valorTexto(receta.cercaOdEje)}</td>
+                  </tr>
+                  <tr>
+                    <th>OI:</th>
+                    <td>${graduacion(receta.cercaOiEsfera)}</td>
+                    <td>${graduacion(receta.cercaOiCilindro)}</td>
+                    <td>${valorTexto(receta.cercaOiEje)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+
+            <div class="dip">
+              <strong>DIP cerca:</strong>
+              <span>${valorTexto(receta.cercaDip)}</span>
+            </div>
+
             <section class="extras">
               <div class="extra">
                 <strong>Adic. OD</strong>
@@ -1312,6 +1357,7 @@ export class ClientesRecetasComponent
     this.mostrarFormulario = false;
     this.recetaEditandoId =
       null;
+    this.recetaOriginalEditando = null;
     this.error = '';
   }
 
@@ -1436,9 +1482,16 @@ export class ClientesRecetasComponent
       for (const campo of campos) {
         const valor = this.form.receta[campo];
         if (valor !== null && valor !== undefined && String(valor).trim() !== '') {
-          const numero = this.numeroNullableFormulario(valor);
-          if (numero === null || (campo.endsWith('Eje') && !Number.isInteger(numero))) {
-            this.error = `Revisa la medida ${campo}: ingresa un número válido.`;
+          try {
+            const numero = this.numeroNullableFormulario(valor);
+            if (numero === null) {
+              throw new Error('Debe ingresar un número.');
+            }
+            this.form.receta[campo] = numero;
+          } catch (error) {
+            const etiqueta = campo.replace('lejos', 'Lejos ').replace('cerca', 'Cerca ')
+              .replace('adicion', 'Adición ').replace('Od', 'OD ').replace('Oi', 'OI ');
+            this.error = `${etiqueta}: ${error instanceof Error ? error.message : 'Medida inválida.'}`;
             return;
           }
         }
@@ -1542,6 +1595,7 @@ export class ClientesRecetasComponent
           this.mostrarFormulario = false;
           this.recetaEditandoId =
             null;
+          this.recetaOriginalEditando = null;
           this.cargar();
         },
 
@@ -2817,6 +2871,13 @@ export class ClientesRecetasComponent
           ).toFixed(2)
         );
 
+      const original = this.recetaOriginalEditando;
+      const valorSeguro = (
+        nuevo: string | number | null,
+        anterior: number | null | undefined
+      ): number | null =>
+        this.numeroNullableFormulario(nuevo) ?? anterior ?? null;
+
       const {
         data, error
       } =
@@ -2842,10 +2903,12 @@ export class ClientesRecetasComponent
             medida:
               receta.medida
                 .trim() ||
+              original?.medida ||
               null,
             marca:
               receta.marca
                 .trim() ||
+              original?.marca ||
               null,
             fecha_receta:
               receta.fechaReceta ||
@@ -2854,98 +2917,121 @@ export class ClientesRecetasComponent
             profesional:
               receta.profesional
                 .trim() ||
+              original?.profesional ||
               null,
 
             lejos_od_esfera:
-              this.numeroNullableFormulario(
-                receta.lejosOdEsfera
+              valorSeguro(
+                receta.lejosOdEsfera,
+                original?.lejosOdEsfera
               ),
             lejos_od_cilindro:
-              this.numeroNullableFormulario(
-                receta.lejosOdCilindro
+              valorSeguro(
+                receta.lejosOdCilindro,
+                original?.lejosOdCilindro
               ),
             lejos_od_eje:
-              this.numeroNullableFormulario(
-                receta.lejosOdEje
+              valorSeguro(
+                receta.lejosOdEje,
+                original?.lejosOdEje
               ),
             lejos_oi_esfera:
-              this.numeroNullableFormulario(
-                receta.lejosOiEsfera
+              valorSeguro(
+                receta.lejosOiEsfera,
+                original?.lejosOiEsfera
               ),
             lejos_oi_cilindro:
-              this.numeroNullableFormulario(
-                receta.lejosOiCilindro
+              valorSeguro(
+                receta.lejosOiCilindro,
+                original?.lejosOiCilindro
               ),
             lejos_oi_eje:
-              this.numeroNullableFormulario(
-                receta.lejosOiEje
+              valorSeguro(
+                receta.lejosOiEje,
+                original?.lejosOiEje
               ),
             lejos_dip:
-              this.numeroNullableFormulario(
-                receta.lejosDip
+              valorSeguro(
+                receta.lejosDip,
+                original?.lejosDip
               ),
 
             cerca_od_esfera:
-              this.numeroNullableFormulario(
-                receta.cercaOdEsfera
+              valorSeguro(
+                receta.cercaOdEsfera,
+                original?.cercaOdEsfera
               ),
             cerca_od_cilindro:
-              this.numeroNullableFormulario(
-                receta.cercaOdCilindro
+              valorSeguro(
+                receta.cercaOdCilindro,
+                original?.cercaOdCilindro
               ),
             cerca_od_eje:
-              this.numeroNullableFormulario(
-                receta.cercaOdEje
+              valorSeguro(
+                receta.cercaOdEje,
+                original?.cercaOdEje
               ),
             cerca_oi_esfera:
-              this.numeroNullableFormulario(
-                receta.cercaOiEsfera
+              valorSeguro(
+                receta.cercaOiEsfera,
+                original?.cercaOiEsfera
               ),
             cerca_oi_cilindro:
-              this.numeroNullableFormulario(
-                receta.cercaOiCilindro
+              valorSeguro(
+                receta.cercaOiCilindro,
+                original?.cercaOiCilindro
               ),
             cerca_oi_eje:
-              this.numeroNullableFormulario(
-                receta.cercaOiEje
+              valorSeguro(
+                receta.cercaOiEje,
+                original?.cercaOiEje
               ),
             cerca_dip:
-              this.numeroNullableFormulario(
-                receta.cercaDip
+              valorSeguro(
+                receta.cercaDip,
+                original?.cercaDip
               ),
 
             adicion_od:
-              this.numeroNullableFormulario(
-                receta.adicionOd
+              valorSeguro(
+                receta.adicionOd,
+                original?.adicionOd
               ),
             adicion_oi:
-              this.numeroNullableFormulario(
-                receta.adicionOi
+              valorSeguro(
+                receta.adicionOi,
+                original?.adicionOi
               ),
 
             agudeza_visual_od:
               receta.agudezaVisualOd
                 .trim() ||
+              original?.agudezaVisualOd ||
               null,
             agudeza_visual_oi:
               receta.agudezaVisualOi
                 .trim() ||
+              original?.agudezaVisualOi ||
               null,
             tipo_lente:
               receta.tipoLente
                 .trim() ||
+              original?.tipoLente ||
               null,
             tipo_montura:
               receta.tipoMontura
                 .trim() ||
+              original?.tipoMontura ||
               null,
             diagnostico:
               receta.diagnostico
                 .trim() ||
+              original?.diagnostico ||
               null,
             observaciones:
               receta.observaciones
                 .trim() ||
+              original?.observaciones ||
               null,
             proximo_control:
               receta.proximoControl ||
@@ -2962,11 +3048,25 @@ export class ClientesRecetasComponent
           .eq(
             'id_cliente',
             this.clienteSeleccionado.id
-          ).select('id_receta').single();
+          )
+          .eq(
+            'actualizado_en',
+            original?.actualizadoEn || ''
+          )
+          .select('*')
+          .single();
 
       if (!error && !data) { throw new Error("No se actualizó la receta. Revisa los permisos y vuelve a cargar el paciente."); }
 
       if (error) {
+        if (
+          String(error.code || '') === 'PGRST116'
+        ) {
+          throw new Error(
+            'Esta receta cambió en otra sesión. Recarga el paciente para no sobrescribir información más reciente.'
+          );
+        }
+
         if (
           String(
             error.message ||
@@ -2986,36 +3086,69 @@ export class ClientesRecetasComponent
           error.message
         );
       }
+
+      const verificaciones: Array<[
+        string,
+        number | null
+      ]> = [
+        ['lejos_od_esfera', valorSeguro(receta.lejosOdEsfera, original?.lejosOdEsfera)],
+        ['lejos_od_cilindro', valorSeguro(receta.lejosOdCilindro, original?.lejosOdCilindro)],
+        ['lejos_od_eje', valorSeguro(receta.lejosOdEje, original?.lejosOdEje)],
+        ['lejos_oi_esfera', valorSeguro(receta.lejosOiEsfera, original?.lejosOiEsfera)],
+        ['lejos_oi_cilindro', valorSeguro(receta.lejosOiCilindro, original?.lejosOiCilindro)],
+        ['lejos_oi_eje', valorSeguro(receta.lejosOiEje, original?.lejosOiEje)],
+        ['lejos_dip', valorSeguro(receta.lejosDip, original?.lejosDip)],
+        ['cerca_od_esfera', valorSeguro(receta.cercaOdEsfera, original?.cercaOdEsfera)],
+        ['cerca_od_cilindro', valorSeguro(receta.cercaOdCilindro, original?.cercaOdCilindro)],
+        ['cerca_od_eje', valorSeguro(receta.cercaOdEje, original?.cercaOdEje)],
+        ['cerca_oi_esfera', valorSeguro(receta.cercaOiEsfera, original?.cercaOiEsfera)],
+        ['cerca_oi_cilindro', valorSeguro(receta.cercaOiCilindro, original?.cercaOiCilindro)],
+        ['cerca_oi_eje', valorSeguro(receta.cercaOiEje, original?.cercaOiEje)],
+        ['cerca_dip', valorSeguro(receta.cercaDip, original?.cercaDip)],
+        ['adicion_od', valorSeguro(receta.adicionOd, original?.adicionOd)],
+        ['adicion_oi', valorSeguro(receta.adicionOi, original?.adicionOi)]
+      ];
+
+      const fila = data as Record<string, unknown>;
+      for (const [campo, esperado] of verificaciones) {
+        const valorDb = fila[campo];
+        const actual = valorDb === null || valorDb === undefined
+          ? null
+          : Number(valorDb);
+        if (actual !== esperado) {
+          throw new Error(
+            `Supabase no confirmó ${campo}. Se esperaba ${esperado ?? 'vacío'} y devolvió ${actual ?? 'vacío'}.`
+          );
+        }
+      }
     });
   }
 
-  private numeroNullableFormulario(
-    valor:
-      string |
-      number |
-      null |
-      undefined
-  ): number | null {
+  private numeroNullableFormulario(valor: string | number | null | undefined): number | null {
+    return convertirMedida(valor);
+  }
+
+  permitirTeclaMedida(evento: KeyboardEvent): void {
     if (
-      valor === null ||
-      valor === undefined ||
-      String(valor).trim() ===
-        ''
+      evento.ctrlKey ||
+      evento.metaKey ||
+      evento.altKey ||
+      ['Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(evento.key)
     ) {
-      return null;
+      return;
     }
 
-    const numero =
-      Number(
-        String(valor)
-          .replace(',', '.')
-      );
+    if (!/^[0-9+\-.,]$/.test(evento.key)) {
+      evento.preventDefault();
+    }
+  }
 
-    return Number.isFinite(
-      numero
-    )
-      ? numero
-      : null;
+  validarPegadoMedida(evento: ClipboardEvent): void {
+    const texto = evento.clipboardData?.getData('text')?.trim() ?? '';
+    if (!/^[+\-−–﹣－＋]?\s*(?:\d+(?:[.,]\d+)?|[.,]\d+)$/.test(texto)) {
+      evento.preventDefault();
+      this.error = 'Las medidas solo admiten números, coma o punto y los signos + o -.';
+    }
   }
 
   private esCliente(
