@@ -261,10 +261,7 @@
 <div><b>OD:</b> ESF {{ receta.cercaOdEsfera == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOdEsfera) }} · CYL {{ receta.cercaOdCilindro == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOdCilindro) }} · EJE {{ receta.cercaOdEje ?? 'Sin registrar' }}</div>
 <div><b>OI:</b> ESF {{ receta.cercaOiEsfera == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOiEsfera) }} · CYL {{ receta.cercaOiCilindro == null ? 'Sin registrar' : formatearGraduacion(receta.cercaOiCilindro) }} · EJE {{ receta.cercaOiEje ?? 'Sin registrar' }}</div>
 <div>DIP: {{ receta.cercaDip ?? 'Sin registrar' }}</div></div>
-<div class="medida-bloque"><strong>Adición</strong>
-<div><b>OD:</b> {{ receta.adicionOd == null ? 'Sin registrar' : formatearGraduacion(receta.adicionOd) }}</div>
-<div><b>OI:</b> {{ receta.adicionOi == null ? 'Sin registrar' : formatearGraduacion(receta.adicionOi) }}</div>
-</div></ng-container><ng-template #sinMedidas>Sin receta</ng-template>
+</ng-container><ng-template #sinMedidas>Sin receta</ng-template>
               </td>
 
               <td>
@@ -646,46 +643,6 @@
           <strong>DIP cerca:</strong>
           <span>{{ receta.cercaDip ?? '—' }}</span>
         </p>
-
-        <div class="sheet-extra-grid physical-extras">
-          <div class="sheet-extra-item">
-            <strong>Adic. OD</strong>
-
-            {{
-              formatearGraduacion(
-                receta.adicionOd
-              )
-            }}
-          </div>
-
-          <div class="sheet-extra-item">
-            <strong>Adic. OI</strong>
-
-            {{
-              formatearGraduacion(
-                receta.adicionOi
-              )
-            }}
-          </div>
-
-          <div class="sheet-extra-item">
-            <strong>AV OD</strong>
-
-            {{
-              receta.agudezaVisualOd ||
-              '—'
-            }}
-          </div>
-
-          <div class="sheet-extra-item">
-            <strong>AV OI</strong>
-
-            {{
-              receta.agudezaVisualOi ||
-              '—'
-            }}
-          </div>
-        </div>
 
         <p class="sheet-text-block">
           <strong>Diagnóstico:</strong>
@@ -1098,72 +1055,6 @@
           </div>
 
           <div class="form-grid recipe-details-grid">
-            <div class="field">
-              <label for="adicionOd">
-                Adición OD
-              </label>
-
-              <input
-                id="adicionOd"
-                name="adicionOd"
-                type="text" inputmode="decimal" autocomplete="off"
-                (keydown)="permitirTeclaMedida($event)"
-                (paste)="validarPegadoMedida($event)"
-                [(ngModel)]="form.receta.adicionOd"
-                placeholder="Ej. +1.50"
-              />
-            </div>
-
-            <div class="field">
-              <label for="adicionOi">
-                Adición OI
-              </label>
-
-              <input
-                id="adicionOi"
-                name="adicionOi"
-                type="text" inputmode="decimal" autocomplete="off"
-                (keydown)="permitirTeclaMedida($event)"
-                (paste)="validarPegadoMedida($event)"
-                [(ngModel)]="form.receta.adicionOi"
-                placeholder="Ej. +1.50"
-              />
-            </div>
-
-            <div class="field">
-              <label for="agudezaVisualOd">
-                Agudeza visual OD
-              </label>
-
-              <input
-                id="agudezaVisualOd"
-                name="agudezaVisualOd"
-                type="text"
-                maxlength="30"
-                [(ngModel)]="
-                  form.receta.agudezaVisualOd
-                "
-                placeholder="Ej. 20/20"
-              />
-            </div>
-
-            <div class="field">
-              <label for="agudezaVisualOi">
-                Agudeza visual OI
-              </label>
-
-              <input
-                id="agudezaVisualOi"
-                name="agudezaVisualOi"
-                type="text"
-                maxlength="30"
-                [(ngModel)]="
-                  form.receta.agudezaVisualOi
-                "
-                placeholder="Ej. 20/20"
-              />
-            </div>
-
             <div class="field full-field">
               <label for="diagnostico">
                 Diagnóstico
