@@ -47,6 +47,7 @@ export interface RecetaOptica {
   proximoControl?: string | null;
   vigente: boolean;
   creadoEn?: string;
+  actualizadoEn?: string;
 }
 
 export interface Cliente {
