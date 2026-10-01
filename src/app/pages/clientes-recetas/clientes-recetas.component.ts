@@ -1216,44 +1216,6 @@ export class ClientesRecetasComponent
               <span>${valorTexto(receta.cercaDip)}</span>
             </div>
 
-            <section class="extras">
-              <div class="extra">
-                <strong>Adic. OD</strong>
-                <span>
-                  ${graduacion(
-                    receta.adicionOd
-                  )}
-                </span>
-              </div>
-
-              <div class="extra">
-                <strong>Adic. OI</strong>
-                <span>
-                  ${graduacion(
-                    receta.adicionOi
-                  )}
-                </span>
-              </div>
-
-              <div class="extra">
-                <strong>AV OD</strong>
-                <span>
-                  ${valorTexto(
-                    receta.agudezaVisualOd
-                  )}
-                </span>
-              </div>
-
-              <div class="extra">
-                <strong>AV OI</strong>
-                <span>
-                  ${valorTexto(
-                    receta.agudezaVisualOi
-                  )}
-                </span>
-              </div>
-            </section>
-
             <section class="linea diagnostico">
               <strong>Diagnóstico:</strong>
               ${valorTexto(
@@ -1478,7 +1440,7 @@ export class ClientesRecetasComponent
       const campos = ['lejosOdEsfera', 'lejosOdCilindro', 'lejosOdEje',
         'lejosOiEsfera', 'lejosOiCilindro', 'lejosOiEje', 'lejosDip',
         'cercaOdEsfera', 'cercaOdCilindro', 'cercaOdEje', 'cercaOiEsfera',
-        'cercaOiCilindro', 'cercaOiEje', 'cercaDip', 'adicionOd', 'adicionOi'] as const;
+        'cercaOiCilindro', 'cercaOiEje', 'cercaDip'] as const;
       for (const campo of campos) {
         const valor = this.form.receta[campo];
         if (valor !== null && valor !== undefined && String(valor).trim() !== '') {
@@ -2480,7 +2442,7 @@ export class ClientesRecetasComponent
   private prepararMedida(): void {
     const nueva = this.construirMedida(this.form.receta);
     // Rebuild generated summaries; preserve legacy free text with no numeric fields.
-    if (nueva || /(?:OD ESF\.|OI ESF\.|OD CYL\.|OI CYL\.|DIP\.|ADIC\.|CERCA )/.test(this.form.receta.medida)) {
+    if (nueva || /(?:OD ESF\.|OI ESF\.|OD CYL\.|OI CYL\.|DIP\.|CERCA )/.test(this.form.receta.medida)) {
       this.form.receta.medida = nueva;
     }
   }
@@ -2513,8 +2475,6 @@ export class ClientesRecetasComponent
     agregar('OI EJE.', receta.lejosOiEje);
     agregar('DIP.', receta.lejosDip);
 
-    agregar('ADIC. OD', receta.adicionOd);
-    agregar('ADIC. OI', receta.adicionOi);
     agregar('CERCA OD ESF.', receta.cercaOdEsfera);
     agregar('CERCA OD CYL.', receta.cercaOdCilindro);
     agregar('CERCA OD EJE.', receta.cercaOdEje);
@@ -2872,6 +2832,19 @@ export class ClientesRecetasComponent
         );
 
       const original = this.recetaOriginalEditando;
+      if (!original?.actualizadoEn) {
+        throw new Error(
+          'No se pudo verificar la versión actual de la receta. Recarga el paciente antes de modificarla.'
+        );
+      }
+
+      const fechaNoVacia = (
+        valor: string | null | undefined
+      ): string | null => {
+        const normalizado = valor?.trim();
+        return normalizado ? normalizado : null;
+      };
+
       const valorSeguro = (
         nuevo: string | number | null,
         anterior: number | null | undefined
@@ -2992,27 +2965,6 @@ export class ClientesRecetasComponent
                 original?.cercaDip
               ),
 
-            adicion_od:
-              valorSeguro(
-                receta.adicionOd,
-                original?.adicionOd
-              ),
-            adicion_oi:
-              valorSeguro(
-                receta.adicionOi,
-                original?.adicionOi
-              ),
-
-            agudeza_visual_od:
-              receta.agudezaVisualOd
-                .trim() ||
-              original?.agudezaVisualOd ||
-              null,
-            agudeza_visual_oi:
-              receta.agudezaVisualOi
-                .trim() ||
-              original?.agudezaVisualOi ||
-              null,
             tipo_lente:
               receta.tipoLente
                 .trim() ||
@@ -3034,7 +2986,8 @@ export class ClientesRecetasComponent
               original?.observaciones ||
               null,
             proximo_control:
-              receta.proximoControl ||
+              fechaNoVacia(receta.proximoControl) ??
+              original.proximoControl ??
               null,
             vigente:
               Boolean(
@@ -3051,7 +3004,7 @@ export class ClientesRecetasComponent
           )
           .eq(
             'actualizado_en',
-            original?.actualizadoEn || ''
+            original.actualizadoEn
           )
           .select('*')
           .single();
@@ -3104,9 +3057,7 @@ export class ClientesRecetasComponent
         ['cerca_oi_esfera', valorSeguro(receta.cercaOiEsfera, original?.cercaOiEsfera)],
         ['cerca_oi_cilindro', valorSeguro(receta.cercaOiCilindro, original?.cercaOiCilindro)],
         ['cerca_oi_eje', valorSeguro(receta.cercaOiEje, original?.cercaOiEje)],
-        ['cerca_dip', valorSeguro(receta.cercaDip, original?.cercaDip)],
-        ['adicion_od', valorSeguro(receta.adicionOd, original?.adicionOd)],
-        ['adicion_oi', valorSeguro(receta.adicionOi, original?.adicionOi)]
+        ['cerca_dip', valorSeguro(receta.cercaDip, original?.cercaDip)]
       ];
 
       const fila = data as Record<string, unknown>;
