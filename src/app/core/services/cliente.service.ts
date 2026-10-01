@@ -1,3 +1,4 @@
+import { convertirMedida } from '../utils/medida-numerica';
 import { Injectable } from '@angular/core';
 import { defer, Observable } from 'rxjs';
 
@@ -70,6 +71,7 @@ interface RecetaDb {
   proximo_control?: string | null;
   vigente: boolean;
   creado_en?: string | null;
+  actualizado_en?: string | null;
 }
 
 @Injectable({
@@ -129,7 +131,8 @@ export class ClienteService {
     observaciones,
     proximo_control,
     vigente,
-    creado_en
+    creado_en,
+    actualizado_en
   `;
 
   constructor(
@@ -332,17 +335,13 @@ export class ClienteService {
               ),
 
             p_adicion_od:
-              this.numeroNullable(
-                receta.adicionOd
-              ),
+              null,
             p_adicion_oi:
-              this.numeroNullable(
-                receta.adicionOi
-              ),
+              null,
             p_agudeza_visual_od:
-              receta.agudezaVisualOd.trim() || null,
+              null,
             p_agudeza_visual_oi:
-              receta.agudezaVisualOi.trim() || null,
+              null,
             p_tipo_lente:
               receta.tipoLente.trim() || null,
             p_tipo_montura:
@@ -366,6 +365,7 @@ export class ClienteService {
 
       const respuesta = data as {
         id_cliente?: number;
+        id_receta?: number;
       } | null;
 
       const idCliente = Number(
@@ -378,7 +378,22 @@ export class ClienteService {
         );
       }
 
-      return this.obtenerPorIdInterno(idCliente);
+      const cliente = await this.obtenerPorIdInterno(idCliente);
+
+      if (incluirReceta) {
+        const idReceta = Number(respuesta?.id_receta);
+        const guardada = cliente.recetas.find(item => item.id === idReceta);
+
+        if (!idReceta || !guardada) {
+          throw new Error(
+            'El cliente se registró, pero no se pudo verificar la receta guardada. Recarga antes de volver a intentarlo.'
+          );
+        }
+
+        this.validarMedidasGuardadas(receta, guardada);
+      }
+
+      return cliente;
     });
   }
 
@@ -406,9 +421,12 @@ export class ClienteService {
         );
       }
 
-      return this.mapearReceta(
+      const guardada = this.mapearReceta(
         data as unknown as RecetaDb
       );
+
+      this.validarMedidasGuardadas(receta, guardada);
+      return guardada;
     });
   }
 
@@ -687,13 +705,13 @@ export class ClienteService {
         this.numeroNullable(receta.cercaDip),
 
       adicion_od:
-        this.numeroNullable(receta.adicionOd),
+        null,
       adicion_oi:
-        this.numeroNullable(receta.adicionOi),
+        null,
       agudeza_visual_od:
-        receta.agudezaVisualOd.trim() || null,
+        null,
       agudeza_visual_oi:
-        receta.agudezaVisualOi.trim() || null,
+        null,
       tipo_lente:
         receta.tipoLente.trim() || null,
       tipo_montura:
@@ -834,8 +852,52 @@ export class ClienteService {
       vigente:
         Boolean(fila.vigente),
       creadoEn:
-        fila.creado_en ?? undefined
+        fila.creado_en ?? undefined,
+      actualizadoEn:
+        fila.actualizado_en ?? undefined
     };
+  }
+
+  private validarMedidasGuardadas(
+    esperada: RecetaForm,
+    guardada: RecetaOptica
+  ): void {
+    const pares: Array<[
+      keyof RecetaForm,
+      keyof RecetaOptica
+    ]> = [
+      ['lejosOdEsfera', 'lejosOdEsfera'],
+      ['lejosOdCilindro', 'lejosOdCilindro'],
+      ['lejosOdEje', 'lejosOdEje'],
+      ['lejosOiEsfera', 'lejosOiEsfera'],
+      ['lejosOiCilindro', 'lejosOiCilindro'],
+      ['lejosOiEje', 'lejosOiEje'],
+      ['lejosDip', 'lejosDip'],
+      ['cercaOdEsfera', 'cercaOdEsfera'],
+      ['cercaOdCilindro', 'cercaOdCilindro'],
+      ['cercaOdEje', 'cercaOdEje'],
+      ['cercaOiEsfera', 'cercaOiEsfera'],
+      ['cercaOiCilindro', 'cercaOiCilindro'],
+      ['cercaOiEje', 'cercaOiEje'],
+      ['cercaDip', 'cercaDip'],
+    ];
+
+    for (const [campoFormulario, campoGuardado] of pares) {
+      const esperado = this.numeroNullable(
+        esperada[campoFormulario] as string | number | null
+      );
+      const actual = this.numeroDb(
+        guardada[campoGuardado] as string | number | null | undefined
+      );
+
+      if (esperado !== actual) {
+        throw new Error(
+          `Supabase no confirmó la medida ${String(campoFormulario)}. ` +
+          `Se esperaba ${esperado ?? 'vacío'} y devolvió ${actual ?? 'vacío'}. ` +
+          'Recarga la ficha antes de continuar.'
+        );
+      }
+    }
   }
 
   private tieneDatosReceta(
@@ -862,10 +924,6 @@ export class ClienteService {
       receta.cercaOiCilindro,
       receta.cercaOiEje,
       receta.cercaDip,
-      receta.adicionOd,
-      receta.adicionOi,
-      receta.agudezaVisualOd,
-      receta.agudezaVisualOi,
       receta.tipoLente,
       receta.tipoMontura,
       receta.diagnostico,
@@ -940,22 +998,8 @@ export class ClienteService {
     };
   }
 
-  private numeroNullable(
-    valor: string | number | null
-  ): number | null {
-    if (
-      valor === null ||
-      valor === undefined ||
-      String(valor).trim() === ''
-    ) {
-      return null;
-    }
-
-    const numero = Number(String(valor).replace(',', '.'));
-
-    return Number.isFinite(numero)
-      ? numero
-      : null;
+  private numeroNullable(valor: string | number | null): number | null {
+    return convertirMedida(valor);
   }
 
   private numeroDb(
