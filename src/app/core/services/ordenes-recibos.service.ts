@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { defer, Observable, firstValueFrom } from 'rxjs';
+import { defer, Observable } from 'rxjs';
 
 import type {
   CambioMonturaRequest,
@@ -170,18 +170,56 @@ export class OrdenesRecibosService {
   }
 
   async completarDatosExportacion(ordenes: OrdenRecibo[]): Promise<OrdenRecibo[]> {
-    const resultado: OrdenRecibo[] = [];
-    for (let inicio = 0; inicio < ordenes.length; inicio += 4) {
-      const lote = await Promise.all(ordenes.slice(inicio, inicio + 4).map(async orden => {
-        const copia = { ...orden };
-        if (!copia.medidasCredito && orden.idCliente != null) {
-          const { data, error } = await this.supabaseService.client
-            .from('recetas_opticas').select('*')
-            .eq('id_cliente', orden.idCliente).eq('vigente', true)
-            .order('fecha_entrada', { ascending: false })
-            .order('id_receta', { ascending: false }).limit(1).maybeSingle();
+    const clientes = [...new Set(ordenes.filter(o => !o.medidasCredito && o.idCliente != null).map(o => o.idCliente as number))];
+    const ventas = ordenes.filter(o => !o.monturaCredito).map(o => o.idVenta);
+    const recetas = new Map<number, Record<string, unknown>>();
+    const monturas = new Map<number, string[]>();
+    const cargarRecetas = async () => {
+      for (let i = 0; i < clientes.length; i += 100) {
+        let desde = 0;
+        while (true) {
+          const { data, error } = await this.supabaseService.client.from('recetas_opticas')
+            .select('id_cliente,id_receta,numero_orden,fecha_entrada,medida,lejos_od_esfera,lejos_od_cilindro,lejos_od_eje,lejos_oi_esfera,lejos_oi_cilindro,lejos_oi_eje,lejos_dip,cerca_od_esfera,cerca_od_cilindro,cerca_od_eje,cerca_oi_esfera,cerca_oi_cilindro,cerca_oi_eje,cerca_dip')
+            .in('id_cliente', clientes.slice(i, i + 100)).eq('vigente', true)
+            .order('fecha_entrada', { ascending: false }).order('id_receta', { ascending: false })
+            .range(desde, desde + 499);
           if (error) throw new Error(error.message);
-          if (data) {
+          for (const fila of data || []) {
+            if (!recetas.has(fila.id_cliente)) recetas.set(fila.id_cliente, fila);
+          }
+          if (!data?.length) break;
+          desde += data.length;
+        }
+      }
+    };
+    const cargarMonturas = async () => {
+      for (let i = 0; i < ventas.length; i += 100) {
+        let desde = 0;
+        while (true) {
+          const { data, error } = await this.supabaseService.client.from('detalle_ventas')
+            .select(`id_venta,id_detalle_venta,id_producto,descripcion_manual,es_item_manual,
+              producto:productos(id_producto,nombre,modelo,color,marca:marcas(nombre),categoria:categorias(nombre))`)
+            .in('id_venta', ventas.slice(i, i + 100))
+            .order('id_detalle_venta', { ascending: true }).range(desde, desde + 499);
+          if (error) throw new Error(error.message);
+          for (const fila of data || []) {
+            const item = this.mapearDetalle(fila as unknown as DetalleVentaDb);
+            if (/montura/i.test(item.categoria || '') || /montura/i.test(item.producto)) {
+              const lista = monturas.get(fila.id_venta) || [];
+              lista.push([item.producto, item.marca, item.modelo, item.color].filter(Boolean).join(' / '));
+              monturas.set(fila.id_venta, lista);
+            }
+          }
+          if (!data?.length) break;
+          desde += data.length;
+        }
+      }
+    };
+    await Promise.all([cargarRecetas(), cargarMonturas()]);
+    return ordenes.map(orden => {
+      const copia = { ...orden };
+      const data = orden.idCliente == null ? undefined : recetas.get(orden.idCliente);
+      if (!copia.medidasCredito && data) {
             const partes: string[] = [];
             for (const distancia of ['lejos', 'cerca']) {
               for (const ojo of ['od', 'oi']) {
@@ -192,26 +230,13 @@ export class OrdenesRecibosService {
               }
               if (data[`${distancia}_dip`] != null) partes.push(`${distancia.toUpperCase()} DIP: ${data[`${distancia}_dip`]}`);
             }
-            for (const ojo of ['od', 'oi']) {
-              if (data[`adicion_${ojo}`] != null) partes.push(`ADIC ${ojo.toUpperCase()}: ${data[`adicion_${ojo}`]}`);
-            }
-            const medidas = partes.join(' | ') || data.medida || 'Sin medidas registradas';
-            copia.medidasCredito = `Receta actual ${data.numero_orden || ''}: ${medidas}`;
-          }
-        }
-        if (!copia.monturaCredito) {
-          const detalle = await firstValueFrom(this.obtenerDetalle(orden.idVenta));
-          copia.monturaCredito = detalle.items
-            .filter(item => /montura/i.test(item.categoria || '') || /montura/i.test(item.producto))
-            .map(item => [item.producto, item.marca, item.modelo, item.color].filter(Boolean).join(' / '))
-            .join(' | ') || 'Sin montura identificada en la venta';
-        }
-        copia.medidasCredito ||= 'Sin medidas registradas';
-        return copia;
-      }));
-      resultado.push(...lote);
-    }
-    return resultado;
+            const medidas = partes.join(' | ') || data['medida'] || 'Sin medidas registradas';
+            copia.medidasCredito = `Receta actual ${data['numero_orden'] || ''}: ${medidas}`;
+      }
+      copia.medidasCredito ||= 'Sin medidas registradas';
+      copia.monturaCredito ||= monturas.get(orden.idVenta)?.join(' | ') || 'Sin montura identificada en la venta';
+      return copia;
+    });
   }
 
   obtenerDetalle(
