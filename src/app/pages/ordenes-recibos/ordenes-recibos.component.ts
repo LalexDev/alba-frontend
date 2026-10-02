@@ -1398,16 +1398,7 @@ export class OrdenesRecibosComponent
 
     return (
       this.pagoRevisado &&
-      this.pagoAdicionalValido &&
-      Number(
-        this.pagoAdicional || 0
-      ) <= 0.009 &&
-      this.ordenAcciones
-        .montoCancelado <= 0.009 &&
-      this.ordenAcciones
-        .estadoPago === 'PENDIENTE' &&
-      this.ordenAcciones
-        .estado !== 'COMPLETADA'
+      this.pagoAdicionalValido
     );
   }
 
@@ -1551,7 +1542,7 @@ export class OrdenesRecibosComponent
 
     if (!this.puedeEliminar) {
       this.errorAcciones =
-        'Solo se pueden eliminar órdenes sin pagos y que no estén completadas.';
+        'Confirma la revisión del pago y verifica que la orden no esté completada.';
       return;
     }
 

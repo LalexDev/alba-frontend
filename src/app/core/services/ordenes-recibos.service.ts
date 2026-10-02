@@ -1632,7 +1632,14 @@ export class OrdenesRecibosService {
         'tiene pagos registrados'
       )
     ) {
-      return 'No se puede eliminar una orden que ya tiene pagos registrados.';
+      return 'La eliminación de la orden y sus pagos no está habilitada en Supabase. Ejecuta la migración de eliminación integral.';
+    }
+
+    if (
+      texto.includes('no tiene permiso para eliminar órdenes') ||
+      texto.includes('no tiene permiso para eliminar ordenes')
+    ) {
+      return 'El usuario no tiene permiso para eliminar órdenes.';
     }
 
     if (
